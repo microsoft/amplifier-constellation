@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.pyc
+/private/
+
+# Local installations and publication review material
+private/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db

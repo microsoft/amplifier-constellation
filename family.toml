@@ -1,0 +1,61 @@
+schema_version = 1
+product = "Amplifier Constellation"
+registry_kind = "documentation"
+updated = "2026-11-02"
+# Source repositories are independent of downloadable binary releases.
+
+[[component]]
+id = "runtime"
+repository = "https://github.com/microsoft/amplifier-constellation-runtime"
+scope = "constellation"
+publication = "source"
+purpose = "Native Rust ACP agent engine, provider and tool execution, durable sessions."
+
+[[component]]
+id = "instance"
+repository = "https://github.com/microsoft/amplifier-constellation-instance"
+scope = "constellation"
+publication = "source"
+purpose = "Independent installed agent identity, setup, profiles, authorized context, work, and observability."
+
+[[component]]
+id = "observatory"
+repository = "https://github.com/microsoft/amplifier-constellation-observatory"
+scope = "constellation"
+publication = "source"
+purpose = "Fleet management and observation across machines; generic ACP with optional management adapters."
+
+[[component]]
+id = "conversations"
+repository = "https://github.com/microsoft/amplifier-constellation-conversations"
+scope = "constellation"
+publication = "source"
+purpose = "Browser conversations, people and agents, threads, approvals, and source context."
+
+[[component]]
+id = "persona-workshop"
+repository = "https://github.com/microsoft/amplifier-persona-workshop"
+scope = "shared"
+publication = "source"
+purpose = "Person-specific communication and working-style profiles, evaluation, and portable exports."
+
+[[component]]
+id = "slack"
+repository = "https://github.com/microsoft/amplifier-acp-slack"
+scope = "shared"
+publication = "source"
+purpose = "Generic ACP integration with Slack conversations and presentation."
+
+[[component]]
+id = "teams"
+repository = "https://github.com/microsoft/amplifier-acp-teams"
+scope = "shared"
+publication = "source"
+purpose = "Generic ACP integration with Teams; live tenant validation remains pending."
+
+[[component]]
+id = "lab"
+repository = "https://github.com/microsoft/amplifier-acp-lab"
+scope = "shared"
+publication = "source"
+purpose = "Repeatable collaborative-agent experiments, observations, and evaluations."
