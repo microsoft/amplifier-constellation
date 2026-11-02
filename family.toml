@@ -59,3 +59,10 @@ repository = "https://github.com/microsoft/amplifier-acp-lab"
 scope = "shared"
 publication = "source"
 purpose = "Repeatable collaborative-agent experiments, observations, and evaluations."
+
+[[component]]
+id = "minecraft"
+repository = "https://github.com/microsoft/amplifier-acp-minecraft"
+scope = "shared"
+publication = "source"
+purpose = "Independent ACP agents as Minecraft players with scoped world interaction and bounded collaboration."

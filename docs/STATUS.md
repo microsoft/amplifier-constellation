@@ -13,8 +13,9 @@ and draft umbrella contracts. These are source versions; downloadable releases a
 | Conversations | 0.5.1 | Browser rooms, direct conversations, Markdown, approvals, and negotiated structured form questions. Agent-side working folders can differ from the client launch folder. |
 | Slack adapter | 0.5.0 | Standard ACP interaction, Slack formatting and delivery, scoped context, and explicit callback approval. |
 | Teams adapter | 0.2.1 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
-| Persona Workshop | 0.5.0 | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Provenance and private identity remain separate. |
+| Persona Workshop | 0.5.1 | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
 | ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
+| Minecraft adapter | 0.1.0 | Independent players, scoped HTTP MCP game tools, public conversation routing, bounded tasks, and optional context/decision integrations. Requires a compatible Minecraft server; public CI uses synthetic fixtures. |
 
 ## Verification
 
