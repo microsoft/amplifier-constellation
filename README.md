@@ -19,6 +19,7 @@ agent implementation, and connector has its own repository and release cycle.
 | Manage agents across machines | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
 | Talk with people and agents in a browser | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
 | Connect an ACP agent to Slack or Teams | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) |
+| Let independent agents participate in Minecraft | [Minecraft adapter](https://github.com/microsoft/amplifier-acp-minecraft) |
 | Build a communication and working-style profile | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
 | Run repeatable collaboration experiments | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
 | Embed or extend our native Rust agent engine | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
@@ -31,7 +32,7 @@ installation instructions, supported platforms, and release availability.
 
 ```mermaid
 flowchart LR
-    People[People] --> Experiences[Conversations · Slack · Teams · ACP editors]
+    People[People] --> Experiences[Conversations · Slack · Teams · Minecraft · ACP editors]
     Experiences -->|Standard ACP entry point| Individual[Independent agent]
     Individual --> Engine[Constellation Rust runtime or another ACP implementation]
     Observatory[Observatory] -->|Optional management interface| Individual
