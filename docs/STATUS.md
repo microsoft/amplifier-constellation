@@ -24,17 +24,41 @@ fictional participants. Personal installations, profiles, conversation records,
 and private validation reports are excluded. Check the component's current
 workflow results and platform documentation before depending on a capability.
 
+The November 2 continuation checkpoint adds current-state attention watches,
+exact predicates for host facts, receipt-based recovery advice, and deadline-aware
+Minecraft scheduling. These remain optional host contracts, not ACP additions.
+Predicate and model evaluations are reported separately. A 26-case transfer replay
+passed: 14 exact evaluations made no provider calls, and 12 semantic evaluations
+used the configured decision service (62.5 ms median transport response in this
+run). This small authored suite is not a population accuracy or cost-saving claim.
+
+The Instance dashboard now exposes acceptance briefs, delivered versions,
+artifact reviews and requester closure through the same authenticated APIs.
+Observatory can open the exact responsibility in that independent dashboard.
+Real-service browser checks cover forms, persisted drafts, semantic control,
+narrow layout and closure with a separate builder principal.
+
+A fresh Zed GUI thread connected to the migrated native agent and used its clock
+tool. Native command checks passed on a macOS ARM64 host (3 tests) and a Windows
+x64 host (9 tests, including 2 child-process fixtures), in addition to Linux
+checks. Windows used the explicit AppContainer feature and the serialized CI
+test setup; preview limitations remain documented by the runtime.
+
+New persona collaboration trials use actual independent ACP installations, not
+chat roleplay. The shared workshop queue scenario publishes a small Python artifact
+and checks its exact bytes separately over 128 input combinations. The public
+example uses fictional participants; personal profiles and transcripts stay private.
+Game build claims still require an independent world inspection.
+
 ## Remaining work
 
-- Verify Teams against a configured live tenant, app identity, and HTTPS callback.
-- Complete a fresh Zed GUI conversation check against the migrated native agent.
+- Live Teams tenant/app verification is deferred; local fixtures remain available.
 - Add interactive provider sign-in where needed; owned clients currently offer
   a preauthenticated fallback.
 - Broaden optional callbacks and session controls per experience. Only Conversations
   currently advertises structured form elicitation among the owned interactive UIs.
-- Broaden native command-isolation validation on macOS and Windows; the runtime
+- Continue platform coverage beyond the tested macOS and Windows hosts; the runtime
   documents platform-specific constraints and preview capabilities.
-- Add dedicated UI controls for the completion contracts already exposed by API.
 - Evaluate conflict resolution, autonomous handoff, and group participation beyond
   controlled scenarios.
 
