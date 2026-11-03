@@ -7,6 +7,7 @@ existing version names until an explicit migration changes them.
 | Boundary | Owner and detailed reference |
 | --- | --- |
 | Family composition | [Family candidate](family.v1-candidate.md) |
+| Self-contained setup, authorization, and management | [Installation baseline](family.v1-candidate.md#self-contained-installation-baseline) |
 | Experience scope and programmatic interaction | [Experience candidate](experience.v1-candidate.md) |
 | Standard agent/client interaction | [Agent Client Protocol](https://agentclientprotocol.com/) |
 | Instance attach, custom transport, and management discovery | [Instance ACP boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md) |

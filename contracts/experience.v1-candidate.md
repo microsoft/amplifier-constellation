@@ -1,6 +1,6 @@
 # Experience contract — v1 candidate
 
-Draft for review · November 2, 2026. This governs how an experience connects people, agents, and actions.
+Draft for review · Updated November 3, 2026. This governs how an experience connects people, agents, and actions.
 
 ## Who builds against this
 
@@ -48,6 +48,11 @@ actor + conversation + audience + optional thread + destination
    verification, and requester acceptance are different observations. Reports
    name the exact artifact and check rather than turning an agent's claim into
    proof that the user's larger task is complete.
+9. **Minimize the complete setup journey.** Measure user and administrator
+   decisions, clicks, app switches, copy/paste, and recovery steps together.
+   Reuse known configuration and automate credential handling where the platform
+   permits it. Preserve the [self-contained installation baseline](family.v1-candidate.md#self-contained-installation-baseline);
+   a shared setup service must not become a prerequisite for a simple UI.
 
 ## Verification expectations
 
@@ -60,6 +65,9 @@ These are acceptance checks to maintain, not a claim of complete coverage:
 - Compare a direct message with a group brainstorming and handoff scenario.
 - Preserve the artifact hash, evaluator result, delivery receipt, and requester
   decision as distinct records.
+- Observe a fresh installation through first successful interaction, including
+  administrator work and a failed attempt followed by recovery. Report all
+  required interactions, not just the connector's buttons.
 
 ## Outside this draft
 
@@ -72,4 +80,5 @@ work on a person's behalf.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-03 | Count end-to-end setup effort while preserving standalone installation. | Low-interaction onboarding for owners and administrators without adding a required shared service. |
 | 2026-11-02 | Initial candidate. | Same-agent continuity, natural participation, source-owned conversations, and programmatically operable UI requirements. |
