@@ -54,6 +54,10 @@ integration; ACP alone does not grant access to another room's history.
 The fleet dashboard is a convenient way to reach independent services. An agent
 does not need the dashboard to keep existing or to accept another authorized ACP
 client. Installing one individual must not require installing the whole family.
+Setup and ongoing connection management must also work without a shared
+Constellation provisioning service. Each owner can operate and update their
+installations independently; fleet interfaces remain optional. See the
+[self-contained installation baseline](contracts/family.v1-candidate.md#self-contained-installation-baseline).
 
 ## Direction and agreements
 
