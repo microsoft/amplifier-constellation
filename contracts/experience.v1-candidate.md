@@ -54,6 +54,12 @@ actor + conversation + audience + optional thread + destination
    permits it. Preserve the [self-contained installation baseline](family.v1-candidate.md#self-contained-installation-baseline);
    a shared setup service must not become a prerequisite for a simple UI.
 
+10. **Show scoped activity where supported.** After committing to a response, use
+    the experience's richest supported working indicator. Prefer informative
+    present-tense tool activity, with Thinking… as the model-wait fallback. Keep
+    the indicator in its response destination, and clear it when settled. Follow
+    the shared [adapter activity contract](adapter-activity.v1-candidate.md).
+
 ## Verification expectations
 
 These are acceptance checks to maintain, not a claim of complete coverage:
