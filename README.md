@@ -118,3 +118,7 @@ Installation-owned updates are described in the
 [update contract](contracts/installation-updates.v1-candidate.md): dashboard,
 CLI and chat requests share the same controls, with optional fleet observation
 and no required shared update service.
+
+The optional [refreshed context contract](contracts/context-snapshots.v1-candidate.md)
+keeps current source projections concise while preserving original requests,
+private history and tool outcomes.
