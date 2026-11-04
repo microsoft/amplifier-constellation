@@ -124,3 +124,8 @@ this boundary. Minecraft, Teams and other adapters apply the same semantics to
 their own supported UI. Declaring this guidance does not claim that every existing
 adapter already passes every case; implementation and verification evidence must
 be recorded in the owning component.
+
+Activity indicators are control traffic. Their creation, edits and removal must
+not become participant messages, new work, or context changes that invalidate
+ongoing work. Where deletion events omit metadata, retain a bounded identifier
+set for the indicator lifecycle. Ordinary participant messages remain unaffected.
