@@ -1,6 +1,6 @@
 # Contract ownership
 
-The two umbrella contracts describe shared expectations. They are candidates for
+The umbrella contracts describe shared expectations. They are candidates for
 review. Component-owned contracts describe concrete interfaces; they retain their
 existing version names until an explicit migration changes them.
 
@@ -9,6 +9,8 @@ existing version names until an explicit migration changes them.
 | Family composition | [Family candidate](family.v1-candidate.md) |
 | Self-contained setup, authorization, and management | [Installation baseline](family.v1-candidate.md#self-contained-installation-baseline) |
 | Experience scope and programmatic interaction | [Experience candidate](experience.v1-candidate.md) |
+| Working indicators and public activity across adapters | [Adapter activity candidate](adapter-activity.v1-candidate.md) |
+| Self-contained update lifecycle | [Installation updates candidate](installation-updates.v1-candidate.md) |
 | Standard agent/client interaction | [Agent Client Protocol](https://agentclientprotocol.com/) |
 | Instance attach, custom transport, and management discovery | [Instance ACP boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md) |
 | Authorized conversation recall and native history | [Instance continuity contract](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/conversation-continuity.md) |
