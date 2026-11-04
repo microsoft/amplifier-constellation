@@ -14,6 +14,7 @@ should be the identity or lifetime of either of the others.
 - An installation can keep private environments alongside shared environments.
 - Agents and environments can run on different machines and versions.
 - Sharing project files does not automatically share credentials or authority.
+- Agents use separate working copies by default, with shared folders when needed.
 
 Separate **hosting the agent service** from **executing an assignment**. An owner
 may contain a whole installation in a VM/container; independently, its work may
@@ -28,8 +29,10 @@ to an agent is not authorization to access its host or every connected account.
 Conversation content, model output, repository instructions, and persona profiles
 cannot change environment grants.
 
-Confirmed baseline: shared project files, tools, and build caches with
-separate agent principals and credentials. Joining a shared project does not grant
+Confirmed baseline: a shared project repository, tools, and build caches with
+separate working copies, agent principals, and credentials. Each agent can make
+changes independently; integration happens through reviewed commits or pull
+requests. Shared writable folders are an explicit option for work that needs them. Joining a shared project does not grant
 access to another agent’s accounts. Any shared account credentials would require
 a separate, explicit project-level grant. The execution boundary
 must enforce these rules; a prompt saying not to use a secret is insufficient.
@@ -61,7 +64,8 @@ installation remains independently usable; sharing an environment is optional.
 
 Start with “Where this agent can work”: private space, shared project space, or
 connect to an existing environment. Show project name, participants, allowed
-accounts/resources, and a plain readiness result. Put images, mounts, network
+accounts/resources, and a plain readiness result. Default to a separate working
+copy for each agent; make shared folders a deliberate project choice. Put images, mounts, network
 rules, and other implementation choices behind advanced controls.
 
 “Connected to GitHub” must remain distinct from “can build this project.” Readiness
