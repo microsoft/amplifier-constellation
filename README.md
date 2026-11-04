@@ -62,6 +62,7 @@ installations independently; fleet interfaces remain optional. See the
 ## Direction and agreements
 
 - [Vision](docs/VISION.md): the experience we are working toward.
+- [Shared spaces proposal](docs/shared-spaces-design.md): approachable setup, everyday work, recovery, and voice operation; design for discussion.
 - [Execution environments proposal](docs/execution-environments.md): separate agent identity, project execution, hosting, and credentials; under discussion.
 - [Family contract](contracts/family.v1-candidate.md): ownership, independence,
   compatibility, and replacement of components.
