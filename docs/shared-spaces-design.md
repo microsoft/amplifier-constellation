@@ -146,3 +146,17 @@ as a completed integration. No new shared provisioning service is required.
 
 The prototype is a local concept for discussing these flows, not the rollout of
 this product. The broader environment service remains a separate design.
+
+
+## Finding from the first delivery exercise
+
+A peer's review offer must not revoke a builder's ongoing tool permissions. It
+changes the conversation, not the authority of the original accepted work. A new
+human instruction still requires reassessment, with completed effects preserved.
+Use the same distinction for progress indicators, approval cards and continuation
+controls so an ordinary group discussion does not repeatedly restart work.
+
+An invited reviewer also needs an actionable capability result: “Can inspect and
+run this project” or the specific missing connection. Showing an agent in a room
+does not establish that it can perform its assignment. Offer a clear handoff to
+another reviewer when needed, preserving the artifact version to be checked.
