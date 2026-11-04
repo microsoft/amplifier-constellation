@@ -125,3 +125,18 @@ The [installation updates contract](installation-updates.v1-candidate.md) adds
 optional local lifecycle controls. Each installation owns its helper and policy;
 Observatory is only a client. Agent-initiated updates use one instance-wide enable
 switch, without per-requester or owner-DM authorization when enabled.
+
+## Installed engine and attention ownership
+
+An installation chooses a runtime family at creation. It may update that engine;
+changing families is a separate installation, not an implicit migration of
+sessions or private state. Instance owns reusable identity, audience boundaries,
+responsibilities, installation controls and optional ambient attention. Runtimes
+own reasoning/session execution. Experiments may replace either implementation
+by creating another independent installation; shared contracts keep experiences
+compatible without requiring host code or engine histories to be interchangeable.
+
+The [attention profile](attention.v1-candidate.md) defines the shared optional
+pre-turn contract. Adapters provide facts and source/delivery constraints.
+Runtime-owned decision tools may still assist reasoning within an admitted turn;
+they do not become a second ambient admission gate.

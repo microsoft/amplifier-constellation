@@ -1,6 +1,6 @@
 # Amplifier Constellation — Vision
 
-Draft for review · November 2, 2026.
+Draft for review · November 4, 2026.
 
 This describes the intended experience. Shipped behavior and verification belong
 in [implementation status](STATUS.md) and component release records. Changes to
@@ -23,7 +23,10 @@ A template supplies reusable behavior and capabilities. An individual carries an
 identity, learned context, and commitments. An assignment gives that individual a
 role in a setting. Two agents from the same template can own work independently;
 one individual can hold several assignments. Changing models need not create a
-different individual.
+different individual. The installed runtime family is chosen when creating an
+installation. Updates within that family are supported; trying a different family
+means creating a separate installation, with no automatic session migration.
+Separate instances are also the unit for experimenting with different host policies.
 
 ### 2. Conversations are places to participate
 
@@ -45,7 +48,12 @@ In a direct conversation, a person normally expects a response. In a group,
 agents should contribute when they can help, recognize an actual handoff, and
 leave room for people and other agents. They should not repeat each other or turn
 brainstorming into work assignments. Quiet participation and useful action both
-need evaluation in realistic conversations.
+need evaluation in realistic conversations. A shared installation-level attention
+policy should give native and third-party ACP engines the same opportunity to
+participate. Thin experiences supply facts, not competing social classifiers.
+While calibrating, ambiguous fresh social events favor a bounded opportunity to
+engage; silence, canceled work and spending limits remain meaningful. See the
+[attention contract](../contracts/attention.v1-candidate.md).
 
 ### 5. Work has continuity and evidence
 
@@ -113,4 +121,5 @@ the initial architecture.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-04 | Installation-owned attention, bounded uncertain engagement, and runtime-family lifecycle. | Explicit product direction; native/Codex compatibility and shared-room experiments. |
 | 2026-11-02 | Initial draft. | The product requirements and experiments that established this family; adapted the vision/contract/status separation used by Amplifier Converge. |

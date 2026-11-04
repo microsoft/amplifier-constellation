@@ -99,3 +99,15 @@ Production clients use ACP v1 and explicit capabilities. Draft-v2 and proposed
 remote-transport prototypes remain isolated experiments. The Instance network
 bridge is a documented custom transport behind a standard stdio attach entry
 point. Neither prototypes nor custom transport URLs imply universal host support.
+
+## November 4 attention candidate
+
+The attention contract is a coordinated review candidate, not a deployed-fleet
+claim. Instance owns optional pre-turn social evaluation and its review journal;
+Slack, Conversations and Minecraft submit audience-local facts and consume
+one-use admission offers. Ordinary ACP remains available without this profile.
+Native and Codex engines completed a bounded live compatibility check; adapter
+fixtures verify that a held event sends no prompt and an offer skips the old
+LLM-only social preflight. A small JEV calibration set distinguished low-confidence
+choices from explicit uncertainty. No production savings estimate follows from
+these checks. AHP is documented as a future host/client option, not implemented.

@@ -27,3 +27,5 @@ Microsoft destination links are being prepared. Publication status is recorded i
 Changing a repository name does not rename a protocol identifier or make a custom
 extension part of ACP. Any namespace migration must preserve or deliberately
 deprecate existing clients through the owning component's versioned interface.
+
+- [Installed-agent attention](attention.v1-candidate.md): optional ambient admission, uncertainty review, ownership and measurement.
