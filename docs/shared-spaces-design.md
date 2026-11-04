@@ -160,3 +160,18 @@ An invited reviewer also needs an actionable capability result: “Can inspect a
 run this project” or the specific missing connection. Showing an agent in a room
 does not establish that it can perform its assignment. Offer a clear handoff to
 another reviewer when needed, preserving the artifact version to be checked.
+
+Keep platform bookkeeping separate from a user’s instruction: a changed thread
+reply count is not an edited request. Preserve the material message revision for
+authorization and review, while recording delivery/activity metadata separately.
+
+The completed exercise also shows why a request, a review and acceptance need
+different visual states. A later request to add CI changed the reviewed version;
+the independent reviewer checked the new delta and tied the result to its new
+commit. The coordinator then requested acceptance. Make that sequence visible
+without requiring the user to reconstruct it from scattered chat messages.
+
+Preserve prior work when a conversation resumes: show “Continuing the existing
+result” with its current artifact and remaining step, rather than starting a
+second task. Completion should quiet the room; further acknowledgments should
+not start another round of work or reopen unrelated earlier assignments.
