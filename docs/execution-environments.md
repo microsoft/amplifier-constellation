@@ -26,8 +26,10 @@ force one sandbox per agent, or equate an environment with a Docker container.
 The environment owner controls mounts, network access, toolchains, resource
 budgets, and which agent principals can use them. A person being allowed to talk
 to an agent is not authorization to access its host or every connected account.
-Conversation content, model output, repository instructions, and persona profiles
-cannot change environment grants.
+Bind each assignment to an allowed conversation audience as well as an agent and
+project: participating in a public room must not expose that agent’s private
+project permissions. Conversation content, model output, repository instructions,
+and persona profiles cannot change environment grants.
 
 Confirmed baseline: a shared project repository, tools, and build caches with
 separate working copies, agent principals, and credentials. Each agent can make
