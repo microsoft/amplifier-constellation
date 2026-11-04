@@ -62,6 +62,7 @@ installations independently; fleet interfaces remain optional. See the
 ## Direction and agreements
 
 - [Vision](docs/VISION.md): the experience we are working toward.
+- [Execution environments proposal](docs/execution-environments.md): separate agent identity, project execution, hosting, and credentials; under discussion.
 - [Family contract](contracts/family.v1-candidate.md): ownership, independence,
   compatibility, and replacement of components.
 - [Experience contract](contracts/experience.v1-candidate.md): conversation scope,
