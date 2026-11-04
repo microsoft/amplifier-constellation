@@ -118,3 +118,10 @@ when concrete implementations need to interoperate.
 | --- | --- | --- |
 | 2026-11-03 | Require a self-contained setup and management lifecycle; shared provisioning remains outside the baseline. | Independent iteration across owners, machines, and implementations without a mandatory shared service or coordinated upgrades. |
 | 2026-11-02 | Initial candidate. | Independent installation, ACP compatibility, and optional fleet-management requirements. |
+
+## Installation updates
+
+The [installation updates contract](installation-updates.v1-candidate.md) adds
+optional local lifecycle controls. Each installation owns its helper and policy;
+Observatory is only a client. Agent-initiated updates use one instance-wide enable
+switch, without per-requester or owner-DM authorization when enabled.
