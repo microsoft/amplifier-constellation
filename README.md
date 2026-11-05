@@ -46,6 +46,13 @@ service lifecycle, and management UI. The two can be installed together; their
 implementation boundary stays replaceable. The native runtime does not require
 Codex. Other ACP implementations remain useful peers.
 
+The coordinated runtime documentation includes a
+[current-design overview and diagram](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/runtime-overview.md)
+and a separate
+[next execution design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
+The latter describes repeated input and steering; it is not a claim about the
+capabilities of runtime 0.9.0 or an older installation.
+
 An experience owns its conversations and presentation. A connector translates
 its platform's messages, threads, permissions, and formatting into the supported
 ACP interaction. Authorized recall across conversations is an optional context
@@ -68,6 +75,10 @@ installations independently; fleet interfaces remain optional. See the
   compatibility, and replacement of components.
 - [Experience contract](contracts/experience.v1-candidate.md): conversation scope,
   human and programmatic controls, participation, and evidence of outcomes.
+- [Input continuity](contracts/input-continuity.v1-candidate.md): accepted next
+  design for follow-ups during ongoing work, preserved effects and explicit stop.
+- [Model support](contracts/model-support.v1-candidate.md): accepted policy for
+  current models by class, verified capabilities and explicit configuration changes.
 - [Contract index](contracts/README.md): which repository owns each detailed seam.
 - [Component registry](family.toml): the machine-readable map of repositories.
 - [Implementation status](docs/STATUS.md): current evidence and outstanding work.

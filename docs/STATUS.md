@@ -5,9 +5,35 @@ and draft umbrella contracts. Downloadable releases are listed by each component
 identified below. Release availability is not an assertion that every installation
 has been updated.
 
-## Current components
+## Accepted next design: input continuity and model support
 
-| Component | Current version | Evidence and limits |
+The [input continuity contract](../contracts/input-continuity.v1-candidate.md)
+and [model support policy](../contracts/model-support.v1-candidate.md) are accepted
+direction for the next coordinated change. They do not report shipped behavior.
+The runtime's
+[overview](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/runtime-overview.md)
+describes audited 0.9.0 source; its separate
+[steering design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md)
+describes the intended implementation.
+
+At runtime 0.9.0, one session has one active prompt, with no durable mid-turn input
+inbox or provider-native steering transport. An ordinary follow-up can also
+invalidate work or approvals in the earlier adapter behavior described below.
+The next design removes that implicit cancellation, retains completed effects,
+supports repeated ordered input and truthful receipts, and keeps explicit stop
+and source/authority revocation separate. Native OpenAI generation moves to
+verified GPT-6+ Responses WebSocket support; other native providers inject at
+legal model boundaries, and opaque non-steering ACP engines queue a next prompt.
+
+Each provider's useful model classes should resolve to the latest verified model
+through setup or an explicit update. Catalog changes must not silently alter
+active turns, saved provider bindings or billing routes. Implementation, protocol
+fixtures, live provider checks, experience checks and installation rollout must be
+recorded separately before these requirements are described as completed.
+
+## Recorded component checkpoint
+
+| Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
 | Runtime | [0.9.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.9.0) | Native Rust model/tool execution and durable ACP sessions; no Codex dependency on the native path. Optional capabilities and trust profiles are documented in the runtime repository; this is not official ACP certification. |
 | Instance | [0.15.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.15.1) | Native installation is the default. Artifacts and installation checks cover Linux ARM64/x64, macOS ARM64/x64, and Windows x64. Checkpoint export/restore/clone and authenticated completion APIs have separate validation. |
@@ -126,6 +152,11 @@ so reply counts do not masquerade as edits of the initiating request. It also
 preserves active tool permissions across teammate replies;
 new human instructions and changed initiating sources still require reassessment.
 Both automatic and human-decision paths have regression coverage.
+
+That is the historical 0.8.2 checkpoint, not the new continuity requirement:
+ordinary human follow-ups must also preserve ongoing work and unchanged
+approvals. True source retraction, explicit stop, changed authority or a materially
+changed operation remain reasons for reevaluation under the next contract.
 
 Slack recovery covers missed human messages and replies in known or newly
 discovered threads, with bounded pagination and retained checkpoints. Unknown old

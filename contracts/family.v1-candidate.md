@@ -140,3 +140,22 @@ The [attention profile](attention.v1-candidate.md) defines the shared optional
 pre-turn contract. Adapters provide facts and source/delivery constraints.
 Runtime-owned decision tools may still assist reasoning within an admitted turn;
 they do not become a second ambient admission gate.
+
+## Continuing work and selecting models
+
+The [input continuity contract](input-continuity.v1-candidate.md) separates new
+input from cancellation. Adapters retain source identity, Instance admits and
+routes eligible input, and the engine owns its durable integration with ongoing
+execution. Provider-specific steering stays inside the engine's provider layer;
+adapters use negotiated ACP capabilities. No shared queue or mandatory service
+is introduced. Plain ACP peers retain a queued-next-prompt fallback without
+canceling their current work.
+
+The [model support contract](model-support.v1-candidate.md) keeps the latest
+verified model in each useful class rather than every historical generation.
+Runtime owns model/protocol compatibility; Instance and other configuration
+clients expose the same choices and validation. A provider/model change does not
+change the individual's identity or silently reuse incompatible session state.
+
+These are accepted design requirements awaiting component release evidence.
+They do not assert support in an older installed runtime, connector or provider.

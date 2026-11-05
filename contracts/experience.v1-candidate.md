@@ -1,6 +1,6 @@
 # Experience contract — v1 candidate
 
-Draft for review · Updated November 3, 2026. This governs how an experience connects people, agents, and actions.
+Draft for review · Updated November 4, 2026. This governs how an experience connects people, agents, and actions.
 
 ## Who builds against this
 
@@ -60,6 +60,14 @@ actor + conversation + audience + optional thread + destination
     the indicator in its response destination, and clear it when settled. Follow
     the shared [adapter activity contract](adapter-activity.v1-candidate.md).
 
+11. **New input continues the work.** Deliver eligible follow-ups through the
+    negotiated steering capability, or queue them for the engine's next supported
+    boundary. An ordinary message does not implicitly cancel work, hide completed
+    results or dismiss an unchanged approval. Preserve authors, order, source
+    revisions and audience. Distinguish a durable receipt from incorporation and
+    an explicit stop from additional guidance. Follow the
+    [input continuity contract](input-continuity.v1-candidate.md).
+
 ## Verification expectations
 
 These are acceptance checks to maintain, not a claim of complete coverage:
@@ -74,6 +82,10 @@ These are acceptance checks to maintain, not a claim of complete coverage:
 - Observe a fresh installation through first successful interaction, including
   administrator work and a failed attempt followed by recovery. Report all
   required interactions, not just the connector's buttons.
+- Send repeated updates during model calls, tools and an approval wait. Verify
+  input order, completed effects, approval continuity and the final reply's
+  destination. Repeat against a peer without steering and through a disconnect;
+  count actual effects and durable receipts rather than just visible replies.
 
 ## Outside this draft
 
@@ -86,5 +98,6 @@ work on a person's behalf.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-04 | Ordinary follow-ups preserve work and approvals; optional steering and explicit queued fallback. | Accepted input-continuity design; implementation and end-to-end release evidence remain separate. |
 | 2026-11-03 | Count end-to-end setup effort while preserving standalone installation. | Low-interaction onboarding for owners and administrators without adding a required shared service. |
 | 2026-11-02 | Initial candidate. | Same-agent continuity, natural participation, source-owned conversations, and programmatically operable UI requirements. |

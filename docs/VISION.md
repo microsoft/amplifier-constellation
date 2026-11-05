@@ -63,6 +63,14 @@ or change they describe. Independent verification and requester acceptance remai
 distinct from the agent saying it is done. A person can redirect or stop work
 without reconstructing its history.
 
+An ordinary follow-up updates ongoing work; it does not implicitly cancel the
+current model call, throw away completed effects, or dismiss an unchanged
+approval. Repeated updates remain ordered through successive model and tool
+steps. The system distinguishes receiving an update from incorporating it, and
+explicit stopping from adding guidance. Native steering is used where supported;
+otherwise input waits for the next legal model boundary, or the end of an opaque
+third-party ACP prompt. See the [input continuity contract](../contracts/input-continuity.v1-candidate.md).
+
 ### 6. Each individual stands on its own
 
 An agent has its own installation, state, configuration, and service lifecycle.
@@ -94,6 +102,17 @@ recover from interruption. Simulated people are labeled simulations. Their
 opinions help explore behavior; they do not substitute for feedback from the
 people represented.
 
+### 10. Current models preserve meaningful choices
+
+Support the latest verified model in each useful provider class, preserving
+choices among capability, speed, cost and specialized abilities. Maintaining
+every historical model generation is not a product requirement. Resolve a choice
+to a concrete model and access route during setup or an explicit update; a new
+catalog entry must not silently change an active turn or a saved session's
+provider binding. Model updates preserve the individual's identity while making
+any new execution context explicit. See the
+[model support contract](../contracts/model-support.v1-candidate.md).
+
 ## What success looks like
 
 - A person meets the same individual in two experiences and can retrieve an
@@ -108,6 +127,11 @@ people represented.
   separate check result, participation observations, and any human acceptance.
 - Updating one installed individual preserves its identity and recoverable state
   while other individuals continue operating.
+- A person adds several details while the agent works; it incorporates them in
+  order, keeps completed results, and completes the same work without duplicate
+  effects or lost approvals. Explicit stop remains available.
+- An owner can select a current model class and see the resolved model, route and
+  supported capabilities before changing execution, without losing old history.
 
 ## Decisions still to test
 
@@ -121,5 +145,6 @@ the initial architecture.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-04 | Preserve work through repeated input; prefer native steering with ordered legal-boundary fallback; support the latest verified model in each useful provider class. | Accepted product direction; component implementation, compatibility tests and rollout remain separately evidenced. |
 | 2026-11-04 | Installation-owned attention, bounded uncertain engagement, and runtime-family lifecycle. | Explicit product direction; native/Codex compatibility and shared-room experiments. |
 | 2026-11-02 | Initial draft. | The product requirements and experiments that established this family; adapted the vision/contract/status separation used by Amplifier Converge. |

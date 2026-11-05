@@ -187,3 +187,20 @@ ACP does not make saved engine sessions portable. Profiles may be deliberately
 exported/imported, but identity, credentials, grants, memories and active work do
 not silently migrate. Compare experiments using independently installed agents
 with versioned configuration and capabilities, not an implicit backend switch.
+
+## Input arriving during admitted work
+
+Social admission and execution-time input continuity are separate responsibilities.
+An ambient event still needs the installation's eligibility and audience checks;
+a held event does not become a steering message. An eligible follow-up to active
+work follows the [input continuity contract](input-continuity.v1-candidate.md).
+The engine incorporates it through a negotiated capability or legal next-call
+boundary, without running another social classifier.
+
+Do not reuse a consumed admission offer, create a second task merely to deliver
+an update, or treat another message as automatic revocation of ongoing work.
+Instance binds the admitted input to its authorized session and active generation;
+adapters retain source provenance and delivery constraints. Explicit stop,
+source retraction, changed authority and original execution limits still apply.
+This is a coordinated next-design requirement, not an additional capability
+claimed for the existing attention profile by documentation alone.
