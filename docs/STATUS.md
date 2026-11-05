@@ -97,10 +97,10 @@ by that adapter; these releases do not by themselves establish its live behavior
 | Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
 | Runtime | [0.10.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.1) | Native Rust execution, durable ACP sessions and ordered input, provider steering/boundary injection, recovery receipts and a current model catalog. No Codex dependency on the native path; optional capabilities are not ACP certification. |
-| Instance | [0.16.2](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.2) | Native Runtime 0.10.1 installation is the default. Negotiated steering authorization, active-only peer awareness, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
-| Observatory | [0.7.1](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.1) | Fleet management and ACP Talk with durable send-while-busy intake, negotiated steering, queued fallback and explicit recovery. |
-| Conversations | [0.8.1](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.1) | Browser rooms, per-recipient durable intake, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
-| Slack adapter | [0.10.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.10.0) | Ordered human and active-only peer intake, structured progress filtering, negotiated steering or queued human fallback, preserved approvals and explicit uncertain-delivery recovery. |
+| Instance | [0.16.3](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.3) | Native Runtime 0.10.1 installation is the default. Negotiated steering authorization, active-only peer awareness, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
+| Observatory | [0.7.2](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.2) | Fleet management and ACP Talk with durable send-while-busy intake, negotiated steering, queued fallback and explicit recovery. |
+| Conversations | [0.8.2](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.2) | Browser rooms, per-recipient durable intake, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
+| Slack adapter | [0.10.1](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.10.1) | Ordered human and active-only peer intake, structured progress filtering, negotiated steering or queued human fallback, preserved approvals and explicit uncertain-delivery recovery. |
 | Teams adapter | 0.3.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
 | Persona Workshop | 0.5.1 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
 | ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
@@ -264,3 +264,7 @@ tests in Python 3.11/3.13 CI. Its unchanged implementation also passed a separat
 the Slack permission and thread-metadata defects, change the requirement, request
 CI coverage, and accept the result. This is a bounded delivery demonstration, not
 zero-intervention autonomy or a human persona fidelity evaluation.
+
+The reply collectors in Instance 0.16.3, Slack 0.10.1, Conversations 0.8.2 and
+Observatory 0.7.2 ignore empty control text before message ordering and phase
+classification. Metadata receipts continue to be processed independently.
