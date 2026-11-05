@@ -82,6 +82,12 @@ routing activity to the wrong audience.
 - Clear or replace temporary status on success, cancellation, failure and
   disconnection. On uncertainty, report an interrupted/unconfirmed outcome rather
   than leaving a permanent “working” signal or claiming success.
+- Give a failure one visible presentation. When a detailed connector notice
+  owns the outcome, retire its temporary indicator rather than posting another
+  generic error. Mark connector-generated notices as control events: retain
+  human visibility and explicitly requested context reads, but exclude them
+  from automatic peer participation and active-turn awareness. Error reporting
+  must not trigger an agent-to-agent response loop.
 - Preserve delivery identity through retries. Reconcile status after reconnect;
   do not replay the underlying work to repair its indicator. Unsupported platform
   status APIs must fall back gracefully, without repeated authorization prompts.
