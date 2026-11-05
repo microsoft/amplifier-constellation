@@ -75,8 +75,7 @@ installations independently; fleet interfaces remain optional. See the
   compatibility, and replacement of components.
 - [Experience contract](contracts/experience.v1-candidate.md): conversation scope,
   human and programmatic controls, participation, and evidence of outcomes.
-- [Input continuity](contracts/input-continuity.v1-candidate.md): accepted next
-  design for follow-ups during ongoing work, preserved effects and explicit stop.
+- [Input continuity](contracts/input-continuity.v1-candidate.md): contract for follow-ups during ongoing work, preserved effects and explicit stop.
 - [Model support](contracts/model-support.v1-candidate.md): accepted policy for
   current models by class, verified capabilities and explicit configuration changes.
 - [Contract index](contracts/README.md): which repository owns each detailed seam.

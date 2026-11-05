@@ -33,7 +33,8 @@ Changing a repository name does not rename a protocol identifier or make a custo
 extension part of ACP. Any namespace migration must preserve or deliberately
 deprecate existing clients through the owning component's versioned interface.
 
-The input-continuity and model-support candidates record accepted next design.
+The input-continuity and model-support contracts record accepted behavior;
+[implementation status](../docs/STATUS.md) identifies versioned support and limits.
 They require coordinated implementation and release evidence; adding these
 documents does not make an older installation support them. Detailed native
 execution design remains with the

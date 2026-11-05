@@ -1,6 +1,6 @@
 # Family contract — v1 candidate
 
-Draft for review · Updated November 3, 2026. This governs how independently owned components compose.
+Draft for review · Updated November 4, 2026. This governs how independently owned components compose. [Implementation status](../docs/STATUS.md) records versioned support and its limits.
 
 ## Who builds against this
 
@@ -157,5 +157,7 @@ Runtime owns model/protocol compatibility; Instance and other configuration
 clients expose the same choices and validation. A provider/model change does not
 change the individual's identity or silently reuse incompatible session state.
 
-These are accepted design requirements awaiting component release evidence.
-They do not assert support in an older installed runtime, connector or provider.
+These requirements have versioned implementation and compatibility records in
+[implementation status](../docs/STATUS.md). They do not assert support in an
+older installed runtime, connector or provider, or substitute for verifying an
+individual installation.

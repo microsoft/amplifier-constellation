@@ -2,8 +2,9 @@
 
 Accepted direction: November 4, 2026. This defines the support policy for the
 Constellation native runtime and the configuration clients that use it.
-Implementation, provider validation and installation rollout remain separate
-milestones. Independent third-party ACP engines retain their own model policies.
+The [versioned implementation status](../docs/STATUS.md) separates released
+support, provider validation and installation rollout. Independent third-party
+ACP engines retain their own model policies.
 
 ## Support current choices
 
@@ -49,7 +50,7 @@ output, media, progress events and continuation. Unsupported combinations fail
 clearly before being advertised. Provider family or model-name prefixes alone
 cannot establish these capabilities.
 
-For the native OpenAI generation path, the accepted next baseline is supported
+For the native OpenAI generation path, the baseline is supported
 GPT-6-and-later models using Responses WebSockets, including native steering.
 Retire older GPT generation execution and its HTTP/SSE generation fallback from
 that path. HTTP remains useful for setup, model discovery, files and other
@@ -98,4 +99,6 @@ Concrete catalogs and protocol details belong in the runtime's
 [provider documentation](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/providers.md)
 and coordinated
 [steering implementation design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
-The latter is the next design, not a statement that runtime 0.9.0 implements it.
+The implementation starts in runtime 0.10.0; the linked status record identifies
+client coverage and verification limits. Older installed runtimes retain their
+own capabilities until explicitly updated.

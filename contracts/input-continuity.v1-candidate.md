@@ -1,8 +1,10 @@
 # Input continuity while an agent works — v1 candidate
 
-Accepted design decision: November 4, 2026. This is the intended behavior for new input
-throughout a turn. It is not a statement that the released components implement
-it yet. Each installation remains self-contained.
+Accepted design decision: November 4, 2026. This defines input continuity across
+independently versioned components. See [implementation status](../docs/STATUS.md)
+for released versions, tested boundaries and client-adoption limits. Each
+installation remains self-contained; contract adoption alone does not establish
+an installation's current behavior.
 
 ## User expectation
 
@@ -175,12 +177,11 @@ authority. A final-looking response does not bypass the input/finalization check
 Provider/model eligibility follows the [model support policy](model-support.v1-candidate.md).
 Concrete state machines and wire formats belong in the runtime's coordinated
 [steering design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
-These responsibilities are accepted next behavior; runtime 0.9.0 does not yet
-provide the durable inbox or native steering described here. The coordinated
-[runtime 0.10.0 candidate](https://github.com/microsoft/amplifier-constellation-runtime/pull/14)
-and [Instance 0.16.0 candidate](https://github.com/microsoft/amplifier-constellation-instance/pull/18)
-implement these boundaries; candidate checks are not evidence of fleet rollout.
-Client adoption is separate: this candidate covers Slack and steering-capable
+The coordinated implementation is Runtime 0.10.0, Instance 0.16.0 and Slack 0.9.0;
+[implementation status](../docs/STATUS.md) records each release and its limits.
+Older runtime versions do not gain an inbox or native steering merely by using
+a newer host. Protocol checks are not evidence of fleet rollout.
+Client adoption is separate: current intake covers Slack and steering-capable
 ACP clients. Conversations and Observatory Talk currently disable new sends
 during active work instead of cancelling it; their browser intake remains a
 follow-up. See the [audited experience coverage](../docs/STATUS.md).
@@ -221,5 +222,6 @@ another reply appears:
 9. Non-steering ACP endpoint: queued input is processed after completion with
    the original turn intact.
 
-Implementation evidence belongs to the owning components. Adoption of this
-candidate does not claim that these tests already pass in deployed agents.
+Implementation evidence belongs to the owning components. Fixture results,
+live-provider results and deployment verification are recorded separately;
+adoption of this contract does not replace installation verification.
