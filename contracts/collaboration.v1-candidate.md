@@ -31,7 +31,9 @@ useful outcome without making the person coordinate every exchange.
 Adapters identify source facts and route them; they do not introduce another
 social classifier. Awareness retains author, source ID/revision, intake order,
 conversation/thread and active work identity. Preserve it in the durable source
-ledger and use the existing bounded input queue. Label peer text as conversational
+ledger and use the existing bounded input queue. If that queue is full, retain the
+source in history with an explicit capacity receipt; never silently start work
+or claim that the active model saw it. Label peer text as conversational
 evidence, not a new human request or permission to expand work. Never mix evidence
 from another room into the active audience without an explicit authorized policy.
 
