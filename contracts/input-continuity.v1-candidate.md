@@ -181,10 +181,15 @@ The coordinated implementation is Runtime 0.10.0, Instance 0.16.0 and Slack 0.9.
 [implementation status](../docs/STATUS.md) records each release and its limits.
 Older runtime versions do not gain an inbox or native steering merely by using
 a newer host. Protocol checks are not evidence of fleet rollout.
-Client adoption is separate: current intake covers Slack and steering-capable
-ACP clients. Conversations and Observatory Talk currently disable new sends
-during active work instead of cancelling it; their browser intake remains a
-follow-up. See the [audited experience coverage](../docs/STATUS.md).
+Client adoption is separate: Slack 0.9.1, Conversations 0.8.0 and Observatory
+0.7.0 accept ordered input while work is active. Each recipient uses negotiated
+steering or a queued next prompt. Uncertain delivery requires explicit recovery;
+ordinary input never cancels work. See the [experience coverage](../docs/STATUS.md).
+
+Peer evidence during existing work follows the
+[collaboration contract](collaboration.v1-candidate.md). Its optional active-prompt
+guard deliberately forbids the ordinary `promptRequired` new-prompt fallback.
+Awareness is not a new request or admission offer.
 
 ## Presentation and observability
 

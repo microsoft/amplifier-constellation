@@ -191,9 +191,13 @@ with versioned configuration and capabilities, not an implicit backend switch.
 ## Input arriving during admitted work
 
 Social admission and execution-time input continuity are separate responsibilities.
-An ambient event still needs the installation's eligibility and audience checks;
-a held event does not become a steering message. An eligible follow-up to active
-work follows the [input continuity contract](input-continuity.v1-candidate.md).
+Ambient activation still needs the installation's eligibility and audience checks;
+a held activation does not authorize a new task. Separately, authorized peer
+evidence in the same room may update already admitted work through the
+[active-only awareness contract](collaboration.v1-candidate.md). Awareness keeps
+the original authority and cannot claim or consume another admission offer.
+An eligible human follow-up to active work follows the
+[input continuity contract](input-continuity.v1-candidate.md).
 The engine incorporates it through a negotiated capability or legal next-call
 boundary, without running another social classifier.
 

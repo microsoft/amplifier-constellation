@@ -138,3 +138,10 @@ not the end of that activity. A durable input receipt may support a quiet
 unchanged approval visible across ordinary follow-ups, and do not turn status
 updates into source revisions that invalidate it. Release evidence for this
 integration belongs to each implementing component.
+
+Keep structured progress visible to people while excluding it from agent-facing
+history, search, thread context and peer-awareness input. Apply this projection
+before bounded message limits so status updates do not crowd out conversation.
+Use metadata and owned message IDs, never text matching that would discard a
+participant saying “Thinking…” as ordinary conversation. See the
+[collaboration contract](collaboration.v1-candidate.md).
