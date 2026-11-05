@@ -55,6 +55,13 @@ While calibrating, ambiguous fresh social events favor a bounded opportunity to
 engage; silence, canceled work and spending limits remain meaningful. See the
 [attention contract](../contracts/attention.v1-candidate.md).
 
+An agent already working should receive relevant new peer contributions in the
+same conversation without starting a second task for each reply. Human-visible
+progress stays separate from conversation evidence. A group should agree who
+reports its conclusion and deliver that result without making the person ask
+again. Nomination, acceptance and delivery are distinct. See the
+[collaboration contract](../contracts/collaboration.v1-candidate.md).
+
 ### 5. Work has continuity and evidence
 
 Responsibilities, accepted scope, progress, and unresolved decisions remain

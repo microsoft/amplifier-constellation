@@ -186,6 +186,11 @@ ACP clients. Conversations and Observatory Talk currently disable new sends
 during active work instead of cancelling it; their browser intake remains a
 follow-up. See the [audited experience coverage](../docs/STATUS.md).
 
+Peer evidence during existing work follows the
+[collaboration contract](collaboration.v1-candidate.md). Its optional active-prompt
+guard deliberately forbids the ordinary `promptRequired` new-prompt fallback.
+Awareness is not a new request or admission offer.
+
 ## Presentation and observability
 
 Continue the existing scoped Thinking…/tool activity throughout the logical
