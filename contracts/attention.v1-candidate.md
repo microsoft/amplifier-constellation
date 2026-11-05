@@ -202,7 +202,10 @@ an update, or treat another message as automatic revocation of ongoing work.
 The narrow negative-acknowledgment path in the input continuity contract may
 explicitly restore an unchanged, unexpired offer after definite `promptRequired`.
 That receipt preserves the original budget reservation and does not authorize a
-retry after an unknown delivery outcome.
+retry after an unknown delivery outcome. Its narrow reconnect handoff requires
+the same principal, saved session and freshly verified source/audience binding;
+atomic consumption preserves the original expiry and slot. Ordinary offers
+remain connection-bound, and explicit cancellation still revokes the handoff.
 Instance binds the admitted input to its authorized session and active generation;
 adapters retain source provenance and delivery constraints. Explicit stop,
 source retraction, changed authority and original execution limits still apply.

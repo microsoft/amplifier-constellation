@@ -137,6 +137,20 @@ the original source, audience, policy, expiry and claimed budget slot. It must
 not revive cancelled, revoked, superseded or expired input, or create extra
 execution allowance. Provider/transport failures alone do not prove non-delivery.
 
+A proven-unapplied restored ticket may cross a reconnect only when the installation
+can verify the same authenticated principal, saved session and source-issued
+audience binding using fresh authorization. It atomically rebinds and consumes
+the original ticket once, keeping its original expiry and claimed budget slot.
+An owner-private audience retains its actor binding. Missing proof, explicit
+cancellation, changed policy/source, or an unknown delivery outcome fails closed.
+This is not general ticket portability: ordinary unused offers remain scoped to
+the original connection and are cancelled on disconnect.
+
+Optional input-receipt reads and explicit recovery acknowledgments require the
+same loaded-session, current conversation and tool authorization as other scoped
+session controls. They do not admit new work or permit replay of an unknown
+outcome. A grant revoked after session load also blocks these recovery controls.
+
 A third-party capability has only its documented receipt guarantees. Keep the
 installation's durable source ledger until delivery is reconciled; do not turn
 an ordinary steering acknowledgment into a stronger claim of durable backend
@@ -162,7 +176,10 @@ Provider/model eligibility follows the [model support policy](model-support.v1-c
 Concrete state machines and wire formats belong in the runtime's coordinated
 [steering design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
 These responsibilities are accepted next behavior; runtime 0.9.0 does not yet
-provide the durable inbox or native steering described here.
+provide the durable inbox or native steering described here. The coordinated
+[runtime 0.10.0 candidate](https://github.com/microsoft/amplifier-constellation-runtime/pull/14)
+and [Instance 0.16.0 candidate](https://github.com/microsoft/amplifier-constellation-instance/pull/18)
+implement these boundaries; candidate checks are not evidence of fleet rollout.
 
 ## Presentation and observability
 
