@@ -1,6 +1,6 @@
 # Implementation status
 
-November 4, 2026. This is a dated development checkpoint, separate from the vision
+November 5, 2026. This is a dated development checkpoint, separate from the vision
 and draft umbrella contracts. Downloadable releases are listed by each component. Source-only components are
 identified below. Release availability is not an assertion that every installation
 has been updated.
@@ -65,15 +65,42 @@ without duplicate effects. These checks do not establish an atomic final read
 across a distributed room or guarantee one ideal group summary. Both need
 separate experience evaluation; late peer evidence remains auditable.
 
+## Collaboration follow-up: coherent answers and scoped context
+
+Runtime 0.10.1 preserves assistant message identity through provider streaming,
+steering successors and session replay. Slack 0.10.0, Conversations 0.8.1 and
+Observatory 0.7.1 assemble interleaved chunks separately and select the latest
+non-commentary answer for delivery. A revised silence decision no longer becomes
+a malformed concatenation or an excuse to repeat completed tools. Instance 0.16.2
+uses the same rule for background reports while charging all emitted output
+against the original budget, and pins Runtime 0.10.1 for native installations.
+
+Slack retains a specifically discussed error/status thread root without feeding
+unrelated progress into attention. Safe failure categories distinguish final
+answer decoding from uncertain backend/transport outcomes. Current reactions
+and the agent's own add/remove operations are conversation-scoped; reaction
+notifications are bounded active-turn observations, not approvals or idle work.
+Existing Slack apps need the added reaction scopes approved and event
+subscriptions updated. Source support does not imply an existing workspace has
+approved those permissions.
+
+Real WebSocket/ACP, subprocess and context fixtures cover revised silence,
+interleaved chunks, replay identity, error roots, reaction deduplication and
+current audience checks. General guidance distinguishes requested, delivered and
+received handoffs, with a bounded context check before cancelling or duplicating
+a transfer. It does not promise an atomic final read across a distributed room.
+Minecraft active-turn adoption and capability changes remain owned and validated
+by that adapter; these releases do not by themselves establish its live behavior.
+
 ## Recorded component checkpoint
 
 | Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
-| Runtime | [0.10.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.0) | Native Rust execution, durable ACP sessions and ordered input, provider steering/boundary injection, recovery receipts and a current model catalog. No Codex dependency on the native path; optional capabilities are not ACP certification. |
-| Instance | [0.16.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.1) | Native Runtime 0.10.0 installation is the default. Negotiated steering authorization, active-only peer awareness, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
-| Observatory | [0.7.0](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.0) | Fleet management and ACP Talk with durable send-while-busy intake, negotiated steering, queued fallback and explicit recovery. |
-| Conversations | [0.8.0](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.0) | Browser rooms, per-recipient durable intake, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
-| Slack adapter | [0.9.1](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.9.1) | Ordered human and active-only peer intake, structured progress filtering, negotiated steering or queued human fallback, preserved approvals and explicit uncertain-delivery recovery. |
+| Runtime | [0.10.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.1) | Native Rust execution, durable ACP sessions and ordered input, provider steering/boundary injection, recovery receipts and a current model catalog. No Codex dependency on the native path; optional capabilities are not ACP certification. |
+| Instance | [0.16.2](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.2) | Native Runtime 0.10.1 installation is the default. Negotiated steering authorization, active-only peer awareness, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
+| Observatory | [0.7.1](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.1) | Fleet management and ACP Talk with durable send-while-busy intake, negotiated steering, queued fallback and explicit recovery. |
+| Conversations | [0.8.1](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.1) | Browser rooms, per-recipient durable intake, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
+| Slack adapter | [0.10.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.10.0) | Ordered human and active-only peer intake, structured progress filtering, negotiated steering or queued human fallback, preserved approvals and explicit uncertain-delivery recovery. |
 | Teams adapter | 0.3.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
 | Persona Workshop | 0.5.1 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
 | ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |

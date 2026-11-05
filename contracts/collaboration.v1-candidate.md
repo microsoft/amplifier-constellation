@@ -92,7 +92,7 @@ reply to every peer. Third-party engines retain their advertised guarantees.
 
 Keep useful scoped progress visible to people, following the
 [activity contract](adapter-activity.v1-candidate.md). Exclude structured adapter
-controls and progress from agent-facing history, search, thread context,
+controls and progress from ordinary agent-facing history, search, thread context,
 attention candidates and awareness. Filtering happens before applying bounded
 message limits, so transient progress cannot displace the latest conversation.
 
@@ -100,6 +100,55 @@ Use structured metadata and owned message IDs, including supported edited and
 deleted envelopes. Do not infer control messages from text alone. Preserve
 source/audience checks; filtering status does not authorize reading more rooms.
 The human UI and audit records retain operational history independently.
+
+When a person explicitly replies to an error or control message, retain that
+exact thread root as a labelled reference. Include its visible text, source and
+reactions in the authorized thread context, without button payloads or private
+control data. It does not become a new attention candidate or an approval.
+Keep unrelated status traffic filtered; never lose the subject of the question.
+
+## Answer identity and revisions
+
+An ACP prompt can produce several assistant messages, particularly after new
+input changes the answer. Emit stable `messageId` values on text chunks and
+preserve them in session replay. Interleaved chunks with the same ID belong to
+that message; a new message does not truncate or complete an earlier one.
+Unidentified clients retain legacy append behavior. This uses ACP v1's optional
+message identity; it does not require a protocol-version change.
+
+Provider adapters preserve assistant item identity and, where available, expose
+`_meta["com.microsoft.amplifier.message"].phase` as `commentary` or `final_answer`.
+Never expose private reasoning as commentary. Responses to one connector turn
+select the latest non-commentary answer in message creation order, while storing
+separate intermediate messages and tool history. An optional silence decision
+revising an earlier draft is silence, not a malformed concatenation or a reason
+to run the tools again. Media stays separately bounded and is not dropped merely
+because a text message ID changes. Source evidence and delivery receipts remain
+separate from the selected final text.
+
+Malformed final output records a bounded failure stage/category, job reference
+and delivery state. Distinguish an answer-format failure after completed work
+from a backend/transport failure with unknown outcome. Do not leak raw provider
+errors, prompts or credentials, and do not replay completed actions as recovery.
+
+## Reactions and resource handoffs
+
+When supported, expose current reactions through the same audience-scoped
+conversation access as message text. Adding/removing a reaction uses the agent's
+own service identity, only within its current authorized conversation, with a
+fresh access check. Reactions are social observations; they do not grant tool
+approval, create accepted work, or launch an idle agent. Active-turn reaction
+observations are bounded, deduplicated and bound to the existing prompt. Ignore
+the agent's own reaction echo. A removal is an observation of change, not a
+claim about the complete current reaction state; query it when it matters.
+
+For transfers of resources or ownership, distinguish requested, offered,
+deposited and received, with source and time. Observe acknowledgements and
+cancellations during active work. Before changing a shared plan or duplicating a
+handoff, inspect recent relevant public evidence when available. A delivery
+receipt establishes the sender's action, not that the recipient saw or collected
+it. Keep original work limits and authorization; handoffs do not renew them.
+
 
 ## Reporting is part of the requested outcome
 
