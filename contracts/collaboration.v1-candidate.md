@@ -184,6 +184,16 @@ guarantee by silently discarding drafts, restarting tools, or creating another
 unbounded prompt. Actual final-check support must be documented by component;
 awareness alone does not establish an atomic last-look across a distributed room.
 
+Where a component supports final reconsideration, record its explicit cutoff:
+the active prompt/turn binding, the last eligible intake sequence, and the source
+IDs and revisions actually included. This is the context used for that decision,
+not a claim that every remote conversation was current at delivery. Input arriving
+after the cutoff follows the negotiated late-input outcome; it must not silently
+renew the turn, authorize another prompt, or replay completed effects. Expose the
+cutoff separately from transport acceptance and incorporation receipts. A component
+without this final-check capability must report it as unsupported rather than
+infer a cutoff from the time it sent its reply.
+
 ## Evaluation
 
 Use fictional fixtures for deterministic boundaries, then separately evaluate
