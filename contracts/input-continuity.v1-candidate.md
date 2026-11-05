@@ -180,6 +180,10 @@ provide the durable inbox or native steering described here. The coordinated
 [runtime 0.10.0 candidate](https://github.com/microsoft/amplifier-constellation-runtime/pull/14)
 and [Instance 0.16.0 candidate](https://github.com/microsoft/amplifier-constellation-instance/pull/18)
 implement these boundaries; candidate checks are not evidence of fleet rollout.
+Client adoption is separate: this candidate covers Slack and steering-capable
+ACP clients. Conversations and Observatory Talk currently disable new sends
+during active work instead of cancelling it; their browser intake remains a
+follow-up. See the [audited experience coverage](../docs/STATUS.md).
 
 ## Presentation and observability
 

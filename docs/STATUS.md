@@ -37,6 +37,15 @@ Its protocol-fixture results do not establish native-provider support or an
 installation rollout. The coordinated runtime and experience changes remain
 separate candidates until their own validation and publication are recorded.
 
+Mid-turn intake in this coordinated candidate is available through the Slack
+adapter and ACP clients that negotiate and use steering. Browser adoption is
+separate: [Conversations at `5da3d797`](https://github.com/microsoft/amplifier-constellation-conversations/blob/5da3d797e9388f22e7cbdf1c165cc335fec54eef/ui/app.js#L157)
+and [Observatory Talk at `d81e6982`](https://github.com/microsoft/amplifier-constellation-observatory/blob/d81e698259209d836d735c1bd731e4f0c9e51e9a/ui/app.js#L89)
+disable sending while work is active; their APIs reject a second concurrent
+prompt as busy. They do not cancel the running prompt to admit another message.
+Both remain ordinary ACP clients compatible with the new runtime, but neither
+browser yet provides this candidate's mid-turn input experience.
+
 ## Recorded component checkpoint
 
 | Component | Recorded version | Evidence and limits |
