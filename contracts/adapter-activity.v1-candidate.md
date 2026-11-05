@@ -129,3 +129,12 @@ Activity indicators are control traffic. Their creation, edits and removal must
 not become participant messages, new work, or context changes that invalidate
 ongoing work. Where deletion events omit metadata, retain a bounded identifier
 set for the indicator lifecycle. Ordinary participant messages remain unaffected.
+
+The [input continuity contract](input-continuity.v1-candidate.md) keeps activity
+attached to the logical turn when provider steering creates successor responses
+or queued input requires another model call. An internal response finishing is
+not the end of that activity. A durable input receipt may support a quiet
+“Update received” affordance; it must not be presented as “applied.” Keep an
+unchanged approval visible across ordinary follow-ups, and do not turn status
+updates into source revisions that invalidate it. Release evidence for this
+integration belongs to each implementing component.

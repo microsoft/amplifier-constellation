@@ -5,15 +5,61 @@ and draft umbrella contracts. Downloadable releases are listed by each component
 identified below. Release availability is not an assertion that every installation
 has been updated.
 
-## Current components
+## Coordinated release: input continuity and model support
 
-| Component | Current version | Evidence and limits |
+The [input continuity contract](../contracts/input-continuity.v1-candidate.md)
+and [model support policy](../contracts/model-support.v1-candidate.md) define the
+coordinated Runtime 0.10.0, Instance 0.16.0 and Slack 0.9.0 change. The runtime's
+[overview](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/runtime-overview.md)
+and [steering design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md)
+describe the implementation and its recovery boundaries.
+
+[Runtime 0.10.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.0)
+adds a durable ordered input inbox within one active prompt per session, native
+GPT-6+ Responses WebSocket steering, and legal next-call injection for other
+native providers. Input receipts distinguish incorporation from uncertain
+outcomes; completed effects and actual tool results stay part of the same work.
+[Instance 0.16.0](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.0)
+applies current conversation and tool authorization to steering and receipt
+recovery. A definite unapplied `promptRequired` result can restore the original
+attention ticket once, retaining its expiry and budget slot across a verified
+same-principal/same-session reconnect. Unknown delivery is not replayed.
+[Slack 0.9.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.9.0)
+provides ordered intake, preserves ordinary follow-ups and unchanged approvals,
+and negotiates steering where the engine supports it. Opaque non-steering
+engines receive a queued next prompt.
+
+The runtime owns current model classes and defaults. Instance uses its catalog
+for suggestions, explicit provider defaults and compatible account choices.
+Retired settings remain inspectable for repair; configuration/execution validation
+stays strict. Loading settings does not silently change models, saved provider
+bindings, authentication routes or existing history.
+
+Protocol and process fixtures cover repeated input, provider event ordering,
+unknown outcomes, lost acknowledgments, prompt finalization and ticket reconnect
+races. A disposable three-component Slack/Instance/Runtime check also passed
+using controlled model/Slack fixtures. These checks are separate from live
+provider, human experience and installation rollout evidence; publication does
+not imply every installation has been updated.
+
+Mid-turn intake in this coordinated release is available through the Slack
+adapter and ACP clients that negotiate and use steering. Browser adoption is
+separate: [Conversations at `5da3d797`](https://github.com/microsoft/amplifier-constellation-conversations/blob/5da3d797e9388f22e7cbdf1c165cc335fec54eef/ui/app.js#L157)
+and [Observatory Talk at `d81e6982`](https://github.com/microsoft/amplifier-constellation-observatory/blob/d81e698259209d836d735c1bd731e4f0c9e51e9a/ui/app.js#L89)
+disable sending while work is active; their APIs reject a second concurrent
+prompt as busy. They do not cancel the running prompt to admit another message.
+Both remain ordinary ACP clients compatible with the new runtime, but neither
+browser yet provides this release's mid-turn input experience.
+
+## Recorded component checkpoint
+
+| Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
-| Runtime | [0.9.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.9.0) | Native Rust model/tool execution and durable ACP sessions; no Codex dependency on the native path. Optional capabilities and trust profiles are documented in the runtime repository; this is not official ACP certification. |
-| Instance | [0.15.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.15.1) | Native installation is the default. Artifacts and installation checks cover Linux ARM64/x64, macOS ARM64/x64, and Windows x64. Checkpoint export/restore/clone and authenticated completion APIs have separate validation. |
+| Runtime | [0.10.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.0) | Native Rust execution, durable ACP sessions and ordered input, provider steering/boundary injection, recovery receipts and a current model catalog. No Codex dependency on the native path; optional capabilities are not ACP certification. |
+| Instance | [0.16.0](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.0) | Native Runtime 0.10.0 installation is the default. Negotiated steering authorization, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
 | Observatory | 0.6.0 | Fleet and machine management, optional management-provider discovery, ordinary ACP Talk, and experiment reports. |
 | Conversations | [0.7.0](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.7.0) | Browser rooms, direct conversations, Markdown, approvals, and negotiated structured form questions. Agent-side working folders can differ from the client launch folder. |
-| Slack adapter | [0.8.2](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.8.2) | Standard ACP interaction, Slack formatting and delivery, scoped context, and explicit callback approval. |
+| Slack adapter | [0.9.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.9.0) | Ordered mid-turn intake, negotiated steering or queued fallback, conversation-scoped status, preserved approvals and explicit uncertain-delivery recovery. |
 | Teams adapter | 0.3.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
 | Persona Workshop | 0.5.1 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
 | ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
@@ -126,6 +172,11 @@ so reply counts do not masquerade as edits of the initiating request. It also
 preserves active tool permissions across teammate replies;
 new human instructions and changed initiating sources still require reassessment.
 Both automatic and human-decision paths have regression coverage.
+
+That is the historical 0.8.2 checkpoint. Slack 0.9.0 also preserves ongoing work
+and unchanged approvals across ordinary human follow-ups. True source retraction,
+explicit stop, changed authority or a materially changed operation remain reasons
+for reevaluation under the input-continuity contract.
 
 Slack recovery covers missed human messages and replies in known or newly
 discovered threads, with bounded pagination and retained checkpoints. Unknown old
