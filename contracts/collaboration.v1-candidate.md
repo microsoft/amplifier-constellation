@@ -202,3 +202,9 @@ the social result in bounded agent conversations:
    redundant recaps and missing conclusions separately from transport receipts.
 6. Reconnect and ambiguous delivery preserve source evidence and do not replay
    uncertain work. Diagnostics contain identifiers/stages, not raw private text.
+
+Empty text updates may carry input receipts or other control metadata. Consumers
+process that metadata independently, but ignore the empty text before assigning
+message order, changing a message phase, consuming answer-group capacity, inserting
+legacy text separators, or firing assistant-text callbacks. An empty update must
+never create an answer placeholder that changes selection of later nonempty text.
