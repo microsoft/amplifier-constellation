@@ -67,6 +67,21 @@ clear migration action; historical sessions remain inspectable.
 
 ## Promotion and migration checks
 
+The November 4, 2026 upstream Gemini catalog supplies these candidate replacements
+for its general model classes. This is a dated input to the runtime catalog,
+not a second selection API or a claim that deployment verification is complete.
+
+| Class | Current upstream candidate |
+| --- | --- |
+| Flagship reasoning | Gemini 4 Argon — `gemini-4-argon` |
+| Flash | Gemini 3.8 Flash — `gemini-3.8-flash` |
+| Flash-Lite | Gemini 3.5 Flash-Lite — `gemini-3.5-flash-lite` |
+
+Source: [Google AI Studio model catalog](https://aistudio.google.com/docs/models).
+The native runtime must still record its tested route, capability limits and
+resolved model identity before promoting any candidate. Other providers follow
+the same per-class process; specialized media and decision models remain separate.
+
 Before promoting a class replacement, record:
 
 - The exact model/route, catalog date and resolved configuration.

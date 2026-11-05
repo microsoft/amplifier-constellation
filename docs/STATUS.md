@@ -31,6 +31,12 @@ active turns, saved provider bindings or billing routes. Implementation, protoco
 fixtures, live provider checks, experience checks and installation rollout must be
 recorded separately before these requirements are described as completed.
 
+The [Instance 0.16.0 boundary candidate](https://github.com/microsoft/amplifier-constellation-instance/pull/18)
+adds negotiated steering checks and definite `promptRequired` ticket restoration.
+Its protocol-fixture results do not establish native-provider support or an
+installation rollout. The coordinated runtime and experience changes remain
+separate candidates until their own validation and publication are recorded.
+
 ## Recorded component checkpoint
 
 | Component | Recorded version | Evidence and limits |

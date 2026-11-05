@@ -129,6 +129,14 @@ Do not cancel-and-reprompt to imitate steering. The native runtime owns
 implementation of the finer-grained model-boundary behavior. Custom metadata remains
 optional and namespaced; this contract does not redefine standard ACP methods.
 
+When a steering-capable backend definitively returns `promptRequired`, the
+installation may restore that input's original attention admission for a
+deferred normal prompt. The client must receive an explicit restoration receipt;
+a missing or ambiguous result never authorizes replay. Restoration preserves
+the original source, audience, policy, expiry and claimed budget slot. It must
+not revive cancelled, revoked, superseded or expired input, or create extra
+execution allowance. Provider/transport failures alone do not prove non-delivery.
+
 A third-party capability has only its documented receipt guarantees. Keep the
 installation's durable source ledger until delivery is reconciled; do not turn
 an ordinary steering acknowledgment into a stronger claim of durable backend
