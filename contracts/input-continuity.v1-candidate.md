@@ -65,6 +65,13 @@ The delivery ledger distinguishes:
 understood or followed it. These are independent of tool completion and task
 success. Input IDs, provider submission IDs and response IDs are distinct.
 
+An uncertain earlier input must not lock the whole conversation. Keep that
+input and its receipt available for review without replaying or silently
+acknowledging it. A separately authorized new request may proceed with bounded
+uncertainty metadata and the saved, known results. Before retrying related
+effects, inspect their actual state; permission to ask a new question is not
+permission to repeat an ambiguous operation.
+
 ## Behavior across a whole turn
 
 | Arrival point | Required behavior |
@@ -90,6 +97,14 @@ Additional messages wait locally while that batch is being acknowledged or
 committed. Drain them when the continuation is known or its required tool results
 are ready. This simplifies ordering and recovery without preventing repeated
 updates throughout the turn. Independent conversations remain concurrent.
+
+Send incremental source updates during active work. Preserve authors, source
+revisions, order, audience and authority; do not resend the entire conversation
+and delivery history for every message or reaction. An incremental update is
+not a replacement context snapshot. If a local history refresh or compaction
+changes the prefix while native steering awaits tool results, preserve the
+active provider chain and return only the new local observations. Defer the
+history reset until that chain is settled, respecting its context budget.
 
 ## Finish work without restarting it
 
