@@ -9,6 +9,7 @@ existing version names until an explicit migration changes them.
 | Family composition | [Family candidate](family.v1-candidate.md) |
 | Self-contained setup, authorization, and management | [Installation baseline](family.v1-candidate.md#self-contained-installation-baseline) |
 | Experience scope and programmatic interaction | [Experience candidate](experience.v1-candidate.md) |
+| Long turns, compaction, source delivery and measured context | [Harness lifecycle candidate](harness-lifecycle.v1-candidate.md) |
 | Working indicators and public activity across adapters | [Adapter activity candidate](adapter-activity.v1-candidate.md) |
 | New messages during ongoing work and explicit stop | [Input continuity candidate](input-continuity.v1-candidate.md) |
 | Current model classes, capability records and explicit selection | [Model support candidate](model-support.v1-candidate.md) |
