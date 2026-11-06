@@ -25,7 +25,8 @@ agent implementation, and connector has its own repository and release cycle.
 | Embed or extend our native Rust agent engine | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
 
 These are experimental, independently usable components. This repository holds
-documentation and a component registry. Follow a component's README for its
+documentation, a component registry, and a small compiled ACP SDK integration
+used by the Rust components. Follow a component's README for its
 installation instructions, supported platforms, and release availability.
 
 ## How the pieces fit
@@ -81,6 +82,8 @@ installations independently; fleet interfaces remain optional. See the
 - [Contract index](contracts/README.md): which repository owns each detailed seam.
 - [Component registry](family.toml): the machine-readable map of repositories.
 - [Implementation status](docs/STATUS.md): current evidence and outstanding work.
+- [ACP SDK integration](docs/acp-sdk-integration.md): protocol ownership,
+  compatibility checks, and the remaining application wrappers.
 
 The vision and umbrella contracts are **drafts for review**. A desired behavior,
 an implemented feature, and a verified result are recorded separately. Work comes

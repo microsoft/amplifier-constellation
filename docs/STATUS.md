@@ -5,7 +5,31 @@ and draft umbrella contracts. Downloadable releases are listed by each component
 identified below. Release availability is not an assertion that every installation
 has been updated.
 
-## Current release: long work, context and visible progress
+## ACP SDK release checkpoint
+
+The Rust ACP production paths now use the official Rust SDK 5.0.0 through the
+shared, immutable connection integration. Runtime 0.12.0, Instance 0.18.0,
+Slack 0.12.0, Conversations 0.9.0 and Observatory 0.8.0 have published binary
+releases. Teams 0.4.0 and ACP Lab 0.4.0 are source releases using the official
+TypeScript and Python SDKs respectively. Persona Workshop 0.6.0 supplies the
+same Rust SDK boundary for its text-only extractor.
+
+See [ACP SDK integration](acp-sdk-integration.md) for the exact versions,
+application-wrapper boundaries, protocol-v1 scope, and test evidence. The
+published Runtime Linux ARM64 artifact passed 67 upstream TCK checks with seven
+skips using a local deterministic provider fixture. This is neither certification
+nor a live-provider quality result. Minecraft's SDK migration and paired rollout
+remain owned by its component; source compatibility does not establish a live
+installation's version.
+
+These releases retain the existing conversation delivery behavior. The
+[immutable conversation-message contract](../contracts/conversation-delivery.v1-candidate.md)
+is the next presentation target: complete public contributions become separate
+messages, while temporary activity can change. Its publication does not claim
+that every current experience already implements that target. Live rollout and
+experience tests remain distinct from source tests and release availability.
+
+## Earlier lifecycle releases: long work, context and visible progress
 
 [Runtime 0.11.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.11.1)
 separates provider inactivity from whole-turn and tool limits, retains original
@@ -135,14 +159,14 @@ by that adapter; these releases do not by themselves establish its live behavior
 
 | Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
-| Runtime | [0.11.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.11.1) | Native Rust execution, durable ACP sessions, ordered input, native context compaction and cache/latency observations. No Codex dependency on the native path; optional capabilities are not ACP certification. |
-| Instance | [0.17.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.17.1) | Native Runtime 0.11.1 installation is the default. Negotiated source delivery, guarded maintenance and native observations. Instance and Runtime artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64. |
-| Observatory | [0.7.3](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.3) | Fleet management and ACP Talk with durable send-while-busy intake, public progress, negotiated steering, queued fallback and explicit recovery. |
-| Conversations | [0.8.3](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.3) | Browser rooms, per-recipient durable intake, public progress, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
-| Slack adapter | [0.11.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.11.0) | Ordered human and active-only peer intake, negotiated source-delivery facts, public commentary/status, preserved approvals and explicit uncertain-delivery recovery. |
-| Teams adapter | 0.3.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
-| Persona Workshop | 0.5.1 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
-| ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
+| Runtime | [0.12.0](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.12.0) | Native Rust execution, durable ACP sessions, ordered input, native context compaction and cache/latency observations. No Codex dependency on the native path; optional capabilities are not ACP certification. |
+| Instance | [0.18.0](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.18.0) | Native Runtime 0.12.0 installation is the default. Negotiated source delivery, guarded maintenance and native observations. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64. Runtime 0.12.0 artifacts cover Linux ARM64/x64, macOS ARM64 and Windows x64. |
+| Observatory | [0.8.0](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.8.0) | Fleet management and ACP Talk with durable send-while-busy intake, public progress, negotiated steering, queued fallback and explicit recovery. |
+| Conversations | [0.9.0](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.9.0) | Browser rooms, per-recipient durable intake, public progress, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
+| Slack adapter | [0.12.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.12.0) | Ordered human and active-only peer intake, negotiated source-delivery facts, public commentary/status, preserved approvals and explicit uncertain-delivery recovery. |
+| Teams adapter | 0.4.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
+| Persona Workshop | 0.6.0 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
+| ACP Lab | 0.4.0 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
 | Minecraft adapter | 0.1.0 | Independent players, scoped HTTP MCP game tools, public conversation routing, bounded tasks, and optional context/decision integrations. Requires a compatible Minecraft server; public CI uses synthetic fixtures. |
 
 ## Verification
