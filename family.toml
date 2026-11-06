@@ -1,7 +1,7 @@
 schema_version = 1
 product = "Amplifier Constellation"
 registry_kind = "documentation"
-updated = "2026-11-05"
+updated = "2026-11-06"
 # Source repositories are independent of downloadable binary releases.
 
 [[component]]
