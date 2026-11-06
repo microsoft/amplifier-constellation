@@ -95,3 +95,45 @@ This is the target experience. Each component release must state which boundarie
 and fallback cases it actually implements; a contract change is not deployment
 evidence. See [ACP prompt turns](https://agentclientprotocol.com/protocol/v1/prompt-turn)
 and [ContentChunk](https://agentclientprotocol.com/protocol/v1/schema#contentchunk).
+
+## Optional public-message completion, version 1
+
+Stable ACP v1 does not supply a completed-message event. A producer may advertise
+`_meta["com.microsoft.amplifier.message"].completion = {"version": 1}` in its
+initialize result. A client opts in with the same value under
+`clientCapabilities._meta`. Proxies preserve the negotiation; they must not
+invent completion for an opaque backend.
+
+After a provider confirms a complete public message, the producer may send an
+empty text `agent_message_chunk` with the original `messageId` and
+`_meta["com.microsoft.amplifier.message"].completed` containing `version: 1`,
+`utf8Bytes`, and the lowercase SHA-256 of the exact accumulated UTF-8 text.
+This marker settles only an existing draft whose content matches. It creates no
+new text, identity, ordering slot or phase. Other empty metadata envelopes remain
+inert. A duplicate matching completion is harmless; appending to a completed
+message is a protocol/application error, never permission to edit spoken text.
+The digest detects mismatched assembly, not trust or authorization.
+
+The initial presentation integration uses this signal for explicitly public
+`phase: "commentary"` contributions. Final answers retain the latest unpublished
+revision until prompt settlement, then post as new messages. This avoids exposing
+structured participation decisions or intermediate answer revisions as speech.
+Completed commentary can be delivered even if later work fails; failure never
+settles an unfinished draft. Without this optional signal, known public commentary
+settles only at a successful prompt terminal. Private thought and tool results
+are never speech.
+
+The common Rust collector lives in `amplifier-acp-connection::speech`; it uses the
+upstream SDK's ordinary typed messages and reserved metadata, not a replacement
+wire protocol. The completion marker is an augmentation for a concrete stable-v1
+gap, not a mandatory Constellation requirement. Reassess it when the upstream
+protocol/SDK provides a usable message lifecycle and remove the augmentation
+once negotiated upstream behavior covers these cases.
+
+Provider mapping: OpenAI Responses uses a completed assistant message from
+`response.output_item.done`, checking the item's status. Other native provider
+paths can settle text at their successful message/response terminal before the
+runtime executes tools. An HTTP frame, text delta, timeout, or cancellation is
+never a completion boundary. See the official
+[OpenAI streaming reference](https://developers.openai.com/api/reference/resources/responses/streaming-events)
+and [Anthropic streaming guide](https://platform.claude.com/docs/en/build-with-claude/streaming).

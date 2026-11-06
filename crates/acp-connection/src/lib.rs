@@ -19,6 +19,7 @@ use tokio::{
 use tokio_util::codec::{FramedRead, FramedWrite, LinesCodec};
 
 mod relay;
+pub mod speech;
 pub use relay::{Relay, RelaySender, is_message, parse_message};
 
 type Responders = Arc<Mutex<HashMap<String, acp::Responder<Value>>>>;
