@@ -152,8 +152,12 @@ Use metadata and owned message IDs, never text matching that would discard a
 participant saying “Thinking…” as ordinary conversation. See the
 [collaboration contract](collaboration.v1-candidate.md).
 
-For long work, typed compaction and public model commentary, follow the
-[harness lifecycle](harness-lifecycle.v1-candidate.md). Explicit public commentary
-may update the scoped working line; private reasoning and raw tool arguments may
-not. A commentary-only turn does not become a final answer. Use typed compaction
-status where negotiated and retain unknown state when progress is unavailable.
+For long work and typed compaction, follow the
+[harness lifecycle](harness-lifecycle.v1-candidate.md). The temporary working line
+is activity, not the agent's speech. Complete public commentary is an ordinary,
+permanent participant message, following the
+[conversation delivery contract](conversation-delivery.v1-candidate.md). Do not
+replace it with later commentary, a final answer, or a tool label. Private
+reasoning and raw tool arguments remain excluded. A commentary-only turn is not
+proof of a completed assignment. Use typed compaction status where negotiated
+and retain unknown state when progress is unavailable.
