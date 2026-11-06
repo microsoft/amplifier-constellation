@@ -18,7 +18,16 @@ Attention `context.messages[]` may include both `revision` and `occurred_at` (sn
 
 ## Presentation
 
-Show only public commentary (`agent_message_chunk` with explicit commentary phase), public tool/status fields, and negotiated compaction status. Never expose private thought chunks, opaque compaction state, tool arguments or results as a status label. Prefer a single concise, changing line in the responding conversation, throttled to the platform. Thinking, compacting, working, waiting and failure are distinct observations. Commentary is not the final answer and must not replace one. Silence decisions remain silent.
+Keep activity and public speech separate. Public tool/status fields and negotiated
+compaction status belong in one concise, changing activity indicator, scoped to
+the responding conversation. Thinking, compacting, working, waiting and failure
+are distinct observations. Complete public commentary belongs in a new permanent
+message, not in that indicator. Preserve interleaving with other participants;
+later answers and corrections must not edit speech that was already published.
+Never expose private thought chunks, opaque compaction state, raw tool arguments
+or results. Silence decisions remain silent. See
+[conversation delivery](conversation-delivery.v1-candidate.md) for boundaries,
+fallback behavior, and delivery verification.
 
 ## Measurement and rollout
 
