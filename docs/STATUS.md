@@ -1,9 +1,48 @@
 # Implementation status
 
-November 5, 2026. This is a dated development checkpoint, separate from the vision
+November 6, 2026. This is a dated development checkpoint, separate from the vision
 and draft umbrella contracts. Downloadable releases are listed by each component. Source-only components are
 identified below. Release availability is not an assertion that every installation
 has been updated.
+
+## Current release: long work, context and visible progress
+
+[Runtime 0.11.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.11.1)
+separates provider inactivity from whole-turn and tool limits, retains original
+history beside its compacted working context, and adds native OpenAI/Anthropic
+compaction, cache-aware stable prefixes and content-free execution measurements.
+OpenAI uses explicit compaction at settled response boundaries: the live API
+rejects steering together with automatic compaction. Updates arriving during
+maintenance remain ordered, while already accepted steering and completed effects
+stay on their original chain. Version 0.11.1 supersedes 0.11.0 for this combination.
+
+[Instance 0.17.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.17.1)
+pins that runtime for new native installations. Its optional source-delivery
+receipts let attention distinguish an update already incorporated during work
+from one whose delivery remains unknown. Incorporation is not completion or an
+automatic decision to suppress another reply. Guarded backend compaction requires
+an advertised command, an idle session and matching typed terminal success.
+The dashboard and API expose native context controls and measurements. Existing
+installations also need their enrolled runtime component updated.
+
+[Slack 0.11.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.11.0),
+[Conversations 0.8.3](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.3)
+and [Observatory 0.7.3](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.3)
+surface public commentary and work/compaction status without treating it as a
+final answer or displaying private reasoning. Slack negotiates source-delivery
+facts while ordinary ACP agents retain their existing path. See the
+[harness lifecycle contract](../contracts/harness-lifecycle.v1-candidate.md) and
+the Lab's [matched experiment guidance](https://github.com/microsoft/amplifier-acp-lab/blob/main/docs/harness-experiments.md).
+
+All five native release targets passed their required CI checks. Controlled live
+OpenAI and Anthropic compaction checks passed; a live OpenAI compaction/steering
+check incorporated two updates while preserving one requested file write. An
+explicitly labeled synthetic Slack check verified two updates during one tool
+execution, the revised final answer, scoped status cleanup and parent/thread
+context. These establish the tested boundaries, not universal model support,
+human participation quality or long-run cost savings. Installation verification
+covered managed Linux and macOS hosts; private identities and deployment records
+remain outside these repositories.
 
 ## Coordinated release: input continuity and model support
 
@@ -96,11 +135,11 @@ by that adapter; these releases do not by themselves establish its live behavior
 
 | Component | Recorded version | Evidence and limits |
 | --- | --- | --- |
-| Runtime | [0.10.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.10.1) | Native Rust execution, durable ACP sessions and ordered input, provider steering/boundary injection, recovery receipts and a current model catalog. No Codex dependency on the native path; optional capabilities are not ACP certification. |
-| Instance | [0.16.3](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.16.3) | Native Runtime 0.10.1 installation is the default. Negotiated steering authorization, active-only peer awareness, original-ticket restoration and current model setup. Instance artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64; Intel Mac runtime installation still requires an explicit native build. |
-| Observatory | [0.7.2](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.2) | Fleet management and ACP Talk with durable send-while-busy intake, negotiated steering, queued fallback and explicit recovery. |
-| Conversations | [0.8.2](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.2) | Browser rooms, per-recipient durable intake, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
-| Slack adapter | [0.10.1](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.10.1) | Ordered human and active-only peer intake, structured progress filtering, negotiated steering or queued human fallback, preserved approvals and explicit uncertain-delivery recovery. |
+| Runtime | [0.11.1](https://github.com/microsoft/amplifier-constellation-runtime/releases/tag/v0.11.1) | Native Rust execution, durable ACP sessions, ordered input, native context compaction and cache/latency observations. No Codex dependency on the native path; optional capabilities are not ACP certification. |
+| Instance | [0.17.1](https://github.com/microsoft/amplifier-constellation-instance/releases/tag/v0.17.1) | Native Runtime 0.11.1 installation is the default. Negotiated source delivery, guarded maintenance and native observations. Instance and Runtime artifacts cover Linux ARM64/x64, macOS ARM64/x64 and Windows x64. |
+| Observatory | [0.7.3](https://github.com/microsoft/amplifier-constellation-observatory/releases/tag/v0.7.3) | Fleet management and ACP Talk with durable send-while-busy intake, public progress, negotiated steering, queued fallback and explicit recovery. |
+| Conversations | [0.8.3](https://github.com/microsoft/amplifier-constellation-conversations/releases/tag/v0.8.3) | Browser rooms, per-recipient durable intake, public progress, steering or queued fallback, Markdown, approvals and structured questions. Agent-side working folders can differ from the client launch folder. |
+| Slack adapter | [0.11.0](https://github.com/microsoft/amplifier-acp-slack/releases/tag/v0.11.0) | Ordered human and active-only peer intake, negotiated source-delivery facts, public commentary/status, preserved approvals and explicit uncertain-delivery recovery. |
 | Teams adapter | 0.3.0 | Local SDK, Graph, media, and ACP fixtures; live tenant/app verification remains pending. |
 | Persona Workshop | 0.5.1 source | Separate communication/working-style guidance and native, AGENTS.md, and SOUL.md exports. Consistent installer naming and compatibility with existing data. Provenance and private identity remain separate. |
 | ACP Lab | 0.3.2 | Repeatable scenarios, recorded participation, artifact identity, and separate executable evaluations. |
