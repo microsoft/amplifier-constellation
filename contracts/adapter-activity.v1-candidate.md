@@ -151,3 +151,9 @@ before bounded message limits so status updates do not crowd out conversation.
 Use metadata and owned message IDs, never text matching that would discard a
 participant saying “Thinking…” as ordinary conversation. See the
 [collaboration contract](collaboration.v1-candidate.md).
+
+For long work, typed compaction and public model commentary, follow the
+[harness lifecycle](harness-lifecycle.v1-candidate.md). Explicit public commentary
+may update the scoped working line; private reasoning and raw tool arguments may
+not. A commentary-only turn does not become a final answer. Use typed compaction
+status where negotiated and retain unknown state when progress is unavailable.

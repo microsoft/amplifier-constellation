@@ -133,3 +133,8 @@ and no required shared update service.
 The optional [refreshed context contract](contracts/context-snapshots.v1-candidate.md)
 keeps current source projections concise while preserving original requests,
 private history and tool outcomes.
+
+The [harness lifecycle contract](contracts/harness-lifecycle.v1-candidate.md)
+separates durable conversation history, provider working context, tool deadlines,
+connection health and assignment authority. It also defines optional source-delivery
+receipts, settled maintenance, and public commentary/status across experiences.
