@@ -16,6 +16,7 @@ existing version names until an explicit migration changes them.
 | New messages during ongoing work and explicit stop | [Input continuity candidate](input-continuity.v1-candidate.md) |
 | Current model classes, capability records and explicit selection | [Model support candidate](model-support.v1-candidate.md) |
 | Active peer awareness and reporting group outcomes | [Collaboration candidate](collaboration.v1-candidate.md) |
+| Natural task requests, limit changes and authorized help | [Conversational task admission candidate](task-admission.v1-candidate.md) |
 | Ambient social admission | [Installed-agent attention candidate](attention.v1-candidate.md) |
 | Self-contained update lifecycle | [Installation updates candidate](installation-updates.v1-candidate.md) |
 | Standard agent/client interaction | [Agent Client Protocol](https://agentclientprotocol.com/) |

@@ -7,6 +7,13 @@ has been updated.
 
 ## ACP SDK release checkpoint
 
+The [conversational task-admission candidate](../contracts/task-admission.v1-candidate.md)
+now separates human task requests, configurable chat-only mode, temporary reply
+capacity, amendments and delegated authority. This is a behavioral design;
+existing work records and attention offers do not gain execution permissions.
+Natural task transitions and transferable execution grants still require their
+own component implementation, verification and rollout.
+
 The Rust ACP production paths now use the official Rust SDK 5.0.0 through the
 shared, immutable connection integration. Runtime 0.12.0, Instance 0.18.0,
 Slack 0.12.0, Conversations 0.9.0 and Observatory 0.8.0 have published binary
