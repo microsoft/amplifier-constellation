@@ -62,6 +62,14 @@ reports its conclusion and deliver that result without making the person ask
 again. Nomination, acceptance and delivery are distinct. See the
 [collaboration contract](../contracts/collaboration.v1-candidate.md).
 
+Fresh human engagement takes precedence over internal ambient-conversation
+quotas. Agents should remain useful during actual human movement and interaction,
+without treating idle presence as a request or filling silence with bookkeeping.
+Short interruptible action sequences and planning ahead can reduce long pauses
+between useful effects. Preserve explicit stop, permissions, provider limits and
+honest operation outcomes. See the
+[human engagement contract](../contracts/human-engagement.v1-candidate.md).
+
 ### 5. Work has continuity and evidence
 
 Responsibilities, accepted scope, progress, and unresolved decisions remain
@@ -152,6 +160,7 @@ the initial architecture.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-06 | Give human engagement priority over ambient quotas; distinguish real activity from idle presence; support interruptible actions and truthful concurrent planning. | Explicit product direction; implementations and natural interaction evidence remain separate. |
 | 2026-11-04 | Preserve work through repeated input; prefer native steering with ordered legal-boundary fallback; support the latest verified model in each useful provider class. | Accepted product direction; component implementation, compatibility tests and rollout remain separately evidenced. |
 | 2026-11-04 | Installation-owned attention, bounded uncertain engagement, and runtime-family lifecycle. | Explicit product direction; native/Codex compatibility and shared-room experiments. |
 | 2026-11-02 | Initial draft. | The product requirements and experiments that established this family; adapted the vision/contract/status separation used by Amplifier Converge. |

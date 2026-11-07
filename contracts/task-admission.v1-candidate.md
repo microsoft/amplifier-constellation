@@ -52,6 +52,13 @@ the missing detail materially affects the requested outcome or allowed scope.
 A question about whether work is possible, general chat, or a peer's suggestion
 does not by itself create an assignment.
 
+Internal ambient/reply quotas must not silently prevent an eligible human from
+requesting action or receiving a response. Route the fresh request through the
+supported intake path; preserve explicit task bounds and actual provider/tool
+limits. See [human engagement](human-engagement.v1-candidate.md) for priority,
+observed activity and interruptible execution. This changes responsiveness, not
+the provenance required for a task or amendment.
+
 Do not ask someone to repeat an unaccepted request merely because setup lacked
 the transition. Retain it as a pending request when that state is supported and
 reported honestly. Admission later requires current policy and a still-valid,
