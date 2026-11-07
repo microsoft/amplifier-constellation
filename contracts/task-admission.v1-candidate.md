@@ -68,6 +68,33 @@ upgrade old conversation history into a task or retry an uncertain admission.
 
 ## Changes, limits and stop
 
+Represent each task dimension as either a finite configured limit or explicitly
+no configured bound. Unknown, omitted and unavailable information must not mean
+unlimited authority. A completion-bound goal still has an accepted scope, owner,
+identity, Stop behavior and actual effect receipts. Installation/provider/tool
+constraints remain independent, and unknown provider capacity stays unknown.
+
+Changing a default can allow newly accepted tasks to run until completion, but
+does not convert old finite, expired, stopped or uncertain assignments. Removing
+an existing limit requires an authorized amendment with the same source/revision
+checks and preserved consumed counts. Do not encode unconfigured bounds using
+large sentinel numbers, rolling deadlines or automatically refreshed allowances.
+
+Optional local watch/continuation helpers must advertise an input version that
+can represent these facts before use. Runtime 0.14's `helper-capabilities` query
+describes the separate `watch-v2` and `continuation-v2` commands; these take
+`{"kind":"finite","value":...}` or `{"kind":"no_configured_bound"}` for
+each dimension. Original numeric commands retain their contract. See the
+[watch](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/watches.md)
+and [continuation](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/continuation.md)
+interfaces and executable examples. This is local helper discovery, not a new
+ACP field, an Instance attention feature, or a requirement to change engines.
+
+Even on a completion-bound task, each watch retains its finite TTL and original
+identity. A new helper or relaxed task limit cannot revive expired watches,
+erase delivered evidence or reset decision accounting. Advice remains separate
+from execution; the resource owner rechecks current authority before effects.
+
 A human can request a smaller or larger allowance in the same conversation when
 policy permits. Bind the change to the exact assignment and expected revision,
 record its source and old/new limits, and preserve consumed work, completed
