@@ -141,3 +141,5 @@ The [harness lifecycle contract](contracts/harness-lifecycle.v1-candidate.md)
 separates durable conversation history, provider working context, tool deadlines,
 connection health and assignment authority. It also defines optional source-delivery
 receipts, settled maintenance, and public commentary/status across experiences.
+
+Saved service setup and Connect/Disconnect controls follow the [service connections contract](contracts/service-connections.v1-candidate.md). Domain installations retain credentials, sessions and lifecycle ownership; the optional Instance registry exposes saved entries and fixed owner actions without a host-shell API.
