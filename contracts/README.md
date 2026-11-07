@@ -18,6 +18,7 @@ existing version names until an explicit migration changes them.
 | Active peer awareness and reporting group outcomes | [Collaboration candidate](collaboration.v1-candidate.md) |
 | Natural task requests, limit changes and authorized help | [Conversational task admission candidate](task-admission.v1-candidate.md) |
 | Ambient social admission | [Installed-agent attention candidate](attention.v1-candidate.md) |
+| Human priority, observed activity and interruptible action | [Human engagement candidate](human-engagement.v1-candidate.md) |
 | Self-contained update lifecycle | [Installation updates candidate](installation-updates.v1-candidate.md) |
 | Standard agent/client interaction | [Agent Client Protocol](https://agentclientprotocol.com/) |
 | Instance attach, custom transport, and management discovery | [Instance ACP boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md) |

@@ -17,6 +17,10 @@ classifier. Name/mention metadata is evidence, not a requirement for engagement.
 Explicit channel subscription, rate limits, stop controls, task deadlines and
 tool permissions remain separate, deterministic controls.
 
+Ambient quotas must not silently suppress fresh human engagement. See
+[human priority and observed activity](human-engagement.v1-candidate.md) for the
+additive capability, source attribution, accounting and activity-evidence rules.
+
 The engine owns reasoning and its own sessions, tools, model/provider calls and
 within-turn stopping. An admitted engine may still choose silence. Admission
 neither approves a tool nor turns a group brainstorm into a task. Minecraft
@@ -100,8 +104,14 @@ session, audience, original event, installed name/purpose and policy configurati
 cannot reuse them. The journal deduplicates the original event across reconnects;
 it does not promise to replay an event lost during a crash. Stale events,
 superseded evidence, edited duplicate events, cancellation, configuration changes
-and spent tickets cannot admit a turn. A newer event in the audience invalidates
-an older offer. A direct prompt cancels pending ambient offers for its session.
+and spent tickets cannot admit a turn. Newer audience events invalidate older
+ambient offers. With advertised human-message priority, distinct human messages
+remain independently eligible: later activity or speech alone is not cancellation.
+Changed source evidence, explicit cancellation, ticket expiry and single use still
+apply to each human offer. An older human message never rewinds ambient freshness.
+A direct prompt cancels pending ambient offers for its session, while preserving
+distinct human offers within their original expiry. Explicit session cancellation
+and access revocation still invalidate both classes.
 Events older than ten minutes are held. Records are retained for at most a day
 of active journal maintenance, longer than the event freshness window.
 
@@ -122,6 +132,11 @@ errors may also get that limited opportunity, but are labeled `provider_error`,
 not counted as semantic uncertainty. Refusals remain holds and are separately
 flagged. Defaults are 600 decision attempts, 60 admitted-or-claimed ambient
 turns, and 12 uncertain/error turns per rolling hour per installed agent.
+With advertised `humanMessages.version:1`, these quotas apply to ambient input;
+explicit source-attributed human messages neither spend nor are held by them.
+Social judgment still identifies relevance and the actual addressee. Provider
+refusals, source grants, stop and task authority remain separate. Unknown actor
+kind is not human priority. Observed activity remains ambient evidence.
 Independent task or platform limits may be lower. No automatic retries, idle
 polling prompts, task renewal or fallback budget expansion are authorized.
 
