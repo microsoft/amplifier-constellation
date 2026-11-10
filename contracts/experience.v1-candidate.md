@@ -100,8 +100,9 @@ These are acceptance checks to maintain, not a claim of complete coverage:
   destination. Repeat against a peer without steering and through a disconnect;
   count actual effects and durable receipts rather than just visible replies.
 - Observe agents coordinating while a person works elsewhere, then that person
-  inspecting, joining a brainstorm and leaving. Compare interruptions, useful
-  contributions, missed decisions and time needed to understand the result.
+  inspecting, joining a brainstorm and closing the view or unfollowing. Compare
+  interruptions, useful contributions, missed decisions and time needed to
+  understand the result. Preserve the distinct effects of Stop or access revocation.
 - Verify that a huddle link grants no access, inspection grants no work authority,
   and an agent's post cannot be admitted as a new human instruction. Preserve
   important dissent and uncertainty when reporting to the original audience.

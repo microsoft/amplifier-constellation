@@ -98,6 +98,8 @@ exchanges stay off the primary human surface by default, with a way to follow
 more detail. A person's invitation to brainstorm still permits multiple voices.
 A reporting owner provides accountability for the result, not a mandatory chair
 through whom every participant or important dissent must pass.
+Leaving the view or unfollowing does not stop still-authorized work; explicit
+Stop and membership or access revocation retain their existing effects.
 
 The original requester and response destination remain bound to the work. A
 huddle post is a distinct, attributed message, not a redirected human reply or
@@ -128,6 +130,10 @@ must remain usable without assuming that policy is installed.
 | Minecraft | Public chat, source-bound history and authorized status/context reads | Public addressed chat is still public; whispers are not an observable shared room. Provide an authorized huddle link through an existing reachable UI and return meaningful outcomes to game chat. No transcript web UI or private-peer huddle transport is currently established. |
 | Companion | Existing scoped sources, requested-result delivery, conversational floor and links | Add only an authorized outcome source, not every huddle line, to the existing awareness path. Current private calls remain separate from the group. Old outcomes stay discoverable; do not rewrite their time to satisfy ambient freshness checks. |
 
+Companion requested-result follow-through also requires the original caller,
+request and source-receipt binding. Registering an observation source alone does
+not establish that obligation; arbitrary huddle posts remain ambient observations.
+
 When a platform lacks a suitable quiet place, an already configured Conversations
 room can be the fallback. It is optional and installation-owned, not a required
 global coordination service. Its audience must be authorized independently of
@@ -149,7 +155,7 @@ belong in the owning components; this proposal introduces no ACP fields.
 
 Observe a complete task: agents coordinate while a person works elsewhere; the
 person inspects without triggering work, joins a multi-agent brainstorm, redirects
-it and leaves; agents finish and report once with checked evidence. Include a
+it and closes the view; agents finish and report once with checked evidence. Include a
 material blocker, dissent, a lost delivery acknowledgment, membership revocation
 and an experience without a native huddle. Verify Stop and original authority
 throughout. A report from a previous call retains its original request, source

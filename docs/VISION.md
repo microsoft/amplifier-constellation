@@ -168,8 +168,8 @@ any new execution context explicit. See the
   elsewhere. The person receives a useful result or decision, can inspect its
   evidence and dissent, and need not reconstruct the work from routine chatter.
 - A person joins a group discussion and hears useful contributions from several
-  agents, then leaves without stopping authorized work or subscribing to every
-  subsequent exchange.
+  agents, then closes the view or unfollows without stopping still-authorized
+  work. Explicit Stop and membership or access revocation retain their effects.
 
 ## Decisions still to test
 
