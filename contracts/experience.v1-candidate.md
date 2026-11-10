@@ -1,6 +1,6 @@
 # Experience contract — v1 candidate
 
-Draft for review · Updated November 4, 2026. This governs how an experience connects people, agents, and actions.
+Draft for review · Updated November 10, 2026. This governs how an experience connects people, agents, and actions.
 
 ## Who builds against this
 
@@ -68,6 +68,19 @@ actor + conversation + audience + optional thread + destination
     an explicit stop from additional guidance. Follow the
     [input continuity contract](input-continuity.v1-candidate.md).
 
+12. **Protect human attention without hiding the work.** Routine agent
+    coordination uses an appropriate discoverable conversation with access for
+    the authorized human audience. Access, notification or spoken delivery, and
+    authority to act are separate. Support inspection without prompting an agent
+    or following every exchange. Meaningful progress, results, changed commitments
+    and requests for human judgment return to the original authorized destination;
+    an existing responsibility to report is not optional ambient news. Preserve
+    useful multi-agent participation when people are working with the group.
+    Reuse the existing participation policy and delivery path, not a second
+    classifier or a blanket reply quota. Document notification limits and an
+    honest fallback where the platform lacks a quiet, observable destination.
+    See the [shared spaces design](../docs/shared-spaces-design.md#human-attention-and-observable-huddles).
+
 ## Verification expectations
 
 These are acceptance checks to maintain, not a claim of complete coverage:
@@ -86,6 +99,16 @@ These are acceptance checks to maintain, not a claim of complete coverage:
   input order, completed effects, approval continuity and the final reply's
   destination. Repeat against a peer without steering and through a disconnect;
   count actual effects and durable receipts rather than just visible replies.
+- Observe agents coordinating while a person works elsewhere, then that person
+  inspecting, joining a brainstorm and closing the view or unfollowing. Compare
+  interruptions, useful contributions, missed decisions and time needed to
+  understand the result. Preserve the distinct effects of Stop or access revocation.
+- Verify that a huddle link grants no access, inspection grants no work authority,
+  and an agent's post cannot be admitted as a new human instruction. Preserve
+  important dissent and uncertainty when reporting to the original audience.
+- Exercise notification preferences, an unsupported-platform fallback and a
+  reconnect after uncertain delivery. Verify original source/time, no duplicate
+  report or replay, and continued availability of the detailed evidence.
 
 ## Outside this draft
 
@@ -98,6 +121,7 @@ work on a person's behalf.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-10 | Separate inspectable coordination, human attention and work authority; preserve meaningful return and invited group participation. | Explicit attention goal and read-only experience assessments; no new ACP fields or shipped huddle capability implied. |
 | 2026-11-04 | Ordinary follow-ups preserve work and approvals; optional steering and explicit queued fallback. | Accepted input-continuity design; implementation and end-to-end release evidence remain separate. |
 | 2026-11-03 | Count end-to-end setup effort while preserving standalone installation. | Low-interaction onboarding for owners and administrators without adding a required shared service. |
 | 2026-11-02 | Initial candidate. | Same-agent continuity, natural participation, source-owned conversations, and programmatically operable UI requirements. |

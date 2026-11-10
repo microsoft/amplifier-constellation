@@ -1,6 +1,6 @@
 # Amplifier Constellation — Vision
 
-Draft for review · November 4, 2026.
+Draft for review · Updated November 10, 2026.
 
 This describes the intended experience. Shipped behavior and verification belong
 in [implementation status](STATUS.md) and component release records. Changes to
@@ -14,6 +14,13 @@ everyday tools. A personal assistant can help across projects; a team coordinato
 can organize shared work; project leads, engineers, and reviewers can own narrower
 responsibilities. People can speak to any of them directly or work through a lead.
 The work stays connected without making a person relay every conversation.
+
+Human attention is scarce and valuable. Constellation should put it where human
+judgment, expertise and taste improve the outcome. Agents carry authorized work
+through coordination, verification and delivery without requiring people to
+monitor routine exchanges. People can inspect the work, challenge its evidence
+and join the conversation when useful. A quieter channel alone is not success:
+the work must remain understandable, accountable and effective.
 
 ## Principles
 
@@ -69,6 +76,16 @@ Short interruptible action sequences and planning ahead can reduce long pauses
 between useful effects. Preserve explicit stop, permissions, provider limits and
 honest operation outcomes. See the
 [human engagement contract](../contracts/human-engagement.v1-candidate.md).
+
+Routine coordination belongs in an observable huddle away from the main human
+conversation. Reuse an appropriate authorized room, thread or workspace; make
+it easy to find, inspect, join and follow without broadcasting every exchange.
+Bring meaningful progress, results, changed commitments and decisions back to
+the people concerned. During active joint work or brainstorming, several agents
+can contribute distinct ideas. Human availability alone is not an invitation to
+narrate work or ask for decisions already delegated. An opportunity to engage
+does not require a public reply. See the
+[attention and huddle design](shared-spaces-design.md#human-attention-and-observable-huddles).
 
 ### 5. Work has continuity and evidence
 
@@ -147,6 +164,12 @@ any new execution context explicit. See the
   effects or lost approvals. Explicit stop remains available.
 - An owner can select a current model class and see the resolved model, route and
   supported capabilities before changing execution, without losing old history.
+- Agents coordinate independently in a discoverable place while a person works
+  elsewhere. The person receives a useful result or decision, can inspect its
+  evidence and dissent, and need not reconstruct the work from routine chatter.
+- A person joins a group discussion and hears useful contributions from several
+  agents, then closes the view or unfollows without stopping still-authorized
+  work. Explicit Stop and membership or access revocation retain their effects.
 
 ## Decisions still to test
 
@@ -160,6 +183,7 @@ the initial architecture.
 
 | Date | Change | Basis |
 | --- | --- | --- |
+| 2026-11-10 | Optimize for human attention while preserving observable coordination, useful group participation and evidence. | Explicit product direction informed by the Converge methodology review; huddle support remains proposed and requires experience-specific verification. |
 | 2026-11-06 | Give human engagement priority over ambient quotas; distinguish real activity from idle presence; support interruptible actions and truthful concurrent planning. | Explicit product direction; implementations and natural interaction evidence remain separate. |
 | 2026-11-04 | Preserve work through repeated input; prefer native steering with ordered legal-boundary fallback; support the latest verified model in each useful provider class. | Accepted product direction; component implementation, compatibility tests and rollout remain separately evidenced. |
 | 2026-11-04 | Installation-owned attention, bounded uncertain engagement, and runtime-family lifecycle. | Explicit product direction; native/Codex compatibility and shared-room experiments. |

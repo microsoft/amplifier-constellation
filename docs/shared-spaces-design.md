@@ -56,6 +56,119 @@ or cancel. Completed effects remain recorded. A changed requirement creates a ne
 work revision and clearly identifies any earlier review that no longer applies.
 “Delivered,” “independently checked,” and “accepted” remain distinct states.
 
+## Human attention and observable huddles
+
+Added November 10, 2026. Product direction and implementation proposal; the
+capability gaps below are not a claim that huddles are already supported.
+
+Agents should own routine coordination without making people read it. Protect
+attention for judgment and useful joint work, while keeping evidence and
+disagreement available. Silence is not proof that work is healthy; a short report
+is not a substitute for checking the result. This follows the Converge review's
+distinction between producing more work and improving people's ability to judge
+it, also developed in [Building Together](https://medium.com/@paradox921/everyone-on-your-team-can-build-more-how-do-you-build-together-39a9ec17fb5e)
+and [You're the Executive Now](https://sundaylettersfromsam.substack.com/p/youre-the-executive-now).
+
+### The social contract
+
+| Situation | Expected behavior |
+| --- | --- |
+| People are actively working with agents, asking questions or brainstorming | Participate in that conversation. Several agents may contribute distinct ideas or disagreement; avoid repeated acknowledgments and restatements. |
+| Agents are coordinating implementation, reviewing details or resolving routine problems | Use a discoverable work huddle. Continue within standing authority even when a person is available; do not turn internal coordination into a stream of questions for them. |
+| A result is ready, progress is meaningful, a commitment changes, or human judgment is needed | Return a concise, evidence-linked update to the original human destination. For a decision, include the choice, recommendation, uncertainty and consequence of waiting. Group related questions and continue independent work. |
+
+These are expectations for the existing agent and participation policy, not three
+new execution modes. Requested milestones and interruptions follow the person's
+working preferences. Urgent material risks and decisions that cannot wait must
+remain visible; ordinary recoverable errors need not interrupt. Human presence
+or opening a transcript alone does not invite speech or create an assignment.
+Completion should end routine acknowledgments rather than start another round.
+
+### Reuse a place, not a new system
+
+A huddle is an ordinary authorized conversation used for work coordination.
+Reuse a suitable project room or thread before creating one; avoid a separate
+space for every turn. Its parent conversation or work view shows a compact
+purpose, participants, current status and inspect link. It need not copy the
+parent transcript. People can inspect and join through existing controls.
+
+Keep three choices separate: **who can access the conversation**, **which updates
+reach a person's feed or voice**, and **what work an agent may perform**. Routine
+exchanges stay off the primary human surface by default, with a way to follow
+more detail. A person's invitation to brainstorm still permits multiple voices.
+A reporting owner provides accountability for the result, not a mandatory chair
+through whom every participant or important dissent must pass.
+Leaving the view or unfollowing does not stop still-authorized work; explicit
+Stop and membership or access revocation retain their existing effects.
+
+The original requester and response destination remain bound to the work. A
+huddle post is a distinct, attributed message, not a redirected human reply or
+an instruction fabricated under a human token. Current audience and source grants
+govern each transfer. Huddle membership grants neither task authority nor access
+to private source material; existing accepted responsibilities and stop controls
+continue unchanged. A link alone grants no history access.
+
+Use the existing message, source, task and delivery records to retain these
+relationships. Do not add a parallel scheduler, relevance classifier, approval
+queue or peer quota. Preserve unknown delivery outcomes rather than resend or
+pretend the person read the result. Quiet coordination must not hide failures,
+disagreement or a changed commitment behind a reassuring summary.
+
+### Experience differences and present gaps
+
+This is a November 10 source assessment, not a live multi-platform acceptance
+test. Each connector owns its platform routing and permissions; Conversations
+owns room presentation and participant delivery. Instance's existing optional
+attention policy supplies shared participation judgment. Ordinary ACP engines
+must remain usable without assuming that policy is installed.
+
+| Experience | Reuse | Gap to verify or implement |
+| --- | --- | --- |
+| Conversations | Named rooms, membership and grants, per-agent sessions, transcript/search, links and Stop | Linked coordination purpose and quiet/follow presentation; authenticated agent-attributed posting into existing delivery paths. Current group turns are human-started bounded rounds, not an autonomous agent conversation. |
+| Slack | Existing channel/thread contexts and scoped delivery | Intentional coordination destination and return path, with verified agent-source handling. A thread is not inherently quiet: [participants and followers can receive notifications](https://slack.com/help/articles/115000769927-Use-threads-to-organize-discussions). Do not change people's Slack preferences silently. |
+| Teams | Conversation/thread scope and source-bound replies | Current connector has no general cross-room send; receiving peer messages depends on explicitly configured Graph access. Verify tenant delivery and notification behavior before promising native huddles. |
+| Minecraft | Public chat, source-bound history and authorized status/context reads | Public addressed chat is still public; whispers are not an observable shared room. Provide an authorized huddle link through an existing reachable UI and return meaningful outcomes to game chat. No transcript web UI or private-peer huddle transport is currently established. |
+| Companion | Existing scoped sources, requested-result delivery, conversational floor and links | Add only an authorized outcome source, not every huddle line, to the existing awareness path. Current private calls remain separate from the group. Old outcomes stay discoverable; do not rewrite their time to satisfy ambient freshness checks. |
+
+Companion requested-result follow-through also requires the original caller,
+request and source-receipt binding. Registering an observation source alone does
+not establish that obligation; arbitrary huddle posts remain ambient observations.
+
+When a platform lacks a suitable quiet place, an already configured Conversations
+room can be the fallback. It is optional and installation-owned, not a required
+global coordination service. Its audience must be authorized independently of
+the platform; cross-platform identity does not automatically establish access.
+If no suitable destination exists, retain inspectable work evidence and report
+the capability limit. Continue independent authorized work and essential human
+updates; do not claim a private DM is an observable huddle or flood the public
+channel as a substitute. A local coordination view is an option only when its
+access and participant transport are actually implemented and verified.
+
+### Smallest useful implementation and acceptance
+
+Start with one linked Conversations room and one connected experience, reusing
+the existing durable delivery and participation path. Establish authenticated
+agent attribution before enabling peer continuation; never submit agent messages
+through a human-only endpoint. Add the quiet/follow choice and a compact evidence
+link, then verify the return of a requested result. Detailed API changes and tests
+belong in the owning components; this proposal introduces no ACP fields.
+
+Observe a complete task: agents coordinate while a person works elsewhere; the
+person inspects without triggering work, joins a multi-agent brainstorm, redirects
+it and closes the view; agents finish and report once with checked evidence. Include a
+material blocker, dissent, a lost delivery acknowledgment, membership revocation
+and an experience without a native huddle. Verify Stop and original authority
+throughout. A report from a previous call retains its original request, source
+time, audience and delivery state; requested fulfillment is not discarded as
+optional ambient news.
+
+Compare human interruptions, repeated explanations, time to understand progress
+or make a decision, missed important information, and actual completed outcomes.
+Also count the effort to configure, find and join the huddle. Fewer messages is
+useful only if people retain confidence grounded in evidence and agents still
+finish the work. If review demand exceeds people's capacity, reduce or resequence
+commitments instead of merely accumulating a quieter review queue.
+
 ## Recovery and updates
 
 Show one actionable problem near the affected teammate or task: “Reconnect your
