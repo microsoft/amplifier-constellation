@@ -19,65 +19,44 @@ The [registry](../family.toml) locates repositories. It is documentation, not a
 required provisioning service or a grant of access. Repository count does not
 determine ownership: one owner can carry several components or an assembly.
 
-## Planned products, platforms and clients
+## Composition relationships
 
-Constellation and Amplifier Unified compose a shared ecosystem. The planned
-repository homes below allocate responsibility; they do not establish available
-APIs, completed extractions or running services. Intended homes are recorded under
-`planned_repository` in the [registry](../family.toml); this does not assert that
-each repository is absent. Creating or preparing a repository does not move
-existing implementation, state or consumer dependencies.
+The [vision](../docs/VISION.md#what-each-part-means) defines the parts in everyday
+terms. Instance is the logical home hosting the selected runtime; it is not a
+requirement for an operating-system container or a mandatory gateway for every
+ACP client. The engine remains responsible for reasoning and execution history.
+One individual can participate in several conversations, and several individuals
+can participate in one conversation. Participation does not merge histories,
+audiences, grants or task authority. The engine may retain separate sessions;
+there is no universal one-to-one conversation/session mapping.
 
-This section records the composition boundary with Constellation. Unified's
-[component-boundary contract](https://github.com/microsoft/amplifier-unified/blob/main/contracts/component-boundaries.v1.md)
-retains its rules for its own composition; its
-[repository map](https://github.com/microsoft/amplifier-unified/blob/main/docs/architecture/repositories.md)
-locates the existing extraction boundaries. The platform names here are the
-agreed target homes. Each serving owner defines its concrete interface and
-compatibility tests; consumers link to that definition. During extraction the
-existing owner remains authoritative until the interface moves with it. Product
-visions describe their intended experience. Guides,
-registry entries and diagrams navigate these homes rather than defining parallel
-promises. Reusable platform code can be a library or an independently operated
-service; repository separation does not require a central deployment.
+## Experience and supporting capability ownership
 
-### Products and client foundations
+Companion is the Constellation experience for calls, camera input, shared
+presentation and useful result return. Its intended independent home is
+`amplifier-companion`; its preview currently lives in Conversations. Extraction
+does not transfer rooms, membership, messages or huddles to the product.
 
-| Home | Intended responsibility |
-| --- | --- |
-| `amplifier-unified` | Own the Unified product experience and how it composes shared capabilities. Its planned Constellation connection uses the same owned interfaces as other consumers. |
-| `amplifier-companion` | Own the Companion product: contacts, calls, voice/camera interaction, shared presentation and return of useful results. Product interaction and consent stay here; agent identity, reasoning and source conversations retain their owners. |
-| `amplifier-client-web`, `amplifier-client-windows`, `amplifier-client-linux`, `amplifier-client-macos`, `amplifier-client-ios`, `amplifier-client-android` | Own reusable browser/device integration and client foundations. Products select the foundations they need while retaining their own UX and outcome responsibility. A client shell does not become the owner of agent history, work authority or every product's behavior. |
+**Amplifier is one external ACP client/experience in this map.** Its implementation
+lives in [Amplifier Unified](https://github.com/microsoft/amplifier-unified), which
+owns its own products, clients, platforms, repository map, vision and contracts.
+Its internal decomposition is outside this agreement. Constellation specifies the
+connection boundary, not Amplifier's internal ownership. The integration is
+planned; the diagram does not certify an available connection.
 
-Companion's preview currently lives in Conversations. Its planned product home
-allows independent development; it does not take rooms, membership, messages or
-huddles out of Conversations. The existing Conversations repository remains their
-home. There is no second conversation service or repository rename in this plan.
+The intended `amplifier-platform-realtime` home covers reusable live-media support;
+products retain call behavior and consent, while ACP engines retain backend
+reasoning and execution sessions. The intended `amplifier-platform-context` home
+covers authorized source discovery, retrieval and context selection; sources
+retain records and access rules, Instance retains installation grants, and engines
+retain execution history and model-context handling. These intended homes are not
+claims of available APIs or completed extraction. Existing serving owners remain
+authoritative until an interface moves through an explicit compatibility change.
 
-### Reusable platform capabilities
-
-The seven capabilities being established for Unified and the Context and Realtime
-homes are intended for reuse across products. These are responsibility boundaries;
-exact operations and implementation choices remain with the serving owners.
-
-| Planned home | Intended responsibility and boundary |
-| --- | --- |
-| `amplifier-platform-scheduling` | Own scheduling and trigger semantics. A due trigger requests work through the receiver's admission and authority rules; it does not renew a task or authorize effects. |
-| `amplifier-platform-workspaces` | Own reusable workspace organization and associations among work, people and resources. Workspace membership does not silently grant access to every linked source or agent session. |
-| `amplifier-platform-resources` | Own reusable file/artifact identity, content, metadata, revisions and authorized retrieval. This does not allocate compute or become a credential/provisioning authority. |
-| `amplifier-platform-operations` | Own durable observations of operations, questions and tasks, with outcome correlation. This is an observation journal; executors retain control of the underlying work and effects. |
-| `amplifier-platform-publishing` | Own immutable built-output snapshots and their supported preview, review, deployment and rollback lifecycle. Callers retain build and source authorization; publication does not certify an output's claims. |
-| `amplifier-platform-portability` | Own supported export, import and transfer between compatible homes. A transfer does not silently migrate opaque engine history, expand grants or renew work. |
-| `amplifier-platform-canvas` | Own reusable content and interaction primitives for a shared visual surface. Products own the experience; presentation or editing alone does not mean sending, approval or completion. |
-| `amplifier-platform-realtime` | Own reusable live voice/media connection and interruption support. Products own call behavior and consent; selected ACP engines retain backend reasoning, tool execution and saved agent sessions. Media transport is not a replacement agent protocol. |
-| `amplifier-platform-context` | Own reusable source discovery, authorized retrieval and context selection with provenance and coverage. Sources retain records and current access rules; Instance retains installation configuration and grants; engines retain execution history and model-context handling. |
-
-Adopt these shared capabilities where they fit rather than building parallel
-Constellation versions. Extract existing code through an explicit compatibility
-transition with affected consumers. No new platform repository is an implicit
-dependency of every installation or a universal identity, memory or credential
-service. Existing [self-contained installation](#self-contained-installation-baseline)
-and [information ownership](#information-ownership) commitments still apply.
+Exact interfaces and tests live with their serving owners. This agreement owns
+Constellation's composition promises; guides and diagrams only explain them.
+Reuse other ecosystems' capabilities through their published boundaries without
+copying their contracts here or requiring every installation to adopt them.
 
 ## Information ownership
 
@@ -108,6 +87,20 @@ attribution, delivery and effect enforcement. The selected engine owns its
 backend reasoning-provider integration. An experience may separately own voice
 or media transport through its provider interface; this does not make those
 protocols part of ACP or move backend reasoning ownership into the experience.
+
+### What crosses each connection
+
+These exchanges identify responsibilities, not new protocol fields or mandatory
+message sequences. A composition uses only supported and authorized operations.
+
+| Connection | What goes across | What comes back / useful result |
+| --- | --- | --- |
+| Person ↔ experience | A request, correction, shared material or explicit control such as Stop. | A response, inspectable work or a meaningful result in the intended conversation. The experience owns how this is presented. |
+| Experience / domain connection ↔ Instance | Attributed input with its source and destination; supported configuration or lifecycle requests through owned APIs. | Agent availability, supported capabilities, interaction output and operation outcomes, scoped to that connection. |
+| Instance ↔ selected runtime | ACP capability discovery, supported session create/load, input and permitted context, permission handling and cancellation. | Response content, tool activity and the interaction terminal. Engine history stays with the runtime. |
+| Runtime ↔ tools / domain services | MCP or another supported tool interface carries authorized reads and actions. | Source material, observed effects or explicit failure/uncertainty. A returned message is not independent proof of every claimed outcome. |
+| Experience / connector ↔ conversation source | Owned APIs retain or retrieve messages, audiences, membership and supported deliveries. | Source-bound history and delivery evidence. Reading one source does not grant access to another. |
+| Participating agents ↔ coordination conversation | Attributed peer messages, questions and results under the room's access rules. | Inspectable coordination and a meaningful return to the original request. A huddle invitation is not execution authority. |
 
 Exact operations, fields, supported versions and failure behavior belong to the
 serving component or upstream protocol. The [interface map](README.md#go-to-the-interface-owner-for-details)
