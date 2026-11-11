@@ -25,7 +25,7 @@ to your work, and [Working together](docs/working-together.md) for applying
 
 [family.toml](family.toml) indexes components, related products and intended homes,
 including Companion and reusable Context/Realtime capabilities. Intended homes do
-not certify available APIs. The [family agreement](contracts/family.v1-candidate.md)
+not certify available APIs. The [family agreement](contracts/composition.md)
 owns their boundaries; serving repositories own setup, API definitions and tests.
 The [ACP connection library](crates/acp-connection/README.md) is shared code,
 not a required service.

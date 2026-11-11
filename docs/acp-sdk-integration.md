@@ -3,7 +3,7 @@
 The protocol owner's SDK handles protocol types, framing, request correlation,
 callbacks and connection lifecycle. Constellation services own application
 meaning: identity, source and audience, work authority, context and delivery.
-The [SDK agreement](../contracts/protocol-sdk.v1-candidate.md) governs this split.
+The [SDK agreement](../contracts/engine-compatibility.md) governs this split.
 
 ## Reuse the protocol integration
 

@@ -50,7 +50,7 @@ through **MCP** or a supported service interface. Results return to the intended
 conversation. Observatory uses installations' management interfaces to observe
 and manage them without taking ownership of their state or permissions.
 
-The [family agreement](../contracts/family.v1-candidate.md#what-crosses-each-connection)
+The [family agreement](../contracts/composition.md#what-crosses-each-connection)
 defines these boundaries; each serving component owns its exact API.
 
 ## What working together should feel like

@@ -36,7 +36,7 @@ Revisit these wrappers when updating the upstream SDK. Replace stream adapters,
 queues, or flush tracking when upstream offers the equivalent integration.
 Keep protocol framing, ID allocation, correlation, cancellation, and dispatch
 upstream; do not add a second protocol implementation here. See the
-[SDK contract](../../contracts/protocol-sdk.v1-candidate.md).
+[SDK contract](../../contracts/engine-compatibility.md).
 
 ## Validation
 

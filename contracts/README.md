@@ -1,58 +1,41 @@
-# Find the agreement you need
+# Shared promises
 
-Read the [family agreement](family.v1-candidate.md) for composition and ownership,
-and the [interaction agreement](experience.v1-candidate.md) for behavior that
-consumers can rely on. Then choose only the boundaries relevant to the next
-outcome. This is a map of intended promises, not a feature or release inventory.
+The [vision](../docs/VISION.md) explains the outcome. These six agreements cover
+the responsibilities that must hold across independently owned parts. Read the
+one your work changes; follow its links when you need the exact interface.
 
-The family and interaction agreements define shared design commitments. Other
-documents or sections retain their stated acceptance scope; candidate wording
-does not silently become an agreement. Detailed component APIs remain the definition of
-what an actual implementation exposes. Inspect and test that implementation
-when choosing work or claiming support.
+| Agreement | Question it answers |
+| --- | --- |
+| [Composition](composition.md) | Who owns each part, and how can we build on it independently? |
+| [Interaction](interaction.md) | How do we protect human attention and return truthful, useful results? |
+| [Work authority](work-authority.md) | Who can assign, change, delegate or stop work, and within what limits? |
+| [Work continuity](work-continuity.md) | How does work incorporate new input and survive interruption without loss or repetition? |
+| [Installations](installations.md) | How do setup, connections, updates and recovery preserve the agent and its work? |
+| [Engine compatibility](engine-compatibility.md) | What can a client rely on across engines, protocols and model choices? |
 
-## Shared service and consumer boundaries
+Each agreement names its audience, promise, checks and choices left open. Intended
+behavior is not proof of deployed support. Optional capabilities require the
+serving implementation's advertised contract; a documentation change does not
+activate them. [Converge](https://github.com/microsoft/amplifier-converge) governs
+how owners settle changes and carry them into affected work.
 
-| If your work changes… | Shared agreement | Implementation responsibility |
-| --- | --- | --- |
-| How independent components compose, operate and share ownership | [Family](family.v1-candidate.md) | Affected service owners; the umbrella owns the common expectation. |
-| Source, audience, destination and equivalent authorized controls | [Interaction](experience.v1-candidate.md) | Experiences and connectors, with the services they consume. |
-| Protocol integration or an optional extension | [Official SDKs](protocol-sdk.v1-candidate.md) | ACP owns its standard; each component owns its integration. |
-| New input during accepted work | [Input continuity](input-continuity.v1-candidate.md) | Source adapter, Instance routing and the selected engine. |
-| Public speech and truthful delivery | [Conversation delivery](conversation-delivery.v1-candidate.md) | Shared assembly behavior and each destination adapter. |
-| Work indicators rather than speech | [Activity](adapter-activity.v1-candidate.md) | The presenting experience or connector. |
-| Human requests, limits, Stop or authorized help | [Task admission](task-admission.v1-candidate.md) | Authenticated intake and the owner of the resource being acted on. |
-| Ambient participation | [Attention](attention.v1-candidate.md) | Optional Instance policy; adapters supply source facts. |
-| Human priority and observed activity | [Human engagement](human-engagement.v1-candidate.md) | Instance policy, engine input and domain operation owners. |
-| Peer awareness, handoffs or returning the result | [Collaboration](collaboration.v1-candidate.md) | Participants, source services and destination adapters. |
-| Long execution, compaction or delivery receipts | [Harness lifecycle](harness-lifecycle.v1-candidate.md) | Selected engine, host and source-delivery owners. |
-| Compact current context without losing originals | [Context snapshots](context-snapshots.v1-candidate.md) | Context producers and the consuming engine. |
-| Model selection or provider compatibility | [Model support](model-support.v1-candidate.md) | The engine and its configuration clients. |
-| Saved connection setup or Connect/Disconnect | [Service connections](service-connections.v1-candidate.md) | Instance registry/helper and the domain installation. |
-| Updates and connected-work recovery | [Installation updates](installation-updates.v1-candidate.md) | Installation-owned providers and lifecycle participants. |
-| Portable individual imagery | [Agent appearance](agent-appearance.v1-candidate.md) | Installed identity and consuming connectors; a scoped convention, not a product UX. |
+## Technical detail
 
-## Go to the interface owner for details
+Exact wire formats, configuration and executable checks belong with their owner:
 
-- **Agent/client interaction:** [ACP](https://agentclientprotocol.com/) and
-  [Instance's attach boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md).
-- **Tools and context:** [native tool connections](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/architecture.md#model-and-tools)
-  and [authorized source continuity](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/conversation-continuity.md).
-- **Installed-agent controls:** [Instance API](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/api.md),
-  [saved connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md)
-  and [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md).
-- **Fleet observation and management:** [Observatory interfaces](https://github.com/microsoft/amplifier-constellation-observatory/blob/main/docs/contracts.md).
-- **Conversation services:** [API](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/api.md)
-  and [huddles](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
-- **Domain operations:** [Slack](https://github.com/microsoft/amplifier-acp-slack),
-  [Teams](https://github.com/microsoft/amplifier-acp-teams) and
-  [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft).
+| Boundary | Definition |
+| --- | --- |
+| Agent/client protocol | [ACP](https://agentclientprotocol.com/) · [Instance attach](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md) |
+| Social participation and active awareness | [Instance attention](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/attention.md) · [conversation continuity](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/conversation-continuity.md) |
+| Tools, context and engine input | [Runtime architecture](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/architecture.md) · [steering](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md) |
+| Installation controls | [Instance API](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/api.md) · [connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md) · [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md) |
+| Conversation services | [API](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/api.md) · [huddles](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md) |
+| Fleet controls | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory/blob/main/docs/contracts.md) |
 
-[family.toml](../family.toml) locates all components. Protocol namespaces retain
-their compatibility meaning even when repository names differ. A custom extension
-is not made standard by its name or by appearing in this map.
+[family.toml](../family.toml) locates connector and other component repositories.
+Focused [reference material](../reference/README.md) retains shared specifications
+without another authoritative home. It is not prerequisite reading for every
+contributor. Older contract URLs contain pointers only, so existing links remain
+useful without preserving a competing agreement.
 
-For a shared-promise change, identify affected producers and consumers, preserve
-or explain compatibility, and check the combined outcome. The
-[working guide](../docs/working-together.md) shows how to do that without making
-ordinary implementation depend on another approval.
+<a id="go-to-the-interface-owner-for-details"></a>
