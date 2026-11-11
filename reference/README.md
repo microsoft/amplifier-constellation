@@ -6,8 +6,8 @@ Start with the [six agreements](../contracts/README.md) for cross-component prom
 | Specification | Why it remains here |
 | --- | --- |
 | [Public speech](../crates/acp-connection/docs/public-speech.md) | Shared message assembly and optional completion metadata, beside the common collector. |
-| [Maintenance and source receipts](maintenance-and-source-receipts.md) | Exact optional Instance profiles not fully described in its broader API guide. |
-| [Refreshed context envelope](context-envelope.md) | Shared producer fields and bounds; Runtime owns model-view processing. |
+| [Maintenance and source receipts](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/harness.md) | Instance owns the exact optional profiles and implementation checks. |
+| [Refreshed context envelope](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/architecture.md#refreshed-client-context) | Runtime owns producer fields, bounds and model-view processing. |
 | [Agent portraits](agent-portraits.md) | The accepted portable visual convention, independent of product layout. |
 
 These specifications do not require universal feature adoption. Capability

@@ -85,7 +85,7 @@ connection drops, the agent reconciles delivery and effects before continuing.
 
 8. **Keep maintenance and observation truthful.** Supported maintenance runs with
    action authority closed and no work lease; require matching completion before
-   rechecking existing authority. Optional [maintenance/source receipts](../reference/maintenance-and-source-receipts.md)
+   rechecking existing authority. Optional [maintenance/source receipts](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/harness.md)
    add evidence, not tasks or replay rights. Keep activity separate from public
    speech and private reasoning. Report input state, linkage, retries and actual
    progress without exposing raw content or credentials. Distinguish bytes, tokens,
