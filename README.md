@@ -42,16 +42,37 @@ parallel release history or gap inventory.
 | Independent collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
 | Optional administration across independent installations | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
 
-[family.toml](family.toml) is the machine-readable repository map. The small
+[family.toml](family.toml) is the machine-readable repository map. Its existing
+components, related products and planned homes are separate; an entry does not
+claim an interface is implemented or an extraction is complete. The small
 [ACP connection library](crates/acp-connection/README.md) is a shared code
 integration, not a required running service. Concrete APIs, setup instructions,
 compatibility and tests belong to their component owners.
 
 Slack, Teams and Minecraft connect their platforms. Bespoke web/native products
 can compose the same services. [Amplifier Unified](https://github.com/microsoft/amplifier-unified)
-is a planned consumer; that connection is not claimed as implemented here.
+is an existing product with a planned Constellation connection.
 The native Runtime and the separate [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
 are distinct engines. Standard ACP and negotiated capabilities allow alternatives.
+
+## Products and shared platform homes
+
+The [family agreement](contracts/family.v1-candidate.md#planned-products-platforms-and-clients)
+defines the intended ownership split. These are planned homes or extractions,
+not an availability report. The repository names below are under `microsoft/`.
+
+| Area | Intended homes |
+| --- | --- |
+| Companion product | `amplifier-companion`; the preview currently lives in Conversations |
+| Shared work and outputs | `amplifier-platform-scheduling`, `amplifier-platform-workspaces`, `amplifier-platform-resources`, `amplifier-platform-operations`, `amplifier-platform-publishing`, `amplifier-platform-portability` |
+| Shared interaction and information | `amplifier-platform-canvas`, `amplifier-platform-realtime`, `amplifier-platform-context` |
+| Browser and native client foundations | `amplifier-client-web`, `amplifier-client-windows`, `amplifier-client-linux`, `amplifier-client-macos`, `amplifier-client-ios`, `amplifier-client-android` |
+
+Use these shared capabilities across Unified and Constellation experiences where
+their interfaces fit. Conversations remains the owner of rooms, membership,
+messages and huddles. Detailed platform contracts stay with their serving owners;
+this index links them rather than keeping another copy. Repository separation
+does not require a separate running service for each capability.
 
 ## Make a contribution fit
 

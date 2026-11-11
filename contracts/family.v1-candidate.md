@@ -19,6 +19,66 @@ The [registry](../family.toml) locates repositories. It is documentation, not a
 required provisioning service or a grant of access. Repository count does not
 determine ownership: one owner can carry several components or an assembly.
 
+## Planned products, platforms and clients
+
+Constellation and Amplifier Unified compose a shared ecosystem. The planned
+repository homes below allocate responsibility; they do not establish available
+APIs, completed extractions or running services. Intended homes are recorded under
+`planned_repository` in the [registry](../family.toml); this does not assert that
+each repository is absent. Creating or preparing a repository does not move
+existing implementation, state or consumer dependencies.
+
+This section records the composition boundary with Constellation. Unified's
+[component-boundary contract](https://github.com/microsoft/amplifier-unified/blob/main/contracts/component-boundaries.v1.md)
+retains its rules for its own composition; its
+[repository map](https://github.com/microsoft/amplifier-unified/blob/main/docs/architecture/repositories.md)
+locates the existing extraction boundaries. The platform names here are the
+agreed target homes. Each serving owner defines its concrete interface and
+compatibility tests; consumers link to that definition. During extraction the
+existing owner remains authoritative until the interface moves with it. Product
+visions describe their intended experience. Guides,
+registry entries and diagrams navigate these homes rather than defining parallel
+promises. Reusable platform code can be a library or an independently operated
+service; repository separation does not require a central deployment.
+
+### Products and client foundations
+
+| Home | Intended responsibility |
+| --- | --- |
+| `amplifier-unified` | Own the Unified product experience and how it composes shared capabilities. Its planned Constellation connection uses the same owned interfaces as other consumers. |
+| `amplifier-companion` | Own the Companion product: contacts, calls, voice/camera interaction, shared presentation and return of useful results. Product interaction and consent stay here; agent identity, reasoning and source conversations retain their owners. |
+| `amplifier-client-web`, `amplifier-client-windows`, `amplifier-client-linux`, `amplifier-client-macos`, `amplifier-client-ios`, `amplifier-client-android` | Own reusable browser/device integration and client foundations. Products select the foundations they need while retaining their own UX and outcome responsibility. A client shell does not become the owner of agent history, work authority or every product's behavior. |
+
+Companion's preview currently lives in Conversations. Its planned product home
+allows independent development; it does not take rooms, membership, messages or
+huddles out of Conversations. The existing Conversations repository remains their
+home. There is no second conversation service or repository rename in this plan.
+
+### Reusable platform capabilities
+
+The seven capabilities being established for Unified and the Context and Realtime
+homes are intended for reuse across products. These are responsibility boundaries;
+exact operations and implementation choices remain with the serving owners.
+
+| Planned home | Intended responsibility and boundary |
+| --- | --- |
+| `amplifier-platform-scheduling` | Own scheduling and trigger semantics. A due trigger requests work through the receiver's admission and authority rules; it does not renew a task or authorize effects. |
+| `amplifier-platform-workspaces` | Own reusable workspace organization and associations among work, people and resources. Workspace membership does not silently grant access to every linked source or agent session. |
+| `amplifier-platform-resources` | Own reusable file/artifact identity, content, metadata, revisions and authorized retrieval. This does not allocate compute or become a credential/provisioning authority. |
+| `amplifier-platform-operations` | Own durable observations of operations, questions and tasks, with outcome correlation. This is an observation journal; executors retain control of the underlying work and effects. |
+| `amplifier-platform-publishing` | Own immutable built-output snapshots and their supported preview, review, deployment and rollback lifecycle. Callers retain build and source authorization; publication does not certify an output's claims. |
+| `amplifier-platform-portability` | Own supported export, import and transfer between compatible homes. A transfer does not silently migrate opaque engine history, expand grants or renew work. |
+| `amplifier-platform-canvas` | Own reusable content and interaction primitives for a shared visual surface. Products own the experience; presentation or editing alone does not mean sending, approval or completion. |
+| `amplifier-platform-realtime` | Own reusable live voice/media connection and interruption support. Products own call behavior and consent; selected ACP engines retain backend reasoning, tool execution and saved agent sessions. Media transport is not a replacement agent protocol. |
+| `amplifier-platform-context` | Own reusable source discovery, authorized retrieval and context selection with provenance and coverage. Sources retain records and current access rules; Instance retains installation configuration and grants; engines retain execution history and model-context handling. |
+
+Adopt these shared capabilities where they fit rather than building parallel
+Constellation versions. Extract existing code through an explicit compatibility
+transition with affected consumers. No new platform repository is an implicit
+dependency of every installation or a universal identity, memory or credential
+service. Existing [self-contained installation](#self-contained-installation-baseline)
+and [information ownership](#information-ownership) commitments still apply.
+
 ## Information ownership
 
 The components preserve different kinds of records. Displaying or retrieving a

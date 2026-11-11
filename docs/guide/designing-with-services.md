@@ -15,6 +15,7 @@ choosing the next experiment.
 | --- | --- |
 | What is the value we are trying to create? | [Vision](../VISION.md) |
 | Which part owns identity, reasoning, conversations or domain access? | [Family responsibilities](../../contracts/family.v1-candidate.md#responsibilities-and-connections) |
+| Where do Companion, Unified, shared platforms and device clients fit? | [Planned product, platform and client boundaries](../../contracts/family.v1-candidate.md#planned-products-platforms-and-clients) |
 | What keeps conversations, execution history, assignments and effects distinct? | [Information ownership](../../contracts/family.v1-candidate.md#information-ownership) |
 | What do ACP, MCP and service APIs carry; who owns voice/media transport? | [Interface responsibilities](../../contracts/family.v1-candidate.md#interface-responsibilities) |
 | What must follow a request through execution and delivery? | [Interaction agreement](../../contracts/experience.v1-candidate.md) |
@@ -25,6 +26,26 @@ These agreements are the source of the roles and meanings illustrated here and i
 [the visual tour](index.html). The guide is a reading aid: deleting it would not
 remove a requirement. A changed commitment belongs in its authoritative home,
 with its affected examples reviewed in the same change.
+
+## Place the idea at the right level
+
+Companion and Unified are product experiences. A product owner decides how people
+ask, inspect, redirect and receive results. The planned client repositories supply
+reusable support for web, Windows, macOS, Linux, iOS and Android; choosing one does
+not create another agent identity or move domain permissions into the client.
+
+The planned platform repositories give products places to reuse work organization,
+resources and operations, canvas and publishing, portability, realtime media and
+context access. An idea can deepen one of those capabilities without rebuilding
+an entire product. These are intended ownership homes, not claims that their
+interfaces or integrations are available. Use the [family agreement](../../contracts/family.v1-candidate.md#planned-products-platforms-and-clients)
+for the boundaries and [repository map](../../family.toml) for the homes.
+
+For example, Companion's shared board could use Canvas while Companion owns its
+call experience. A quiet work huddle still uses Conversations or a suitable source
+platform; the product returns the meaningful result where the person asked. Source
+records keep their original audience, and a scheduled operation still needs the
+authority required by its engine and domain.
 
 ## Work through an idea: a launch-readiness brief
 
@@ -60,8 +81,9 @@ within the same promises can be tried by the experience owner independently.
 | A better way for people to inspect, ask or redirect | An experience | Instance and conversation controls, domain evidence and delivery. |
 | Access to a new system or a useful new action | A connector or tool service | The system's identity/access model, ACP engine and existing source/delivery paths. |
 | Better reasoning, tool use or long-work continuation | The engine | Provider integration and the domain's actual outcome evidence. |
-| Better information across conversations | The source/context owners | Instance retrieval and engine context use, with original audiences preserved. |
+| Better information across conversations | The source/context owners, including the planned Context capability | Existing source access, Instance retrieval and engine context use, with original audiences preserved. |
 | Quieter coordination and meaningful reports | Conversation and delivery owners | Existing participation policy, huddles and the originating connection. |
+| A reusable shared board, live-media path or work platform capability | The relevant planned platform owner | Product experiences and existing serving owners; agree the interface before depending on it. |
 | A new end-to-end workflow | One owner for the outcome, working with affected service owners | The smallest useful combination of these parts; a new workflow need not create a new central service. |
 
 Bring a short example: who benefits, what they should be able to accomplish, what
