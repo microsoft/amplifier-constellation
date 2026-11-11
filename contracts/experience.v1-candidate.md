@@ -1,6 +1,6 @@
-# Interaction across services and experiences — v1 candidate
+# Interaction across services and experiences — v1
 
-Review draft. For services, connectors and the experiences that compose them.
+For services, connectors and the experiences that compose them.
 This defines shared interaction meaning, not a prescribed product UX. Existing
 control panels and previews do not establish the design of future experiences.
 

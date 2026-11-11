@@ -1,6 +1,6 @@
 # Amplifier Constellation
 
-Review draft. This defines the shared services and behavior we want. Product
+This defines the shared services and behavior we want. Product
 experiences remain open to design; existing development and administration
 screens do not establish the intended UX.
 
@@ -56,7 +56,9 @@ agent's history or authority. A model, an engine session, an individual and an
 assignment remain distinct.
 
 These boundaries also let the people building Constellation lead substantial
-areas in parallel. Owners can deepen a capability and make local choices while
+areas in parallel. Early prototypes do not bound the ambition or the depth of
+future investment. Ownership boundaries can evolve as people reshape the system
+together. Owners can deepen a capability and make local choices while
 others rely on its agreed interfaces. They draw on one another's expertise when
 it can improve the outcome and realign when a shared promise changes. We use
 [Converge](https://github.com/microsoft/amplifier-converge) to carry that direction

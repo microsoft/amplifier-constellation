@@ -1,6 +1,6 @@
-# Family composition and ownership — v1 candidate
+# Family composition and ownership — v1
 
-Review draft. For owners of Constellation services, connectors and consumers.
+For owners of Constellation services, connectors and consumers.
 The promise: independently useful parts can be developed and operated separately
 while keeping the behavior that others rely on.
 
@@ -19,6 +19,43 @@ The [registry](../family.toml) locates repositories. It is documentation, not a
 required provisioning service or a grant of access. Repository count does not
 determine ownership: one owner can carry several components or an assembly.
 
+## Information ownership
+
+The components preserve different kinds of records. Displaying or retrieving a
+record does not transfer its ownership or create another authoritative copy.
+
+| Record | Owner and meaning |
+| --- | --- |
+| Installed identity and configuration | Instance, when used, owns the individual's installation settings and exposed controls. |
+| Conversation, membership and original messages | The source platform or conversation service owns its conversations and current access rules. Conversations does not replace every platform's store. |
+| Model execution history and continuation state | The selected engine owns its session format and execution recovery. Source access and domain-effect recovery remain with their respective owners. |
+| Responsibility or assignment | The service that accepts it owns the record under its contract. Instance can expose responsibility records; a domain can own its task and effect limits. Recording work, starting it and authorizing effects remain distinct; no universal task database is required. |
+| Actual external state | The external system owns what exists there. A connector or domain service records action attempts, observed results and uncertainty; its receipt is evidence, not a substitute for the external state. |
+| Context access | The source's current authorization governs retrieval. A supplied excerpt retains provenance and coverage and does not itself grant access. |
+| Display and draft state | The experience owns its supported view state; selecting or drafting does not imply sending or authorizing work. |
+
+## Interface responsibilities
+
+ACP carries client/engine interactions: capability discovery, supported sessions,
+input, output, tool activity, permissions and cancellation. MCP exposes declared
+tools and context. Service APIs expose their owner's resources and supported
+operations. These are separate responsibilities, not a universal envelope or a
+requirement for every client to use every interface.
+
+A connector can be both an ACP client bringing platform input to an agent and a
+tool/context service exposing permitted domain access. Its domain retains source
+attribution, delivery and effect enforcement. The selected engine owns its
+backend reasoning-provider integration. An experience may separately own voice
+or media transport through its provider interface; this does not make those
+protocols part of ACP or move backend reasoning ownership into the experience.
+
+Exact operations, fields, supported versions and failure behavior belong to the
+serving component or upstream protocol. The [interface map](README.md#go-to-the-interface-owner-for-details)
+links those definitions. Inspect the actual producer and consumer before relying
+on optional behavior. Shared outcome meanings live in the
+[interaction agreement](experience.v1-candidate.md), including the distinction
+between receipt, execution, delivery and verified completion.
+
 ## Design commitments
 
 1. **Keep a standard agent boundary.** Ordinary ACP is sufficient for a compatible
@@ -30,7 +67,11 @@ determine ownership: one owner can carry several components or an assembly.
 2. **Give each promise one home.** The serving component owns its detailed schema
    and behavior tests. Consumers use declared interfaces, not another component's
    private database or files. Shared expectations live here; guides link to them
-   rather than making competing definitions.
+   rather than making competing definitions. Vision explains intended value;
+   contracts hold commitments; guides and diagrams illustrate and navigate them.
+   Removing a guide must not remove a commitment. When a promise changes, inspect
+   its linked examples in the same change rather than maintaining a separate
+   synchronization inventory.
 3. **Preserve identity and scope deliberately.** Different individuals retain
    separate identities, state and credentials. The same individual's connections
    retain distinct conversations, audiences and working sessions. Sharing context

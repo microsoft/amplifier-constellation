@@ -61,8 +61,8 @@ implementation decisions stay with that owner. A change to a shared promise
 identifies affected consumers and is settled with the responsible owners before
 dependent work relies on it.
 
-The umbrella revision is a review draft. Accepted design commitments retain their
-scope; a new draft or a diagram does not ratify new interfaces. Read only the
+Accepted design commitments retain their scope; a new proposal or a diagram
+does not ratify new interfaces. Read only the
 contracts relevant to your work. Keep implementation details and private evidence
 out of the shared vision, and evaluate actual behavior when making a claim.
 

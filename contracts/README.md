@@ -5,9 +5,9 @@ and the [interaction agreement](experience.v1-candidate.md) for behavior that
 consumers can rely on. Then choose only the boundaries relevant to the next
 outcome. This is a map of intended promises, not a feature or release inventory.
 
-The family and interaction revisions are review drafts. Documents or sections
-explicitly marked as accepted retain that scope; candidate wording does not
-silently become an agreement. Detailed component APIs remain the definition of
+The family and interaction agreements define shared design commitments. Other
+documents or sections retain their stated acceptance scope; candidate wording
+does not silently become an agreement. Detailed component APIs remain the definition of
 what an actual implementation exposes. Inspect and test that implementation
 when choosing work or claiming support.
 

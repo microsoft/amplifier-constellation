@@ -29,31 +29,40 @@ assignment or PR can hold the working agreement:
 The actual assignment supplies the people and permissions. This example does
 not assign ownership or grant access to a partner's installations.
 
-## Three peers, one useful experience
+## Bring a third owner into an emerging ecosystem
 
-Consider an illustrative initiative: a person asks for work in a conversation,
-agents coordinate quietly, and the result returns with evidence. Three peers could lead
-**conversation services**, **the installed agent**, and **domain connections**. Those
-are possible outcome boundaries, not a proposed organization chart.
+Two people are shaping persistent agent services and connections. Each directs
+substantial work with agents. A third colleague wants to contribute; the early
+prototypes barely suggest the capabilities and investment ahead. The shared task
+is deciding how to develop that larger system together.
 
-At first, “return the result” might mean different things to each owner. The
-conversation-service owner expects a result that a future client can present.
-The installation owner has recorded that a request was accepted. The connector
-owner can show an action finished. Walking through one example exposes the gap: acceptance is not
-completion, and completion is not delivery. The owners agree on the observations
-needed between their parts and name who verifies the whole journey.
+“The same teammate across experiences” sounds aligned until the owners explore
+what it means. What follows an individual between conversations? Who may see it?
+Where does ongoing work live? They use the vision and relevant contracts to
+expose different interpretations and agree what each part can rely on. A precise
+interface may matter, but no one needs to learn every implementation detail.
 
-Each person then directs their own agents: investigate, implement, integrate,
-check, repair and report. They continue making judgments about priorities,
-investment and quality. Agents prepare evidence and carry operational work;
-the initial agreement is not a substitute for that ongoing leadership.
+The newcomer brings experience-design expertise and challenges the direction:
+people should be able to understand and redirect work without following every
+agent exchange. That can change investment in identity, context, conversation
+services and execution, as well as future UX. Possible areas of ownership include
+persistent agents, collaboration and connections, and human experiences; these
+are illustrative responsibilities, not assigned partners or repository quotas.
 
-A colleague with design expertise tries a correctly implemented result and
-finds that it still demands too much attention. Their contribution may change
-what the team wants, not merely catch a defect. The outcome owner brings the
-relevant example, current promise, evidence and uncertainty. The colleague can
-challenge the question, then return to their own work. The resulting decision
-reaches the agreement, active assignments, implementation and checks.
+The owners settle the shared behavior and choose a small combined trial. Each
+continues leading priorities, judgment and investment in their area. Their agents
+investigate, build, verify and repair within the agreement. Independent service
+work continues while a consequential shared choice is being resolved.
+
+Suppose the trial still demands too much human attention. The owners can revise
+the intended behavior, not merely tune an existing screen. They carry the decision
+into affected contracts, assignments and checks, preserving useful work. Other
+capability development keeps moving. An internal improvement that preserves the
+promises remains its owner's decision.
+
+The [launch-brief example](guide/designing-with-services.md#work-through-an-idea-a-launch-readiness-brief)
+shows one possible use of the services. It helps inspect their connections; it
+does not represent the full ambition or depth of any owner's area.
 
 ## Know which changes need shared attention
 

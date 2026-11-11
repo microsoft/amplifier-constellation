@@ -17,7 +17,9 @@ by default.
   work. Do not add routine approval gates.
 - Give shared promises one home. Keep detailed schemas, protocol behavior and
   tests with their serving component; link them here. Guides and diagrams explain
-  those promises and do not create a second API specification.
+  those promises and do not create a second API specification. Removing a guide
+  must not remove a commitment. When changing a promise, review its linked
+  examples in the same change; do not create a separate synchronization ledger.
 - Name an outcome owner, affected connections and a meaningful combined check in
   the existing work record. Carry changed direction into active work; a document
   edit alone is not completion.
