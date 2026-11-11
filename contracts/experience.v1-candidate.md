@@ -1,125 +1,83 @@
 # Interaction across services and experiences — v1
 
-For services, connectors and the experiences that compose them.
-This defines shared interaction meaning, not a prescribed product UX. Existing
-control panels and previews do not establish the design of future experiences.
-
-## Who builds against this
-
-Conversation experiences, platform connectors, agent services, and management
-interfaces share these expectations. A platform-specific adapter owns the
-translation to its platform's presentation, routing, and access rules.
-
-## What it is
-
-An experience submits a scoped interaction and shows the result at its source.
-The diagram is conceptual; exact payloads belong to the producing component.
-
-```text
-actor + conversation + audience + optional thread + destination
-  -> authorized ACP interaction or management operation
-  -> recorded outcome
-  -> delivery in the intended place
-```
+For experiences, connectors, agent services and management clients. The promise:
+a scoped request retains its meaning through execution and return. Product UX
+and platform presentation remain with their owners.
 
 ## Promises
 
-1. **Keep the originating scope.** Actors, conversations, threads, and destinations
-   remain identifiable through execution and delivery. A late reply cannot move
-   to a newly selected conversation or a different audience.
-2. **Context does not grant access.** An excerpt or persona instruction cannot
-   authorize a tool or expose another conversation. Current source grants and
-   destination membership govern retrieval and sharing.
-3. **Use the same admitted action.** Whatever UX is designed, clicks, keyboard,
-   voice, CLI, and agents reach the same service operation and permission checks.
-   UI-only actions are defects
-   when they prevent an authorized assistant from operating the app for a person.
-4. **Expose meaningful view state.** Navigation, selection, drafts, focus, and
-   other meaningful visible state have a documented programmatic path. Revision
-   checks prevent a stale controller from overwriting a person's newer intent.
-5. **Preserve the individual across places.** Connections identify the agent
-   implementation and the installed individual where available. Recognizing the
-   same agent does not imply a single transcript or unrestricted shared memory.
-6. **Participation respects the interaction.** Direct or explicitly addressed
-   messages normally receive a response. Group participation supports silence,
-   avoids duplicate contributions, and distinguishes discussion from an accepted
-   assignment. These are experience behaviors, not invented ACP capabilities.
-7. **Show capabilities and failures honestly.** Negotiate callbacks and content
-   types before using them. Preserve a saved session when authentication fails;
-   do not silently create a replacement or replay uncertain side effects.
-8. **Separate outcomes from claims.** Receipt, tool execution, delivery, artifact
-   verification, and requester acceptance are different observations. Reports
-   name the exact artifact and check rather than turning an agent's claim into
-   proof that the user's larger task is complete.
-9. **Minimize the complete setup journey.** Measure user and administrator
-   decisions, clicks, app switches, copy/paste, and recovery steps together.
-   Reuse known configuration and automate credential handling where the platform
-   permits it. Preserve the [self-contained installation baseline](family.v1-candidate.md#self-contained-installation-baseline);
-   a shared setup service must not become a prerequisite for a simple UI.
+1. **Preserve origin and destination.** Keep actor, conversation, audience, thread
+   and destination identifiable. A late response cannot follow a changed screen
+   selection into another conversation.
+2. **Respect source access.** Context, persona and recognized identity grant no
+   access. Current source grants and destination membership govern retrieval and
+   sharing; the same individual does not imply one transcript.
+3. **Offer equivalent controls.** UI, voice, CLI and agents use the same admitted
+   service operations and permissions. Meaningful navigation, selection, drafts,
+   focus and view state have documented programmatic access. Revision checks
+   protect newer human intent from stale writes. Authorized assistants must not
+   be blocked by UI-only actions.
+4. **Participate appropriately.** Normally respond to direct/addressed input;
+   allow silence and avoid duplicate contributions in groups. Discussion is not
+   acceptance of an assignment. Connections identify implementation and installed
+   individual where available.
+5. **Be honest about support and outcomes.** Negotiate callbacks/content types.
+   Authentication failure preserves the saved session, without replacement or
+   uncertain-effect replay. Receipt, execution, delivery, artifact verification
+   and requester acceptance are distinct; reports identify the artifact and check.
+6. **Minimize total setup effort.** Reuse configuration and automate credentials
+   where allowed. Count decisions, clicks, switches, copying and recovery for
+   administrators too. Preserve [self-contained installations](family.v1-candidate.md#self-contained-installation-baseline).
+7. **Show useful activity.** Once committed to a response, show scoped present-tense
+   tool activity, falling back to Thinking… for model wait; clear it on settlement.
+   Use the richest supported indicator under [adapter activity](adapter-activity.v1-candidate.md).
+8. **Let input continue work.** Steer through negotiated capability or queue for
+   the next supported boundary. Preserve attribution, order, revisions, audience,
+   completed results and unchanged approvals. Receipt is not incorporation; extra
+   guidance is not Stop. [Input continuity](input-continuity.v1-candidate.md) owns
+   the detailed promise.
 
-10. **Show scoped activity where supported.** After committing to a response, use
-    the experience's richest supported working indicator. Prefer informative
-    present-tense tool activity, with Thinking… as the model-wait fallback. Keep
-    the indicator in its response destination, and clear it when settled. Follow
-    the shared [adapter activity contract](adapter-activity.v1-candidate.md).
+## Protect attention, keep work visible
 
-11. **New input continues the work.** Deliver eligible follow-ups through the
-    negotiated steering capability, or queue them for the engine's next supported
-    boundary. An ordinary message does not implicitly cancel work, hide completed
-    results or dismiss an unchanged approval. Preserve authors, order, source
-    revisions and audience. Distinguish a durable receipt from incorporation and
-    an explicit stop from additional guidance. Follow the
-    [input continuity contract](input-continuity.v1-candidate.md).
+Routine coordination belongs in a discoverable conversation accessible to the
+authorized human audience. People can inspect without prompting an agent, or
+join active brainstorming. Access, notification/spoken delivery and authority
+to act are separate.
 
-12. **Protect human attention without hiding the work.** Routine agent
-    coordination uses an appropriate discoverable conversation with access for
-    the authorized human audience. Access, notification or spoken delivery, and
-    authority to act are separate. Support inspection without prompting an agent
-    or following every exchange. Meaningful progress, results, changed commitments
-    and requests for human judgment return to the original authorized destination;
-    an existing responsibility to report is not optional ambient news. Preserve
-    useful multi-agent participation when people are working with the group.
-    Reuse the existing participation policy and delivery path, not a second
-    classifier or a blanket reply quota. Document notification limits and an
-    honest fallback where the platform lacks a quiet, observable destination.
-    Reuse an appropriate authorized conversation before creating one. Where a
-    platform has no suitable room, an independently configured Conversations
-    service may be an optional fallback. If none is available, explain the limit
-    without claiming hidden coordination or flooding the human channel. Concrete
-    room operations belong to the [huddle service](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
+Meaningful progress, results, changed commitments and decisions needing judgment
+return to the original authorized destination. Reporting an accepted responsibility
+is not optional ambient news. Retain important dissent and uncertainty. Reuse
+existing participation/delivery policy, not another classifier or blanket quota.
+
+Reuse an appropriate authorized conversation before creating one. Document platform
+notification limits. Where no suitable room exists, an independently configured
+Conversations service may supply a fallback; otherwise explain the limitation
+without claiming hidden coordination or flooding the channel. Concrete operations
+belong to the [huddle service](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
 
 ## Verification expectations
 
-These are acceptance checks to maintain, not a claim of complete coverage:
+- Compare UI/API effects with equivalent authority; reject stale view writes and
+  keep late replies in their original destination.
+- Revoke source access, then attempt cross-room retrieval. Reconnect after auth
+  failure without creating a replacement session or repeating work.
+- Compare direct requests, brainstorming and handoffs; retain artifact hashes,
+  evaluation, delivery and requester decisions as distinct evidence.
+- Follow a fresh setup through failure, recovery and first success, counting all
+  user and administrator steps.
+- Send follow-ups during model calls, tools and approval waits, with and without
+  steering and across disconnect. Check order, effects, approval continuity,
+  receipts and final destination.
+- Observe quiet coordination, inspection, joining and unfollowing. Measure
+  interruptions, useful contributions, missed decisions and comprehension effort;
+  distinguish Stop and revoked access.
+- Confirm a huddle link grants no access, inspection grants no work authority and
+  peer posts cannot become human instructions. Test notification preferences,
+  fallback and uncertain-delivery recovery: preserve source/time and evidence
+  without duplicate reports or replay.
 
-- Exercise UI and API paths with equivalent authority and compare their effects.
-- Attempt a stale view update and a late response after switching conversations.
-- Revoke a source grant and confirm it prevents subsequent cross-room retrieval.
-- Reconnect after an authentication failure without recreating or repeating work.
-- Compare a direct message with a group brainstorming and handoff scenario.
-- Preserve the artifact hash, evaluator result, delivery receipt, and requester
-  decision as distinct records.
-- Observe a fresh installation through first successful interaction, including
-  administrator work and a failed attempt followed by recovery. Report all
-  required interactions, not just the connector's buttons.
-- Send repeated updates during model calls, tools and an approval wait. Verify
-  input order, completed effects, approval continuity and the final reply's
-  destination. Repeat against a peer without steering and through a disconnect;
-  count actual effects and durable receipts rather than just visible replies.
-- Observe agents coordinating while a person works elsewhere, then that person
-  inspecting, joining a brainstorm and closing the view or unfollowing. Compare
-  interruptions, useful contributions, missed decisions and time needed to
-  understand the result. Preserve the distinct effects of Stop or access revocation.
-- Verify that a huddle link grants no access, inspection grants no work authority,
-  and an agent's post cannot be admitted as a new human instruction. Preserve
-  important dissent and uncertainty when reporting to the original audience.
-- Exercise notification preferences, an unsupported-platform fallback and a
-  reconnect after uncertain delivery. Verify original source/time, no duplicate
-  report or replay, and continued availability of the detailed evidence.
+## Left open
 
-## Outside this draft
-
-The contract does not require identical UI controls or callback capabilities in
-every host. Each host must document what it supports. It does not define a global
-human identity directory, a universal memory system, or automatic acceptance of
-work on a person's behalf.
+Controls and optional callbacks may differ by host; document supported behavior.
+This agreement creates no global identity directory, universal memory or automatic
+acceptance of work on someone's behalf.
