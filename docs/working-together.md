@@ -7,7 +7,7 @@ This guide applies them; it adds no approval process or required software.
 
 ## Get enough context to make a useful contribution
 
-Start with the [vision](VISION.md) and the [visual guide](guide/README.md).
+Start with the [vision](VISION.md), including its picture of the parts and their connections.
 Then read the contracts and component guidance for the boundary you will touch.
 Inspect the actual implementation and relevant evidence to establish the gap for
 your next outcome; do not rely on a maintained summary of what is missing. You
@@ -30,6 +30,8 @@ The actual assignment supplies the people and permissions. This example does
 not assign ownership or grant access to a partner's installations.
 
 ## Bring a third owner into an emerging ecosystem
+
+![Illustrative independent areas of ownership connected by shared promises](working-together.svg)
 
 Two people are shaping persistent agent services and connections. Each directs
 substantial work with agents. A third colleague wants to contribute; the early
@@ -60,7 +62,7 @@ into affected contracts, assignments and checks, preserving useful work. Other
 capability development keeps moving. An internal improvement that preserves the
 promises remains its owner's decision.
 
-The [launch-brief example](guide/designing-with-services.md#work-through-an-idea-a-launch-readiness-brief)
+The [working-together journey](VISION.md#what-working-together-should-feel-like)
 shows one possible use of the services. It helps inspect their connections; it
 does not represent the full ambition or depth of any owner's area.
 

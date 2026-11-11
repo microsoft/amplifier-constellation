@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000" role="img" aria-labelledby="title desc">
+<title id="title">The same agents, across the places you work</title>
+<desc id="desc">Five experiences contain conversations: Companion, Slack, Teams, Amplifier and Minecraft. A coordinator's Instance contains its runtime and connects to both a Companion call and a Slack conversation. A researcher's Instance also connects to that Slack conversation and a Teams discussion. A specialist's Instance connects to Amplifier and Minecraft. Thus one individual can participate in multiple conversations and multiple individuals can share one conversation. Lines represent participation through supported connections, not shared permission or a mandatory deployment. Amplifier integration is planned.</desc>
+<style>
+text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:#183b42}.title{font-size:42px;font-weight:700}.sub{font-size:23px;fill:#4b6570}.name{font-size:25px;font-weight:650}.label{font-size:21px}.small{font-size:19px;fill:#4b6570}.eyebrow{font-size:17px;letter-spacing:1.4px;font-weight:600;fill:#4b6570}.connection{fill:none;stroke:#527982;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.home{fill:#e7f1ed;stroke:#679386;stroke-width:2}.experience{fill:#f6f2e9;stroke:#d3c9b3;stroke-width:2}.conversation{fill:white;stroke:#c8c9c1;stroke-width:1.5}
+</style>
+<rect width="1440" height="1000" rx="18" fill="#fcfbf7"/>
+<text x="45" y="58" class="eyebrow">CONSTELLATION · PERSISTENT INDIVIDUALS, CONNECTED CONVERSATIONS</text>
+<text x="45" y="115" class="title">The same agents, across the places you work.</text>
+<text x="45" y="157" class="sub">Talk, collaborate and receive results where the work belongs.</text>
+<text x="45" y="209" class="eyebrow">EXPERIENCES · EACH CONVERSATION KEEPS ITS AUDIENCE AND HISTORY</text>
+<!-- Experiences own their interaction; the conversation may be supplied by their service. -->
+<g transform="translate(30 235)"><rect class="experience" width="260" height="170" rx="16"/><text x="20" y="39" class="name">Companion</text><rect x="16" y="58" width="228" height="91" rx="11" class="conversation"/><text x="31" y="94" class="label">A private call</text><text x="31" y="125" class="small">You + coordinator</text></g>
+<g transform="translate(310 235)"><rect class="experience" width="260" height="170" rx="16"/><text x="20" y="39" class="name">Slack</text><rect x="16" y="58" width="228" height="91" rx="11" class="conversation"/><text x="31" y="94" class="label">A project thread</text><text x="31" y="125" class="small">People + two agents</text></g>
+<g transform="translate(590 235)"><rect class="experience" width="260" height="170" rx="16"/><text x="20" y="39" class="name">Teams</text><rect x="16" y="58" width="228" height="91" rx="11" class="conversation"/><text x="31" y="94" class="label">A team discussion</text><text x="31" y="125" class="small">People + researcher</text></g>
+<g transform="translate(870 235)"><rect class="experience" width="260" height="170" rx="16"/><text x="20" y="39" class="name">Amplifier</text><rect x="16" y="58" width="228" height="91" rx="11" class="conversation"/><text x="31" y="94" class="label">A work conversation</text><text x="31" y="125" class="small">Connection planned</text></g>
+<g transform="translate(1150 235)"><rect class="experience" width="260" height="170" rx="16"/><text x="20" y="39" class="name">Minecraft</text><rect x="16" y="58" width="228" height="91" rx="11" class="conversation"/><text x="31" y="94" class="label">A world conversation</text><text x="31" y="125" class="small">People + specialist</text></g>
+<!-- Participation is many-to-many; no arrows imply command authority. -->
+<path class="connection" d="M160 405V458Q160 476 180 476H235Q250 476 250 496V565"/>
+<path class="connection" d="M425 405V440Q425 454 410 454H290Q270 454 270 476V565"/>
+<path class="connection" d="M455 405V490Q455 508 475 508H680Q700 508 700 528V565"/>
+<path class="connection" d="M720 405V565"/>
+<path class="connection" d="M1000 405V454Q1000 476 1020 476H1160Q1180 476 1180 496V565"/>
+<path class="connection" d="M1280 405V489Q1280 508 1260 508H1220Q1200 508 1200 528V565"/>
+<!-- Runtime is visibly inside its individual Instance home. -->
+<g transform="translate(100 565)"><rect class="home" width="320" height="244" rx="18"/><text x="25" y="42" class="name">Coordinator</text><text x="25" y="73" class="small">Instance · the agent's home</text><text x="25" y="111" class="label">Identity + responsibilities</text><rect x="22" y="133" width="276" height="88" rx="12" fill="white" stroke="#a2b8b4"/><text x="42" y="168" class="name">Runtime / engine</text><text x="42" y="199" class="small">Reasoning, tools, sessions</text></g>
+<g transform="translate(560 565)"><rect class="home" width="320" height="244" rx="18"/><text x="25" y="42" class="name">Researcher</text><text x="25" y="73" class="small">Instance · the agent's home</text><text x="25" y="111" class="label">Identity + responsibilities</text><rect x="22" y="133" width="276" height="88" rx="12" fill="white" stroke="#a2b8b4"/><text x="42" y="168" class="name">Runtime / engine</text><text x="42" y="199" class="small">Reasoning, tools, sessions</text></g>
+<g transform="translate(1020 565)"><rect class="home" width="320" height="244" rx="18"/><text x="25" y="42" class="name">Specialist</text><text x="25" y="73" class="small">Instance · the agent's home</text><text x="25" y="111" class="label">Identity + responsibilities</text><rect x="22" y="133" width="276" height="88" rx="12" fill="white" stroke="#a2b8b4"/><text x="42" y="168" class="name">Runtime / engine</text><text x="42" y="199" class="small">Reasoning, tools, sessions</text></g>
+<text x="45" y="861" class="label">Conversation services can supply shared rooms and quiet, inspectable work huddles.</text>
+<text x="45" y="899" class="small">People can inspect or join; meaningful results return to the original conversation.</text>
+<path d="M45 926H1395" stroke="#c9d4cf"/>
+<text x="45" y="960" class="small">Lines show participation through supported connections; this is not an integration or deployment checklist.</text>
+</svg>

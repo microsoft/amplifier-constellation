@@ -14,16 +14,17 @@ development and administration access; future experiences can take different for
 
 ## Get the lay of the land
 
-[![Constellation service map: experiences connect to independently owned agent, conversation and domain services](docs/guide/system-map.svg)](docs/guide/README.md)
+[![Persistent agents connect to conversations across experiences](docs/system-map.svg)](docs/VISION.md)
 
-| Start with | What it answers |
+Start with the [vision](docs/VISION.md): the spatial picture, definitions of the
+parts, their connections and the value for people. It is the approachable story;
+there is no separately authored guide to keep in sync.
+
+| Read next | What it answers |
 | --- | --- |
-| [Vision](docs/VISION.md) | What are we trying to make possible, and why? |
-| [Visual guide](docs/guide/README.md) · [browser tour](docs/guide/index.html) | What are the big parts, how do they connect, and where could I contribute? Open the tour locally; it is an explanatory document, not a running product. |
-| [Design with the services](docs/guide/designing-with-services.md) | What does each part do, what passes between them, and how could my idea fit? |
-| [Family agreement](contracts/family.v1-candidate.md) | What must remain dependable across independently owned parts? |
-| [Working together](docs/working-together.md) | How do people lead areas with agents, use one another's expertise and handle changes? |
-| [Contract map](contracts/README.md) | Which specific promise and interface matter for my next outcome? |
+| [Family agreement](contracts/family.v1-candidate.md) | What must remain dependable between independently owned parts? |
+| [Contract map](contracts/README.md) | Where is the exact promise or serving interface for my work? |
+| [Working together](docs/working-together.md) | How do owners and agents develop and combine their contributions? |
 
 We use [Amplifier Converge](https://github.com/microsoft/amplifier-converge) as the
 working method. Shared intent and agreements guide the work. Contributors inspect
@@ -51,28 +52,23 @@ compatibility and tests belong to their component owners.
 
 Slack, Teams and Minecraft connect their platforms. Bespoke web/native products
 can compose the same services. [Amplifier Unified](https://github.com/microsoft/amplifier-unified)
-is an existing product with a planned Constellation connection.
+implements the Amplifier experience, whose Constellation connection is planned.
 The native Runtime and the separate [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
 are distinct engines. Standard ACP and negotiated capabilities allow alternatives.
 
-## Products and shared platform homes
+## Experiences and their connections
 
-The [family agreement](contracts/family.v1-candidate.md#planned-products-platforms-and-clients)
-defines the intended ownership split. These are planned homes or extractions,
-not an availability report. The repository names below are under `microsoft/`.
+Companion, Slack, Teams, Minecraft and **Amplifier** are places where people can
+work with agents. This map shows their connections to Constellation. Amplifier's
+own clients, platforms and repository structure belong to its
+[separate ecosystem](https://github.com/microsoft/amplifier-unified).
 
-| Area | Intended homes |
-| --- | --- |
-| Companion product | `amplifier-companion`; the preview currently lives in Conversations |
-| Shared work and outputs | `amplifier-platform-scheduling`, `amplifier-platform-workspaces`, `amplifier-platform-resources`, `amplifier-platform-operations`, `amplifier-platform-publishing`, `amplifier-platform-portability` |
-| Shared interaction and information | `amplifier-platform-canvas`, `amplifier-platform-realtime`, `amplifier-platform-context` |
-| Browser and native client foundations | `amplifier-client-web`, `amplifier-client-windows`, `amplifier-client-linux`, `amplifier-client-macos`, `amplifier-client-ios`, `amplifier-client-android` |
-
-Use these shared capabilities across Unified and Constellation experiences where
-their interfaces fit. Conversations remains the owner of rooms, membership,
-messages and huddles. Detailed platform contracts stay with their serving owners;
-this index links them rather than keeping another copy. Repository separation
-does not require a separate running service for each capability.
+The [family agreement](contracts/family.v1-candidate.md#composition-relationships)
+defines each part, and [its connection table](contracts/family.v1-candidate.md#what-crosses-each-connection)
+explains what passes between them. Companion's planned product home is
+`amplifier-companion`. Reusable Realtime and Context capabilities have intended
+homes in `amplifier-platform-realtime` and `amplifier-platform-context`; this is
+not a claim of completed extraction or available interfaces.
 
 ## Make a contribution fit
 
