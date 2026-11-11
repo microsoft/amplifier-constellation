@@ -1,6 +1,6 @@
 # Protocol SDK contract — v1 candidate
 
-Accepted direction · November 6, 2026. Implementation and deployment status must
+Accepted direction. Implementation and deployment status must
 be reported separately from this contract.
 
 ## SDK first

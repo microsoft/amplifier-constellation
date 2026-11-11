@@ -1,79 +1,59 @@
-# ACP SDK integration
+# ACP integration boundaries
 
-The protocol owner's SDK handles the conversation wire protocol. Constellation
-components handle the application: who the agent is, which conversation it is
-answering, what it can do, and how its work appears to people.
+The protocol owner's SDK handles protocol types, framing, request correlation,
+callbacks and connection lifecycle. Constellation services own application
+meaning: identity, source and audience, work authority, context and delivery.
+The [SDK agreement](../contracts/protocol-sdk.v1-candidate.md) governs this split.
 
-## Implementations
+## Reuse the protocol integration
 
-| Components | Official SDK | Integration |
-| --- | --- | --- |
-| Runtime, Instance, Slack, Conversations, Observatory, Persona Workshop | [Rust SDK](https://github.com/agentclientprotocol/rust-sdk) 5.0.0 | The compiled `amplifier-acp-connection` crate in this repository adapts the SDK to each application's asynchronous queues and transport. |
-| Teams | [TypeScript SDK](https://github.com/agentclientprotocol/typescript-sdk) 2.4.0 | `ClientSideConnection` and the SDK stream transport own messages and callback dispatch. |
-| ACP Lab, Minecraft client | [Python SDK](https://github.com/agentclientprotocol/python-sdk) commit `9853d8b514d6340000bcbd01ec07808436db80cf` | `connect_to_agent`, generated models and extension methods own the protocol. A bounded application queue preserves observation ordering and surfaces collection failures. |
+Use the official [Rust](https://github.com/agentclientprotocol/rust-sdk),
+[TypeScript](https://github.com/agentclientprotocol/typescript-sdk) or
+[Python](https://github.com/agentclientprotocol/python-sdk) SDK appropriate to the
+component. Read the component's dependency manifest and lock for its actual pin;
+this guide does not maintain a second dependency-version table.
 
-The selected protocol remains stable ACP v1. SDK support for draft v2 does not
-silently switch an installation to that draft. Optional Constellation extensions
-are negotiated separately. Instance's authenticated network transport retains its
-own transport identifier; using ACP messages does not make that transport part of
-the base ACP specification.
+The [amplifier-acp-connection library](../crates/acp-connection/README.md) adapts
+the Rust SDK to application queues and transport and includes shared speech
+assembly. It is a compiled dependency, not a required shared service. An owner
+can use a different independently released component while honoring the same
+negotiated boundary.
 
-The Rust integration is a library dependency pinned to an immutable source
-revision. It does not add a shared service or couple running installations.
-Owners can run different component versions on different machines. Each release
-includes the integration it was built and tested with.
+Stable ACP v1 and optional capabilities are separate claims. Instance's
+custom authenticated network hop keeps its own transport identity; ordinary
+stdio attach remains the compatibility entry point. Do not infer that a remote
+URL is a standard ACP transport or enable draft behavior merely because an SDK
+can represent it.
 
-## Why application wrappers remain
+## Keep wrappers narrow
 
-The SDK owns framing, generated protocol types, request IDs, correlation, error
-responses and callback responders. Those handwritten implementations were
-removed from the migrated production paths. Application state still belongs to
-the application: saved sessions, credentials, permissions, work budgets,
-presentation, and uncertain-delivery records are not SDK responsibilities.
+An application may need ordered observation queues, transport adapters or a
+settlement barrier. These preserve application behavior around the SDK, rather
+than replacing its JSON-RPC machinery. Preserve upstream request IDs and unknown
+metadata when relaying transparently. Durable source records, permission policy
+and uncertain outcomes still belong to their application owners.
 
-The Rust wrapper connects the SDK's local execution model to Tokio applications
-and bounded queues. It preserves upstream-owned IDs when acting as a transparent
-proxy and waits for actual transport writes where settlement matters.
+Document a concrete upstream gap, the smallest augmentation, its checks and the
+condition for removing it. An immutable official upstream revision can be used
+when required support is not yet published; verify the actual installed revision
+rather than relying on an unchanged package version. Reassess exceptions when
+the upstream mechanism becomes sufficient.
 
-The pinned Python SDK invokes notification callbacks independently and logs their
-exceptions. A public stream observer plus upstream-generated notification types
-feeds an ordered, bounded application queue so a slow collector cannot silently
-reorder output or lose its failure. Session replay uses an application drain
-barrier. This does not add another JSON-RPC parser or request registry.
+## Evaluate the connection you are changing
 
-Python's published 0.12.1 package lacks the typed compaction and message-identity
-support in the pinned upstream revision. The revision still reports version
-0.12.1, so an installation must verify the VCS commit in `direct_url.json` as well
-as the package version. Replace the pin and reassess the wrapper when an official
-release supplies the required behavior. The [SDK-first contract](../contracts/protocol-sdk.v1-candidate.md)
-sets the approval and removal requirements for any exception.
+Exercise actual SDK peers, callbacks, ordered notifications, closure, cancellation,
+malformed input, reconnect and the capabilities the consumer uses. Use the
+[official ACP TCK](https://github.com/agentclientprotocol/acp-tck) for its applicable
+agent checks, alongside client and integration checks.
 
-## What the checks establish
+Keep four questions distinct:
 
-Component tests use real SDK peers and subprocesses to exercise initialization,
-session replay, callbacks, cancellation, ordered notifications, closure, malformed
-input, and negotiated extensions. A disposable Instance boundary also exercises
-repeated compaction in the same session, denied effectful callbacks, matching
-terminal settlement, source revisions, and session isolation. Delivery or
-incorporation receipts are not task-completion receipts.
+1. Does this exact agent satisfy the exercised standard ACP cases?
+2. Do both sides support the optional capability being used?
+3. Does the actual installation and transport preserve the behavior?
+4. Does the combined experience produce the intended useful outcome?
 
-The published Runtime 0.12.0 Linux ARM64 binary was checked with upstream
-[ACP TCK](https://github.com/agentclientprotocol/acp-tck) revision
-`b7f40fb3c003c45926547be5a1f7e2b374035815`: 67 passed and 7 skipped, using
-the trusted-local MCP profile and a deterministic local Responses fixture.
-This verifies the exercised protocol behavior, not model quality, every provider,
-or certification. The runtime's `tests/tck.py` records the command, capability
-profile, binary, and individual results.
-
-The platform compatibility kit should keep four results distinct: standard ACP,
-negotiated optional capabilities, installation/transport compatibility, and
-observable experience quality. A candidate may pass basic ACP while lacking
-steering, compaction, portable identity or management controls. Report those as
-absent or not exercised rather than silently adding a bridge or claiming support.
-Test clients and test agents are separate roles; an agent-conformance runner is
-not evidence that an experience client conforms.
-
-Source merges, published releases, installed versions and live experience tests
-are separate checkpoints. Consult [implementation status](STATUS.md) and each
-component's release notes for the deployed scope. Minecraft owns its paired
-body/controller deployment, including its Python environment.
+Record the exact artifacts and conditions with the check that needs them. An
+agent-conformance run does not prove that an experience client conforms; a local
+provider fixture does not prove live model quality. Neither old release counts
+nor a guide's wording can replace a current check of the relevant boundary.

@@ -1,190 +1,83 @@
-# Amplifier Constellation — Vision
+# Amplifier Constellation
 
-Draft for review · Updated November 10, 2026.
+This defines the shared services and behavior we want. Product
+experiences remain open to design; existing development and administration
+screens do not establish the intended UX.
 
-This describes the intended experience. Shipped behavior and verification belong
-in [implementation status](STATUS.md) and component release records. Changes to
-this direction should be explicit before implementation changes the agreements
-other components depend on.
+## Persistent agents, useful wherever people work
 
-## What Constellation is
+People can now direct more work than they can personally follow. The opportunity
+is larger than getting another answer from a model: a small group can pursue an
+ambition that previously needed a much larger organization. The difficulty is
+keeping that work coherent, knowing what deserves confidence, and spending human
+attention where judgment, expertise and taste make a difference.
 
-Constellation lets people work with persistent agents as participants in their
-everyday tools. A personal assistant can help across projects; a team coordinator
-can organize shared work; project leads, engineers, and reviewers can own narrower
-responsibilities. People can speak to any of them directly or work through a lead.
-The work stays connected without making a person relay every conversation.
+Constellation provides reusable services for persistent agents to participate in
+that work. An individual can act as a personal assistant, coordinator or
+specialist across several experiences. It retains its identity and accepted
+responsibilities while each conversation keeps its own audience and access
+rules. People remain responsible for direction and delegated authority. Agents
+carry preparation, execution, coordination, verification and follow-through
+within their demonstrated capabilities.
 
-Human attention is scarce and valuable. Constellation should put it where human
-judgment, expertise and taste improve the outcome. Agents carry authorized work
-through coordination, verification and delivery without requiring people to
-monitor routine exchanges. People can inspect the work, challenge its evidence
-and join the conversation when useful. A quieter channel alone is not success:
-the work must remain understandable, accountable and effective.
+## A common foundation for different experiences
 
-## Principles
+Slack, Teams, Minecraft, Amplifier Unified and future web or native products
+should be able to draw on these capabilities without rebuilding an agent system
+for each surface. A person may talk, type, show something or work alongside an
+agent. Each experience can design the interaction that fits its setting.
 
-### 1. An agent is an individual
+Underneath, the services should preserve the same essential meanings. A new
+conversation need not create a new individual. Relevant context can be retrieved
+with its source and permission intact. An accepted task can continue without
+making the person relay every exchange. A clarification preserves useful work;
+Stop remains explicit. A lost acknowledgment leaves an honest unknown outcome,
+not an excuse to repeat an action.
 
-A template supplies reusable behavior and capabilities. An individual carries an
-identity, learned context, and commitments. An assignment gives that individual a
-role in a setting. Two agents from the same template can own work independently;
-one individual can hold several assignments. Changing models need not create a
-different individual. The installed runtime family is chosen when creating an
-installation. Updates within that family are supported; trying a different family
-means creating a separate installation, with no automatic session migration.
-Separate instances are also the unit for experimenting with different host policies.
+Routine agent coordination belongs in an observable place away from the human's
+main conversation. People can inspect or join when useful. Meaningful progress,
+results, changed commitments and decisions return to the original conversation.
+Multiple agents can contribute during active joint work; they need not narrate
+routine exchanges. Quietness alone is not success: the work must remain
+understandable, accountable and effective.
 
-### 2. Conversations are places to participate
+## Independently owned parts that work together
 
-Slack, Teams, and browser experiences own their conversations. An agent can join
-several of them, and people should recognize the same individual in each place.
-A conversation, a model working session, and an agent's lifetime are separate.
-Continuity should not require placing all conversation history in one prompt.
+The foundation separates installed identity and management, reasoning and tool
+execution, conversation and context services, and connections to external
+systems. Standard Agent Client Protocol (ACP) connects clients and agents;
+explicit tool and service interfaces connect the capabilities around them.
+Enhancements are negotiated rather than assumed from a product name.
 
-### 3. Coordination preserves boundaries
+Each installation owns its setup, credentials, state, updates and recovery. It
+can use a different engine, machine or release without requiring a central
+Constellation service. Coordination never implies unrestricted access to another
+agent's history or authority. A model, an engine session, an individual and an
+assignment remain distinct.
 
-A person can have separate work and personal agents plus an assistant that
-coordinates both. Coordination does not imply unrestricted access or permission
-to pass information between them. Source membership, current grants, and the
-destination audience constrain recall, delegation, and replies.
+These boundaries also let the people building Constellation lead substantial
+areas in parallel. Early prototypes do not bound the ambition or the depth of
+future investment. Ownership boundaries can evolve as people reshape the system
+together. Owners can deepen a capability and make local choices while
+others rely on its agreed interfaces. They draw on one another's expertise when
+it can improve the outcome and realign when a shared promise changes. We use
+[Converge](https://github.com/microsoft/amplifier-converge) to carry that direction
+into agent-assisted work without requiring everyone to follow all the details.
 
-### 4. Participation fits the room
+## How we judge the result
 
-In a direct conversation, a person normally expects a response. In a group,
-agents should contribute when they can help, recognize an actual handoff, and
-leave room for people and other agents. They should not repeat each other or turn
-brainstorming into work assignments. Quiet participation and useful action both
-need evaluation in realistic conversations. A shared installation-level attention
-policy should give native and third-party ACP engines the same opportunity to
-participate. Thin experiences supply facts, not competing social classifiers.
-While calibrating, ambiguous fresh social events favor a bounded opportunity to
-engage; silence, canceled work and spending limits remain meaningful. See the
-[attention contract](../contracts/attention.v1-candidate.md).
+We should be able to compose a useful journey across independently owned parts,
+redirect it during work, recover from interruption, and deliver a result whose
+claims can be checked. Evaluate the human effort to set it up, understand it,
+correct it and trust it—not only the amount of work agents produce.
 
-An agent already working should receive relevant new peer contributions in the
-same conversation without starting a second task for each reply. Human-visible
-progress stays separate from conversation evidence. A group should agree who
-reports its conclusion and deliver that result without making the person ask
-again. Nomination, acceptance and delivery are distinct. See the
-[collaboration contract](../contracts/collaboration.v1-candidate.md).
+The services should make new experiences easier to build while leaving their UX
+open. Current implementation is something to inspect against this intent when
+choosing work, not a second specification. Simplify or replace mechanisms when
+they consume more attention than they return.
 
-Fresh human engagement takes precedence over internal ambient-conversation
-quotas. Agents should remain useful during actual human movement and interaction,
-without treating idle presence as a request or filling silence with bookkeeping.
-Short interruptible action sequences and planning ahead can reduce long pauses
-between useful effects. Preserve explicit stop, permissions, provider limits and
-honest operation outcomes. See the
-[human engagement contract](../contracts/human-engagement.v1-candidate.md).
-
-Routine coordination belongs in an observable huddle away from the main human
-conversation. Reuse an appropriate authorized room, thread or workspace; make
-it easy to find, inspect, join and follow without broadcasting every exchange.
-Bring meaningful progress, results, changed commitments and decisions back to
-the people concerned. During active joint work or brainstorming, several agents
-can contribute distinct ideas. Human availability alone is not an invitation to
-narrate work or ask for decisions already delegated. An opportunity to engage
-does not require a public reply. See the
-[attention and huddle design](shared-spaces-design.md#human-attention-and-observable-huddles).
-
-### 5. Work has continuity and evidence
-
-Responsibilities, accepted scope, progress, and unresolved decisions remain
-discoverable when the conversation moves elsewhere. Reports identify the artifact
-or change they describe. Independent verification and requester acceptance remain
-distinct from the agent saying it is done. A person can redirect or stop work
-without reconstructing its history.
-
-An ordinary follow-up updates ongoing work; it does not implicitly cancel the
-current model call, throw away completed effects, or dismiss an unchanged
-approval. Repeated updates remain ordered through successive model and tool
-steps. The system distinguishes receiving an update from incorporating it, and
-explicit stopping from adding guidance. Native steering is used where supported;
-otherwise input waits for the next legal model boundary, or the end of an opaque
-third-party ACP prompt. See the [input continuity contract](../contracts/input-continuity.v1-candidate.md).
-
-### 6. Each individual stands on its own
-
-An agent has its own installation, state, configuration, and service lifecycle.
-Several can share a machine; others can live elsewhere and use different versions
-or implementations. They coordinate through explicit interfaces and experiences.
-The fleet dashboard is optional, and its unavailability does not erase an agent
-or its accepted responsibilities.
-
-### 7. Every interface can be operated for a person
-
-Setup and everyday use should make sense to someone who does not write code.
-Useful defaults come first; advanced settings remain available. Every user action
-has a programmatic equivalent, including navigation, selection, drafts, and view
-state. An assistant can operate the same experience while a person speaks and
-watches, using the same permissions and observable results.
-
-### 8. Open boundaries allow different implementations
-
-Ordinary interaction uses ACP and negotiated capabilities. Optional management,
-context, persona, and work contracts add features without making them prerequisites
-for basic chat. Connectors own platform-specific behavior. Native agents, Codex,
-and other ACP implementations should be testable against the same experiences.
-
-### 9. Experiments improve both work and interaction
-
-Evaluate the artifact and the conversation separately. Repeatable scenarios should
-show whether agents complete the task, wait appropriately, avoid duplication, and
-recover from interruption. Simulated people are labeled simulations. Their
-opinions help explore behavior; they do not substitute for feedback from the
-people represented.
-
-### 10. Current models preserve meaningful choices
-
-Support the latest verified model in each useful provider class, preserving
-choices among capability, speed, cost and specialized abilities. Maintaining
-every historical model generation is not a product requirement. Resolve a choice
-to a concrete model and access route during setup or an explicit update; a new
-catalog entry must not silently change an active turn or a saved session's
-provider binding. Model updates preserve the individual's identity while making
-any new execution context explicit. See the
-[model support contract](../contracts/model-support.v1-candidate.md).
-
-## What success looks like
-
-- A person meets the same individual in two experiences and can retrieve an
-  authorized prior decision with its source, without copying the transcript.
-- An ordinary ACP agent can join an experience without installing Constellation's
-  management service or giving it access to private implementation storage.
-- Work and personal agents remain isolated while their coordinator shares only
-  what each relationship and destination permits.
-- An agent can guide a person through setup and manipulate the visible application
-  using the same operations as the human interface.
-- A repeatable collaboration run preserves the exact delivered artifact, the
-  separate check result, participation observations, and any human acceptance.
-- Updating one installed individual preserves its identity and recoverable state
-  while other individuals continue operating.
-- A person adds several details while the agent works; it incorporates them in
-  order, keeps completed results, and completes the same work without duplicate
-  effects or lost approvals. Explicit stop remains available.
-- An owner can select a current model class and see the resolved model, route and
-  supported capabilities before changing execution, without losing old history.
-- Agents coordinate independently in a discoverable place while a person works
-  elsewhere. The person receives a useful result or decision, can inspect its
-  evidence and dissent, and need not reconstruct the work from routine chatter.
-- A person joins a group discussion and hears useful contributions from several
-  agents, then closes the view or unfollows without stopping still-authorized
-  work. Explicit Stop and membership or access revocation retain their effects.
-
-## Decisions still to test
-
-How should concurrent conversations reconcile conflicting commitments? Which
-participation rules remain useful outside carefully prompted simulations? What
-should the system remember automatically, and what should require a deliberate
-choice? These need experiments and human feedback rather than a fixed answer in
-the initial architecture.
-
-## Changelog
-
-| Date | Change | Basis |
-| --- | --- | --- |
-| 2026-11-10 | Optimize for human attention while preserving observable coordination, useful group participation and evidence. | Explicit product direction informed by the Converge methodology review; huddle support remains proposed and requires experience-specific verification. |
-| 2026-11-06 | Give human engagement priority over ambient quotas; distinguish real activity from idle presence; support interruptible actions and truthful concurrent planning. | Explicit product direction; implementations and natural interaction evidence remain separate. |
-| 2026-11-04 | Preserve work through repeated input; prefer native steering with ordered legal-boundary fallback; support the latest verified model in each useful provider class. | Accepted product direction; component implementation, compatibility tests and rollout remain separately evidenced. |
-| 2026-11-04 | Installation-owned attention, bounded uncertain engagement, and runtime-family lifecycle. | Explicit product direction; native/Codex compatibility and shared-room experiments. |
-| 2026-11-02 | Initial draft. | The product requirements and experiments that established this family; adapted the vision/contract/status separation used by Amplifier Converge. |
+The [family agreement](../contracts/family.v1-candidate.md) defines composition
+and ownership. The [interaction agreement](../contracts/experience.v1-candidate.md)
+defines what consumers can rely on. The [visual guide](guide/README.md) explains
+the parts and connections; [working together](working-together.md) applies the
+method to contributions.

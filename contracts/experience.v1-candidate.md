@@ -1,6 +1,8 @@
-# Experience contract — v1 candidate
+# Interaction across services and experiences — v1
 
-Draft for review · Updated November 10, 2026. This governs how an experience connects people, agents, and actions.
+For services, connectors and the experiences that compose them.
+This defines shared interaction meaning, not a prescribed product UX. Existing
+control panels and previews do not establish the design of future experiences.
 
 ## Who builds against this
 
@@ -28,8 +30,9 @@ actor + conversation + audience + optional thread + destination
 2. **Context does not grant access.** An excerpt or persona instruction cannot
    authorize a tool or expose another conversation. Current source grants and
    destination membership govern retrieval and sharing.
-3. **Use the same admitted action.** Clicks, keyboard, voice, CLI, and agents reach
-   the same service operation and permission checks. UI-only actions are defects
+3. **Use the same admitted action.** Whatever UX is designed, clicks, keyboard,
+   voice, CLI, and agents reach the same service operation and permission checks.
+   UI-only actions are defects
    when they prevent an authorized assistant from operating the app for a person.
 4. **Expose meaningful view state.** Navigation, selection, drafts, focus, and
    other meaningful visible state have a documented programmatic path. Revision
@@ -79,7 +82,11 @@ actor + conversation + audience + optional thread + destination
     Reuse the existing participation policy and delivery path, not a second
     classifier or a blanket reply quota. Document notification limits and an
     honest fallback where the platform lacks a quiet, observable destination.
-    See the [shared spaces design](../docs/shared-spaces-design.md#human-attention-and-observable-huddles).
+    Reuse an appropriate authorized conversation before creating one. Where a
+    platform has no suitable room, an independently configured Conversations
+    service may be an optional fallback. If none is available, explain the limit
+    without claiming hidden coordination or flooding the human channel. Concrete
+    room operations belong to the [huddle service](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
 
 ## Verification expectations
 
@@ -116,12 +123,3 @@ The contract does not require identical UI controls or callback capabilities in
 every host. Each host must document what it supports. It does not define a global
 human identity directory, a universal memory system, or automatic acceptance of
 work on a person's behalf.
-
-## Changelog
-
-| Date | Change | Basis |
-| --- | --- | --- |
-| 2026-11-10 | Separate inspectable coordination, human attention and work authority; preserve meaningful return and invited group participation. | Explicit attention goal and read-only experience assessments; no new ACP fields or shipped huddle capability implied. |
-| 2026-11-04 | Ordinary follow-ups preserve work and approvals; optional steering and explicit queued fallback. | Accepted input-continuity design; implementation and end-to-end release evidence remain separate. |
-| 2026-11-03 | Count end-to-end setup effort while preserving standalone installation. | Low-interaction onboarding for owners and administrators without adding a required shared service. |
-| 2026-11-02 | Initial candidate. | Same-agent continuity, natural participation, source-owned conversations, and programmatically operable UI requirements. |

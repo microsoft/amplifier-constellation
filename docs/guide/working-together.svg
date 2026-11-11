@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="910" viewBox="0 0 1440 910" role="img" aria-labelledby="title desc">
+<title id="title">Independent ownership, a coherent result</title>
+<desc id="desc">Three illustrative owners lead conversation services, installed-agent capability and domain connections. Each directs agents and makes local decisions. Shared vision and interface promises connect their work. Local choices stay with their owner; a shared-promise change brings affected owners together; changed direction propagates to active work. A named owner checks the combined outcome. These are example responsibilities, not assigned partners or a repository-per-person rule.</desc>
+<style>
+text { font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; fill:#172f3d }
+.eyebrow { font-size:15px; font-weight:750; letter-spacing:2px; fill:#536971 }
+.title { font-size:44px; font-weight:750; letter-spacing:-1px }
+.heading { font-size:25px; font-weight:700 }
+.body { font-size:21px; fill:#405761 }
+.small { font-size:18px; fill:#536971 }
+</style>
+<rect width="1440" height="910" fill="#f5f3ec"/>
+<text x="48" y="44" class="eyebrow">BUILDING WITH CONVERGE</text>
+<text x="48" y="99" class="title">Independent ownership. A coherent result.</text>
+<text x="48" y="139" class="body">People lead substantial areas with agents, connected by shared purpose and dependable interfaces.</text>
+<rect x="48" y="179" width="1344" height="89" rx="18" fill="#172f3d"/>
+<text x="76" y="215" font-size="23" font-weight="700" style="fill:#fff">Shared intent and interface promises</text>
+<text x="76" y="247" font-size="20" style="fill:#cfe0df">What we want · what others can rely on · which choices remain local</text>
+<g stroke="#b5c7c5" stroke-width="2"><path d="M260 268 V305"/><path d="M720 268 V305"/><path d="M1180 268 V305"/></g>
+<g>
+<rect x="48" y="305" width="424" height="258" rx="20" fill="#f0eaf4"/>
+<circle cx="89" cy="349" r="19" fill="#80618e"/><text x="89" y="356" text-anchor="middle" font-size="19" font-weight="700" style="fill:#fff">1</text>
+<text x="121" y="357" class="heading">Conversation services</text>
+<text x="76" y="403" class="body">Rooms, context and result return</text>
+<text x="76" y="457" class="body">A human owner leads the outcome.</text>
+<text x="76" y="489" class="body">Agents carry authorized work.</text>
+<text x="76" y="534" class="small">Local decisions within authority</text>
+<rect x="508" y="305" width="424" height="258" rx="20" fill="#e5f0eb"/>
+<circle cx="549" cy="349" r="19" fill="#336e60"/><text x="549" y="356" text-anchor="middle" font-size="19" font-weight="700" style="fill:#fff">2</text>
+<text x="581" y="357" class="heading">Agent capability</text>
+<text x="536" y="403" class="body">Identity, context and execution</text>
+<text x="536" y="457" class="body">A human owner leads the outcome.</text>
+<text x="536" y="489" class="body">Agents carry authorized work.</text>
+<text x="536" y="534" class="small">May span several repositories</text>
+<rect x="968" y="305" width="424" height="258" rx="20" fill="#f8efdb"/>
+<circle cx="1009" cy="349" r="19" fill="#92713e"/><text x="1009" y="356" text-anchor="middle" font-size="19" font-weight="700" style="fill:#fff">3</text>
+<text x="1041" y="357" class="heading">Domain connections</text>
+<text x="996" y="403" class="body">Sources, access and real effects</text>
+<text x="996" y="457" class="body">A human owner leads the outcome.</text>
+<text x="996" y="489" class="body">Agents carry authorized work.</text>
+<text x="996" y="534" class="small">Reuse services through shared promises</text>
+</g>
+<text x="48" y="609" class="eyebrow">BRING SHARED ATTENTION TO THE DECISIONS THAT NEED IT</text>
+<text x="76" y="653" class="heading">Local choice</text>
+<text x="76" y="686" class="body">Owner decides, checks and adapts.</text>
+<text x="536" y="653" class="heading">Shared promise changes</text>
+<text x="536" y="686" class="body">Affected owners realign.</text>
+<text x="996" y="653" class="heading">Direction changes</text>
+<text x="996" y="686" class="body">Reassess active work together.</text>
+<rect x="48" y="733" width="1344" height="100" rx="18" fill="#fff" stroke="#d2d9d3"/>
+<text x="76" y="772" class="heading">Check the combined outcome</text>
+<text x="76" y="807" class="body">A named owner verifies the complete journey. Useful expert input can change what we choose to build.</text>
+<text x="48" y="879" class="small">Illustrative responsibilities, not assigned partners. The agreements carry into each owner's work with agents.</text>
+</svg>
