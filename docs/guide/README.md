@@ -6,7 +6,14 @@ People and independent service owners can keep improving their areas while
 relying on clear promises between them.
 
 [Open the visual tour](index.html) locally for a presentation view. The diagrams
-below also work on GitHub. This guide explains the
+below also work on GitHub. The tour and its two SVG files can be opened together
+without a server; its source-reference links open the canonical documents online.
+Use the browser's **Print → Save as PDF** for a portable handout. Printing includes
+all interface cards, even when collapsed, and restores the screen afterward.
+Turn off the browser's print headers and footers to omit the local file path.
+The PDF is an export of this guide, not a separately maintained document.
+
+This guide explains the
 [vision](../VISION.md) and [shared agreements](../../contracts/README.md); it does
 not define another API or a finished product interface.
 
