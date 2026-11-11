@@ -20,6 +20,7 @@ development and administration access; future experiences can take different for
 | --- | --- |
 | [Vision](docs/VISION.md) | What are we trying to make possible, and why? |
 | [Visual guide](docs/guide/README.md) · [browser tour](docs/guide/index.html) | What are the big parts, how do they connect, and where could I contribute? Open the tour locally; it is an explanatory document, not a running product. |
+| [Design with the services](docs/guide/designing-with-services.md) | What does each part do, what passes between them, and how could my idea fit? |
 | [Family agreement](contracts/family.v1-candidate.md) | What must remain dependable across independently owned parts? |
 | [Working together](docs/working-together.md) | How do people lead areas with agents, use one another's expertise and handle changes? |
 | [Contract map](contracts/README.md) | Which specific promise and interface matter for my next outcome? |

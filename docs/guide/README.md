@@ -10,6 +10,10 @@ below also work on GitHub. This guide explains the
 [vision](../VISION.md) and [shared agreements](../../contracts/README.md); it does
 not define another API or a finished product interface.
 
+To develop an idea, use [Designing with the services](designing-with-services.md):
+what each part does, what its interfaces carry, where information belongs, and a
+worked example that connects the parts.
+
 ## The big parts
 
 ![Service map: external experiences compose installed agents, conversation services and domain connections through ACP, MCP and service APIs](system-map.svg)
@@ -24,6 +28,12 @@ and exercise the services. They do not prescribe the eventual ecosystem UX.
 | **Engine: reasoning and execution** | Turns an admitted request and permitted context into model calls, tool use and durable session evidence. Native Runtime or another ACP engine can fill this role. | It does not decide Slack membership, game permissions or another installation's administration. |
 | **Conversation and context services** | Addressable conversations, participants, messages, authorized retrieval, coordination rooms and a return path for results. Sources retain their own access rules. | Sharing an agent identity or a room does not combine every transcript or authorize work. |
 | **Domain connections** | Translate platform events and source identity; deliver replies; expose authorized actions and context. Slack, Teams and Minecraft have their own adapters. | They use the agent boundary rather than each owning another reasoning engine or shared social classifier. |
+
+In everyday terms: Instance answers **which assistant this is**; the engine
+provides **how it reasons and uses tools**; conversation services provide **where
+people and agents can discuss and inspect work**; domain connections provide
+**how it reads and acts in existing systems**. An experience shapes **how a person
+works with those capabilities**.
 
 Optional supporting parts prepare portable profiles (**Persona Workshop**),
 exercise collaboration and independently check outcomes (**ACP Lab**), and
