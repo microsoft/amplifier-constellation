@@ -1,6 +1,6 @@
 # Adapter activity contract — v1 candidate
 
-Updated November 4, 2026. Shared guidance for every ACP experience and connector,
+Shared guidance for every ACP experience and connector,
 including chat, browser, editor, terminal, voice, and game surfaces. This defines
 behavior, not a new mandatory ACP extension or shared service.
 

@@ -1,107 +1,71 @@
 # Amplifier Constellation
 
-Independent, persistent agents working with people across their tools.
+Reusable services for persistent agents that work with people across their tools.
 
-An agent can be your personal assistant, a team coordinator, a project lead, or a
-specialist. You can talk to the same individual in a browser, a Slack conversation,
-or an ACP-compatible editor. Its identity and responsibilities continue across
-those places, while each conversation keeps its own audience and access rules.
+An installed agent can retain its identity and accepted responsibilities across
+conversations, use authorized context, and coordinate with other agents.
+Experiences connect to those capabilities through explicit interfaces. Each owner
+can develop and operate their part without requiring a single application,
+engine or central Constellation service.
 
-This repository is the starting point for the Constellation family. It holds the
-vision, the component map, and the agreements between components. Each application,
-agent implementation, and connector has its own repository and release cycle.
+This repository is the primary map and shared direction for the family. It does
+not define the final product UX. Existing control panels and preview clients are
+development and administration access; future experiences can take different forms.
 
-## Start here
+## Get the lay of the land
 
-| You want to… | Start with |
+[![Constellation service map: experiences connect to independently owned agent, conversation and domain services](docs/guide/system-map.svg)](docs/guide/README.md)
+
+| Start with | What it answers |
 | --- | --- |
-| Install and configure one independent agent | [Agent Instance](https://github.com/microsoft/amplifier-constellation-instance) |
-| Manage agents across machines | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
-| Talk with people and agents in a browser | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
-| Connect an ACP agent to Slack or Teams | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) |
-| Let independent agents participate in Minecraft | [Minecraft adapter](https://github.com/microsoft/amplifier-acp-minecraft) |
-| Build a communication and working-style profile | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
-| Run repeatable collaboration experiments | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
-| Embed or extend our native Rust agent engine | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
+| [Vision](docs/VISION.md) | What are we trying to make possible, and why? |
+| [Visual guide](docs/guide/README.md) · [browser tour](docs/guide/index.html) | What are the big parts, how do they connect, and where could I contribute? Open the tour locally; it is an explanatory document, not a running product. |
+| [Family agreement](contracts/family.v1-candidate.md) | What must remain dependable across independently owned parts? |
+| [Working together](docs/working-together.md) | How do people lead areas with agents, use one another's expertise and handle changes? |
+| [Contract map](contracts/README.md) | Which specific promise and interface matter for my next outcome? |
 
-These are experimental, independently usable components. This repository holds
-documentation, a component registry, and a small compiled ACP SDK integration
-used by the Rust components. Follow a component's README for its
-installation instructions, supported platforms, and release availability.
+We use [Amplifier Converge](https://github.com/microsoft/amplifier-converge) as the
+working method. Shared intent and agreements guide the work. Contributors inspect
+current reality to choose the next useful outcome; this umbrella does not keep a
+parallel release history or gap inventory.
 
-## How the pieces fit
+## Find the owning component
 
-```mermaid
-flowchart LR
-    People[People] --> Experiences[Conversations · Slack · Teams · Minecraft · ACP editors]
-    Experiences -->|Standard ACP entry point| Individual[Independent agent]
-    Individual --> Engine[Constellation Rust runtime or another ACP implementation]
-    Observatory[Observatory] -->|Optional management interface| Individual
-    Persona[Persona Workshop] -->|Portable profile package| Individual
-    Lab[ACP Lab] -->|ACP interactions and separate evaluation| Individual
-```
+| Capability | Repository |
+| --- | --- |
+| Installed identity, configuration, authorized context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
+| Native reasoning, model/provider integration, tools and durable execution sessions | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
+| Conversation, membership, message, context and observable coordination services | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
+| Connections to external conversations and domain actions | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
+| Portable communication and working-style profiles | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
+| Independent collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
+| Optional administration across independent installations | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
 
-**Runtime** provides the model and tool loop and saved working sessions.
-**Instance** gives an installed individual its identity, configuration, profiles,
-service lifecycle, and management UI. The two can be installed together; their
-implementation boundary stays replaceable. The native runtime does not require
-Codex. Other ACP implementations remain useful peers.
+[family.toml](family.toml) is the machine-readable repository map. The small
+[ACP connection library](crates/acp-connection/README.md) is a shared code
+integration, not a required running service. Concrete APIs, setup instructions,
+compatibility and tests belong to their component owners.
 
-The coordinated runtime documentation includes a
-[current-design overview and diagram](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/runtime-overview.md)
-and a separate
-[next execution design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
-The latter describes repeated input and steering; it is not a claim about the
-capabilities of runtime 0.9.0 or an older installation.
+Slack, Teams and Minecraft connect their platforms. Bespoke web/native products
+can compose the same services. [Amplifier Unified](https://github.com/microsoft/amplifier-unified)
+is a planned consumer; that connection is not claimed as implemented here.
+The native Runtime and the separate [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
+are distinct engines. Standard ACP and negotiated capabilities allow alternatives.
 
-An experience owns its conversations and presentation. A connector translates
-its platform's messages, threads, permissions, and formatting into the supported
-ACP interaction. Authorized recall across conversations is an optional context
-integration; ACP alone does not grant access to another room's history.
+## Make a contribution fit
 
-The fleet dashboard is a convenient way to reach independent services. An agent
-does not need the dashboard to keep existing or to accept another authorized ACP
-client. Installing one individual must not require installing the whole family.
-Setup and ongoing connection management must also work without a shared
-Constellation provisioning service. Each owner can operate and update their
-installations independently; fleet interfaces remain optional. See the
-[self-contained installation baseline](contracts/family.v1-candidate.md#self-contained-installation-baseline).
+Start from the current vision and the boundary you will change. Name the outcome,
+owner, authority and integrated check in the existing assignment or PR. Local
+implementation decisions stay with that owner. A change to a shared promise
+identifies affected consumers and is settled with the responsible owners before
+dependent work relies on it.
 
-## Direction and agreements
+The umbrella revision is a review draft. Accepted design commitments retain their
+scope; a new draft or a diagram does not ratify new interfaces. Read only the
+contracts relevant to your work. Keep implementation details and private evidence
+out of the shared vision, and evaluate actual behavior when making a claim.
 
-- [Vision](docs/VISION.md): the experience we are working toward.
-- [Shared spaces proposal](docs/shared-spaces-design.md): approachable setup, everyday work, recovery, and voice operation; design for discussion.
-- [Execution environments proposal](docs/execution-environments.md): separate agent identity, project execution, hosting, and credentials; under discussion.
-- [Family contract](contracts/family.v1-candidate.md): ownership, independence,
-  compatibility, and replacement of components.
-- [Experience contract](contracts/experience.v1-candidate.md): conversation scope,
-  human and programmatic controls, participation, and evidence of outcomes.
-- [Input continuity](contracts/input-continuity.v1-candidate.md): contract for follow-ups during ongoing work, preserved effects and explicit stop.
-- [Model support](contracts/model-support.v1-candidate.md): accepted policy for
-  current models by class, verified capabilities and explicit configuration changes.
-- [Contract index](contracts/README.md): which repository owns each detailed seam.
-- [Component registry](family.toml): the machine-readable map of repositories.
-- [Implementation status](docs/STATUS.md): current evidence and outstanding work.
-- [ACP SDK integration](docs/acp-sdk-integration.md): protocol ownership,
-  compatibility checks, and the remaining application wrappers.
-
-The vision and umbrella contracts are **drafts for review**. A desired behavior,
-an implemented feature, and a verified result are recorded separately. Work comes
-from the gaps between them. Component APIs and tests remain authoritative for
-what a particular release implements.
-
-## Working on the family
-
-Start with the component that owns the behavior. Changes inside a component stay
-there. Propose a change here when it changes the responsibilities or expectations
-between components; include an example and the observations that would prove it.
-Keep detailed API schemas, release artifacts, and implementation tests with their
-owning component.
-
-Constellation is an experimental part of the broader
-[Amplifier ecosystem](https://github.com/microsoft/amplifier). Its Rust runtime is
-one implementation; it does not rename or replace the separate
-[Amplifier Agent](https://github.com/microsoft/amplifier-agent) project.
+Constellation is part of the broader [Amplifier ecosystem](https://github.com/microsoft/amplifier).
 
 ## Contributing
 
@@ -127,19 +91,3 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
-
-Installation-owned updates are described in the
-[update contract](contracts/installation-updates.v1-candidate.md): dashboard,
-CLI and chat requests share the same controls, with optional fleet observation
-and no required shared update service.
-
-The optional [refreshed context contract](contracts/context-snapshots.v1-candidate.md)
-keeps current source projections concise while preserving original requests,
-private history and tool outcomes.
-
-The [harness lifecycle contract](contracts/harness-lifecycle.v1-candidate.md)
-separates durable conversation history, provider working context, tool deadlines,
-connection health and assignment authority. It also defines optional source-delivery
-receipts, settled maintenance, and public commentary/status across experiences.
-
-Saved service setup and Connect/Disconnect controls follow the [service connections contract](contracts/service-connections.v1-candidate.md). Domain installations retain credentials, sessions and lifecycle ownership; the optional Instance registry exposes saved entries and fixed owner actions without a host-shell API.

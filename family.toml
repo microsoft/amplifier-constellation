@@ -1,7 +1,7 @@
 schema_version = 1
 product = "Amplifier Constellation"
 registry_kind = "documentation"
-updated = "2026-11-06"
+updated = "2026-11-11"
 # Source repositories are independent of downloadable binary releases.
 
 [[component]]
@@ -30,7 +30,7 @@ id = "conversations"
 repository = "https://github.com/microsoft/amplifier-constellation-conversations"
 scope = "constellation"
 publication = "source"
-purpose = "Browser conversations, people and agents, threads, approvals, and source context."
+purpose = "Conversation and coordination services, membership, messages, authorized source context, and reference clients."
 
 [[component]]
 id = "persona-workshop"
@@ -51,7 +51,7 @@ id = "teams"
 repository = "https://github.com/microsoft/amplifier-acp-teams"
 scope = "shared"
 publication = "source"
-purpose = "Generic ACP integration with Teams; live tenant validation remains pending."
+purpose = "Generic ACP integration with Teams conversations, platform authorization, and presentation."
 
 [[component]]
 id = "lab"

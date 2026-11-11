@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050" role="img" aria-labelledby="title desc">
+<title id="title">Constellation: one foundation, many experiences</title>
+<desc id="desc">Experiences including Slack, Teams, Minecraft, planned Amplifier Unified integration, future web or native products and ACP clients can compose independently owned services. Four major responsibilities are installed identity and management, reasoning and execution, conversation and context services, and domain connections. ACP connects clients and engines. MCP exposes authorized tools and context. Owned service APIs compose and manage capabilities. Profiles, evaluation and fleet administration are optional supporting capabilities. This is a conceptual map, not a mandatory stack or deployment topology.</desc>
+<defs>
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; fill:#172f3d }
+    .eyebrow { font-size:15px; font-weight:750; letter-spacing:2px; fill:#536971 }
+    .title { font-size:45px; font-weight:750; letter-spacing:-1px }
+    .sub { font-size:22px; fill:#536971 }
+    .label { font-size:22px; font-weight:700 }
+    .body { font-size:20px; fill:#405761 }
+    .small { font-size:17px; fill:#536971 }
+    .line { stroke:#b4c5c6; stroke-width:2; fill:none }
+  </style>
+  <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8" fill="none" stroke="#799291" stroke-width="1.5"/></marker>
+</defs>
+<rect width="1440" height="1050" fill="#f5f3ec"/>
+<text x="48" y="45" class="eyebrow">AMPLIFIER CONSTELLATION · THE SERVICE FOUNDATION</text>
+<text x="48" y="102" class="title">One foundation. Many experiences.</text>
+<text x="48" y="139" class="sub">Reuse agent capabilities while leaving product UX open to design.</text>
+
+<text x="48" y="192" class="eyebrow">WHERE PEOPLE AND SOFTWARE CONNECT</text>
+<g>
+  <rect x="48" y="213" width="250" height="88" rx="16" fill="#fff" stroke="#dddcd4"/>
+  <text x="70" y="248" class="label">Slack · Teams</text><text x="70" y="279" class="small">Platform connections</text>
+  <rect x="318" y="213" width="250" height="88" rx="16" fill="#fff" stroke="#dddcd4"/>
+  <text x="340" y="248" class="label">Minecraft</text><text x="340" y="279" class="small">Connected world</text>
+  <rect x="588" y="213" width="264" height="88" rx="16" fill="#fff" stroke="#a99b78" stroke-dasharray="5 5"/>
+  <text x="610" y="248" class="label">Amplifier Unified</text><text x="610" y="279" class="small">Integration planned</text>
+  <rect x="872" y="213" width="250" height="88" rx="16" fill="#fff" stroke="#dddcd4"/>
+  <text x="894" y="248" class="label">Web · Native</text><text x="894" y="279" class="small">Future experiences</text>
+  <rect x="1142" y="213" width="250" height="88" rx="16" fill="#fff" stroke="#dddcd4"/>
+  <text x="1164" y="248" class="label">Other ACP clients</text><text x="1164" y="279" class="small">Compatible agent access</text>
+</g>
+<path d="M173 302 V315 H1267 V302 M443 302 V315 M720 302 V350 M997 302 V315" class="line"/><path d="M720 338 V350" class="line" marker-end="url(#arrow)"/>
+<text x="746" y="342" class="small">Choose the capabilities the experience needs</text>
+
+<rect x="32" y="365" width="1376" height="404" rx="25" fill="#fff" stroke="#dedfd8"/>
+<text x="56" y="402" class="eyebrow">INDEPENDENTLY OWNED SERVICE RESPONSIBILITIES</text>
+<g>
+  <rect x="56" y="424" width="316" height="243" rx="16" fill="#e5f0eb"/>
+  <text x="78" y="462" class="label">Installed individual</text>
+  <text x="78" y="490" class="small">INSTANCE</text>
+  <text x="78" y="531" class="body">Identity &amp; configuration</text>
+  <text x="78" y="563" class="body">Context &amp; responsibilities</text>
+  <text x="78" y="595" class="body">Setup, updates &amp; recovery</text>
+  <text x="78" y="640" class="small">One installation, its own state</text>
+
+  <rect x="392" y="424" width="316" height="243" rx="16" fill="#e7edf6"/>
+  <text x="414" y="462" class="label">Reasoning &amp; execution</text>
+  <text x="414" y="490" class="small">NATIVE RUNTIME OR ACP ENGINE</text>
+  <text x="414" y="531" class="body">Model &amp; provider calls</text>
+  <text x="414" y="563" class="body">Permitted tool execution</text>
+  <text x="414" y="595" class="body">Saved execution sessions</text>
+  <text x="414" y="640" class="small">Explicit engine capabilities</text>
+
+  <rect x="728" y="424" width="316" height="243" rx="16" fill="#f0eaf4"/>
+  <text x="750" y="462" class="label">Conversation services</text>
+  <text x="750" y="490" class="small">CONTEXT &amp; COORDINATION</text>
+  <text x="750" y="531" class="body">Rooms, people &amp; messages</text>
+  <text x="750" y="563" class="body">Authorized source retrieval</text>
+  <text x="750" y="595" class="body">Huddles &amp; result return</text>
+  <text x="750" y="640" class="small">Source-owned access rules</text>
+
+  <rect x="1064" y="424" width="320" height="243" rx="16" fill="#f8efdb"/>
+  <text x="1086" y="462" class="label">Domain connections</text>
+  <text x="1086" y="490" class="small">SLACK · TEAMS · MINECRAFT · …</text>
+  <text x="1086" y="531" class="body">Source identity &amp; delivery</text>
+  <text x="1086" y="563" class="body">Platform access &amp; actions</text>
+  <text x="1086" y="595" class="body">Outcomes &amp; recovery</text>
+  <text x="1086" y="640" class="small">The domain owns its effects</text>
+</g>
+<line x1="56" y1="691" x2="1384" y2="691" stroke="#dedfd8"/>
+<text x="68" y="731" class="body"><tspan font-weight="750">ACP</tspan><tspan>  client ↔ agent</tspan></text>
+<text x="470" y="731" class="body"><tspan font-weight="750">MCP</tspan><tspan>  permitted tools &amp; context</tspan></text>
+<text x="976" y="731" class="body"><tspan font-weight="750">Service APIs</tspan><tspan>  compose &amp; operate</tspan></text>
+
+<text x="48" y="816" class="eyebrow">OPTIONAL SUPPORT · USE WHAT HELPS</text>
+<rect x="48" y="838" width="424" height="107" rx="16" fill="#ebece7"/>
+<text x="70" y="878" class="label">Persona Workshop</text><text x="70" y="906" class="small">Portable communication profiles</text><text x="70" y="930" class="small">and working styles</text>
+<rect x="508" y="838" width="424" height="107" rx="16" fill="#ebece7"/>
+<text x="530" y="878" class="label">ACP Lab</text><text x="530" y="906" class="small">Collaboration trials &amp; independent checks</text>
+<rect x="968" y="838" width="424" height="107" rx="16" fill="#ebece7"/>
+<text x="990" y="878" class="label">Observatory</text><text x="990" y="906" class="small">Operate independent installations</text>
+<text x="48" y="991" class="small">No required central service. An ACP client can use a compatible engine directly.</text>
+<text x="48" y="1020" class="small">Conceptual capability map, not a mandatory stack, deployment topology or finished UX.</text>
+</svg>

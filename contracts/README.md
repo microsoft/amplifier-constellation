@@ -1,48 +1,57 @@
-# Contract ownership
+# Find the agreement you need
 
-The umbrella contracts describe shared expectations. They are candidates for
-review. Component-owned contracts describe concrete interfaces; they retain their
-existing version names until an explicit migration changes them.
+Read the [family agreement](family.v1-candidate.md) for composition and ownership,
+and the [interaction agreement](experience.v1-candidate.md) for behavior that
+consumers can rely on. Then choose only the boundaries relevant to the next
+outcome. This is a map of intended promises, not a feature or release inventory.
 
-| Boundary | Owner and detailed reference |
-| --- | --- |
-| Family composition | [Family candidate](family.v1-candidate.md) |
-| Self-contained setup, authorization, and management | [Installation baseline](family.v1-candidate.md#self-contained-installation-baseline) |
-| Experience scope and programmatic interaction | [Experience candidate](experience.v1-candidate.md) |
-| Official SDK adoption and approved protocol exceptions | [Protocol SDK candidate](protocol-sdk.v1-candidate.md) |
-| Individual portraits and runtime background colors | [Agent appearance candidate](agent-appearance.v1-candidate.md) |
-| Long turns, compaction, source delivery and measured context | [Harness lifecycle candidate](harness-lifecycle.v1-candidate.md) |
-| Working indicators and public activity across adapters | [Adapter activity candidate](adapter-activity.v1-candidate.md) |
-| New messages during ongoing work and explicit stop | [Input continuity candidate](input-continuity.v1-candidate.md) |
-| Current model classes, capability records and explicit selection | [Model support candidate](model-support.v1-candidate.md) |
-| Active peer awareness and reporting group outcomes | [Collaboration candidate](collaboration.v1-candidate.md) |
-| Natural task requests, limit changes and authorized help | [Conversational task admission candidate](task-admission.v1-candidate.md) |
-| Ambient social admission | [Installed-agent attention candidate](attention.v1-candidate.md) |
-| Human priority, observed activity and interruptible action | [Human engagement candidate](human-engagement.v1-candidate.md) |
-| Saved service connections and fixed installation-owned actions | [Service connections candidate](service-connections.v1-candidate.md) |
-| Self-contained update lifecycle | [Installation updates candidate](installation-updates.v1-candidate.md) |
-| Standard agent/client interaction | [Agent Client Protocol](https://agentclientprotocol.com/) |
-| Instance attach, custom transport, and management discovery | [Instance ACP boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md) |
-| Authorized conversation recall and native history | [Instance continuity contract](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/conversation-continuity.md) |
-| Native optional ACP behavior | [Runtime capabilities](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/acp-optional-capabilities.md) |
-| Conversation client permissions and tools | [Conversations callbacks](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/client-callbacks.md) |
-| Slack participation and presentation | [Slack adapter](https://github.com/microsoft/amplifier-acp-slack) |
-| Teams participation and presentation | [Teams adapter](https://github.com/microsoft/amplifier-acp-teams) |
-| Portable persona packages | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
-| Experiment execution and independent evaluation | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
+The family and interaction revisions are review drafts. Documents or sections
+explicitly marked as accepted retain that scope; candidate wording does not
+silently become an agreement. Detailed component APIs remain the definition of
+what an actual implementation exposes. Inspect and test that implementation
+when choosing work or claiming support.
 
-Component repositories are recorded in [the registry](../family.toml).
-Repository availability, an accepted contract, a component release and a verified
-installation are separate facts. See [implementation status](../docs/STATUS.md)
-and the owning component's release evidence.
+## Shared service and consumer boundaries
 
-Changing a repository name does not rename a protocol identifier or make a custom
-extension part of ACP. Any namespace migration must preserve or deliberately
-deprecate existing clients through the owning component's versioned interface.
+| If your work changes… | Shared agreement | Implementation responsibility |
+| --- | --- | --- |
+| How independent components compose, operate and share ownership | [Family](family.v1-candidate.md) | Affected service owners; the umbrella owns the common expectation. |
+| Source, audience, destination and equivalent authorized controls | [Interaction](experience.v1-candidate.md) | Experiences and connectors, with the services they consume. |
+| Protocol integration or an optional extension | [Official SDKs](protocol-sdk.v1-candidate.md) | ACP owns its standard; each component owns its integration. |
+| New input during accepted work | [Input continuity](input-continuity.v1-candidate.md) | Source adapter, Instance routing and the selected engine. |
+| Public speech and truthful delivery | [Conversation delivery](conversation-delivery.v1-candidate.md) | Shared assembly behavior and each destination adapter. |
+| Work indicators rather than speech | [Activity](adapter-activity.v1-candidate.md) | The presenting experience or connector. |
+| Human requests, limits, Stop or authorized help | [Task admission](task-admission.v1-candidate.md) | Authenticated intake and the owner of the resource being acted on. |
+| Ambient participation | [Attention](attention.v1-candidate.md) | Optional Instance policy; adapters supply source facts. |
+| Human priority and observed activity | [Human engagement](human-engagement.v1-candidate.md) | Instance policy, engine input and domain operation owners. |
+| Peer awareness, handoffs or returning the result | [Collaboration](collaboration.v1-candidate.md) | Participants, source services and destination adapters. |
+| Long execution, compaction or delivery receipts | [Harness lifecycle](harness-lifecycle.v1-candidate.md) | Selected engine, host and source-delivery owners. |
+| Compact current context without losing originals | [Context snapshots](context-snapshots.v1-candidate.md) | Context producers and the consuming engine. |
+| Model selection or provider compatibility | [Model support](model-support.v1-candidate.md) | The engine and its configuration clients. |
+| Saved connection setup or Connect/Disconnect | [Service connections](service-connections.v1-candidate.md) | Instance registry/helper and the domain installation. |
+| Updates and connected-work recovery | [Installation updates](installation-updates.v1-candidate.md) | Installation-owned providers and lifecycle participants. |
+| Portable individual imagery | [Agent appearance](agent-appearance.v1-candidate.md) | Installed identity and consuming connectors; a scoped convention, not a product UX. |
 
-The input-continuity and model-support contracts record accepted behavior;
-[implementation status](../docs/STATUS.md) identifies versioned support and limits.
-They require coordinated implementation and release evidence; adding these
-documents does not make an older installation support them. Detailed native
-execution design remains with the
-[runtime](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
+## Go to the interface owner for details
+
+- **Agent/client interaction:** [ACP](https://agentclientprotocol.com/) and
+  [Instance's attach boundary](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/acp-boundary.md).
+- **Tools and context:** [native tool connections](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/architecture.md#model-and-tools)
+  and [authorized source continuity](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/conversation-continuity.md).
+- **Installed-agent controls:** [Instance API](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/api.md),
+  [saved connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md)
+  and [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md).
+- **Conversation services:** [API](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/api.md)
+  and [huddles](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
+- **Domain operations:** [Slack](https://github.com/microsoft/amplifier-acp-slack),
+  [Teams](https://github.com/microsoft/amplifier-acp-teams) and
+  [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft).
+
+[family.toml](../family.toml) locates all components. Protocol namespaces retain
+their compatibility meaning even when repository names differ. A custom extension
+is not made standard by its name or by appearing in this map.
+
+For a shared-promise change, identify affected producers and consumers, preserve
+or explain compatibility, and check the combined outcome. The
+[working guide](../docs/working-together.md) shows how to do that without making
+ordinary implementation depend on another approval.

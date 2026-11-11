@@ -29,7 +29,8 @@ and bounded context available to the agent. Include:
 - A concrete reason for an unavailable operation and its supported remedy.
 
 Do not infer authority from available tool names or ACP capability alone. A
-temporary reply reserve permits conversation, not world or filesystem effects.
+temporary reply reserve does not itself authorize world or filesystem effects;
+any such effect must rely on separately valid existing work authority.
 Waiting for capacity cannot clear a configured chat-only mode. Installation mode
 changes do not automatically resume old stopped, expired or uncertain work.
 
@@ -157,7 +158,8 @@ Exercise the actual admission and effect boundaries with disposable fixtures:
   or quoted human name cannot manufacture human authorization.
 - Duplicate intake, lost acknowledgments and restart do not duplicate execution.
 - Chat-only mode and temporary capacity produce different truthful guidance;
-  reply-only turns remain effect-free in either case.
+  reply admission alone grants no effects; separately valid existing task
+  authority remains distinguishable from a new grant.
 - New work or a mode change does not resume expired or stopped assignments.
 - Amendments preserve identity and consumed counts; concurrent edits, a lower
   exhausted cap and a human stop have observable outcomes.

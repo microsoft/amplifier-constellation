@@ -157,41 +157,29 @@ not establish token, dollar or quality improvements.
 
 ## Compatibility and rollout
 
-Slack and browser group rooms discover the capability; direct chats remain
-ordinary ACP. Minecraft can opt into collecting public events for the host;
-without the capability it can offer bounded ordinary ACP turns, explicitly
-without pre-LLM savings. Legacy name routing remains available when this mode
-is disabled. No adapter needs decision-service credentials for this profile.
-A migration must remove the older adapter-owned social evaluator, not run both.
+Group adapters discover the capability; direct conversations can remain ordinary
+ACP. A domain may opt into collecting public events for the host. Without the
+capability it can use bounded ordinary ACP turns, explicitly without claiming
+pre-LLM savings. Existing routing remains available when this mode is disabled.
+No adapter needs decision-service credentials for this profile. A migration must
+remove the older adapter-owned social evaluator, not run both.
 
-Teams has no live validation in this change. Observatory Talk and Zed remain
-ordinary direct ACP clients. Preserve running tasks, deadlines, budgets, source
-authorizations and saved session bindings on rollout. Deploy at idle boundaries
-only after component review and test evidence; no world resets or mission renewal.
+Evaluate each adapter's actual capability negotiation and fallback. Preserve
+running tasks, deadlines, budgets, source authorizations and saved session
+bindings on rollout. Use the installation's coordinated lifecycle after component
+review and test evidence; no world resets or assignment renewal.
 
 ## Streaming and optional host protocols
 
-Streaming already reaches the adapter boundary: Instance forwards ordinary ACP
-`session/update` notifications without waiting for the final result. Presentation
-is a separate policy:
+Instance preserves ordinary ACP updates. Public presentation follows
+[conversation delivery](conversation-delivery.v1-candidate.md); adapters use
+negotiated completion information and the documented fallback. Private thought,
+permission details and provisional participation judgments are not public speech.
 
-| Experience | Current presentation |
-| --- | --- |
-| Conversations, direct chat | Streams visible message updates as they arrive. |
-| Conversations, shared room | Buffers until the agent commits to speaking, so a private participation choice is not published. |
-| Slack | Consumes ACP updates; publishes the final formatted reply. Draft streaming is not introduced here. |
-| Minecraft | Consumes ACP updates and runs permitted tools; publishes the final conversational response. Game movement/actions need not wait for the final chat text. |
-| Zed / another ordinary ACP client | Receives standard ACP updates; rendering belongs to that client. |
-
-No adapter may present thought chunks, permission details or provisional social
-judgments as public speech merely because they arrive in the stream.
-
-AHP is an adjacent future option for synchronizing session state among multiple
-clients of a host. ACP remains the engine boundary, and MCP remains the tool
-boundary. The [AHP relationship guide](https://microsoft.github.io/agent-host-protocol/guide/ahp-and-acp)
-describes that layering. AHP does not itself supply this installation's social
-policy, identity continuity or source authorization. No AHP service, dependency
-or compatibility claim is introduced by this candidate.
+ACP remains the agent/client boundary and MCP the tool boundary. A future host
+protocol may provide additional session synchronization, but it would not itself
+supply social policy, identity continuity or source authorization. Any adoption
+needs a concrete interface agreement; it is not implied by this candidate.
 
 ## Installation lifecycle
 

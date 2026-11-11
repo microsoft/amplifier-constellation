@@ -1,9 +1,8 @@
 # Conversation awareness and closing the loop — v1 candidate
 
 This extends [input continuity](input-continuity.v1-candidate.md) and
-[Instance attention](attention.v1-candidate.md). Released behavior and adoption
-belong in [implementation status](../docs/STATUS.md); a contract is not proof of
-deployment or collaboration quality.
+[Instance attention](attention.v1-candidate.md). Evaluate behavior at the relevant
+service boundary; a contract is not proof of deployment or collaboration quality.
 
 ## Expected experience
 

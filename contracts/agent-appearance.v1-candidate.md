@@ -1,6 +1,7 @@
 # Agent appearance — v1 candidate
 
-Accepted visual convention · November 6, 2026.
+Accepted convention for portable agent portraits. This does not prescribe the
+layout or interaction design of future products.
 
 An agent's character, face, clothing and accessories identify the individual.
 Its portrait background identifies the installed runtime family. Model or

@@ -1,10 +1,10 @@
 # Input continuity while an agent works — v1 candidate
 
-Accepted design decision: November 4, 2026. This defines input continuity across
-independently versioned components. See [implementation status](../docs/STATUS.md)
-for released versions, tested boundaries and client-adoption limits. Each
-installation remains self-contained; contract adoption alone does not establish
-an installation's current behavior.
+Accepted design decision. This defines input continuity across
+independently versioned components. Evaluate the actual producer and consumer
+capabilities when relying on this behavior. Each installation remains
+self-contained; contract adoption alone does not establish an installation's
+current behavior.
 
 ## User expectation
 
@@ -192,14 +192,9 @@ authority. A final-looking response does not bypass the input/finalization check
 Provider/model eligibility follows the [model support policy](model-support.v1-candidate.md).
 Concrete state machines and wire formats belong in the runtime's coordinated
 [steering design](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md).
-The coordinated implementation is Runtime 0.10.0, Instance 0.16.0 and Slack 0.9.0;
-[implementation status](../docs/STATUS.md) records each release and its limits.
-Older runtime versions do not gain an inbox or native steering merely by using
-a newer host. Protocol checks are not evidence of fleet rollout.
-Client adoption is separate: Slack 0.9.1, Conversations 0.8.0 and Observatory
-0.7.0 accept ordered input while work is active. Each recipient uses negotiated
-steering or a queued next prompt. Uncertain delivery requires explicit recovery;
-ordinary input never cancels work. See the [experience coverage](../docs/STATUS.md).
+The client and installed engine must both support the selected path. A newer
+host does not add an inbox or native steering to an opaque backend. Uncertain
+delivery requires explicit recovery; ordinary input never cancels work.
 
 Peer evidence during existing work follows the
 [collaboration contract](collaboration.v1-candidate.md). Its optional active-prompt
