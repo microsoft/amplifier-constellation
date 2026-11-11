@@ -66,3 +66,110 @@ repository = "https://github.com/microsoft/amplifier-acp-minecraft"
 scope = "shared"
 publication = "source"
 purpose = "Independent ACP agents as Minecraft players with scoped world interaction and bounded collaboration."
+
+# Related products retain their own composition contracts.
+[[related_repository]]
+id = "unified"
+repository = "https://github.com/microsoft/amplifier-unified"
+kind = "product"
+contract = "https://github.com/microsoft/amplifier-unified/blob/main/contracts/component-boundaries.v1.md"
+
+# Intended homes for setup, extraction or adoption. This is not an availability
+# inventory: an entry neither asserts repository absence nor an implemented API.
+# Scope and cross-component boundaries have one home in the linked agreement.
+
+[[planned_repository]]
+id = "companion"
+repository_name = "microsoft/amplifier-companion"
+kind = "product"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-scheduling"
+repository_name = "microsoft/amplifier-platform-scheduling"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-workspaces"
+repository_name = "microsoft/amplifier-platform-workspaces"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-resources"
+repository_name = "microsoft/amplifier-platform-resources"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-operations"
+repository_name = "microsoft/amplifier-platform-operations"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-publishing"
+repository_name = "microsoft/amplifier-platform-publishing"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-portability"
+repository_name = "microsoft/amplifier-platform-portability"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-canvas"
+repository_name = "microsoft/amplifier-platform-canvas"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-realtime"
+repository_name = "microsoft/amplifier-platform-realtime"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "platform-context"
+repository_name = "microsoft/amplifier-platform-context"
+kind = "platform"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-web"
+repository_name = "microsoft/amplifier-client-web"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-windows"
+repository_name = "microsoft/amplifier-client-windows"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-linux"
+repository_name = "microsoft/amplifier-client-linux"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-macos"
+repository_name = "microsoft/amplifier-client-macos"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-ios"
+repository_name = "microsoft/amplifier-client-ios"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"
+
+[[planned_repository]]
+id = "client-android"
+repository_name = "microsoft/amplifier-client-android"
+kind = "client"
+boundary = "contracts/family.v1-candidate.md#planned-products-platforms-and-clients"

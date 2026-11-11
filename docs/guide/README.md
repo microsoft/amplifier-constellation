@@ -23,11 +23,14 @@ worked example that connects the parts.
 
 ## The big parts
 
-![Service map: external experiences compose installed agents, conversation services and domain connections through ACP, MCP and service APIs](system-map.svg)
+![Ecosystem map: Companion, Unified and connected experiences compose agent services and planned shared platforms, with six planned client foundations](system-map.svg)
 
 Think of these as capabilities that can be composed, not a required stack to
-install together. Existing browser screens and Companion preview help us develop
-and exercise the services. They do not prescribe the eventual ecosystem UX.
+install together. **Companion is a product with its own planned repository**; its
+existing preview is currently implemented beside the Conversations service.
+**Unified is an existing product** with a planned Constellation connection.
+Their product experiences remain distinct from shared services and reusable
+client foundations. Current administration screens do not prescribe their UX.
 
 | Part | What it contributes | Where its responsibility ends |
 | --- | --- | --- |
@@ -47,9 +50,26 @@ exercise collaboration and independently check outcomes (**ACP Lab**), and
 operate several installations through their exposed controls (**Observatory**).
 They are reusable tools, not prerequisites for an agent to exist or respond.
 
-Future web and native UX can compose these capabilities. **Amplifier Unified is
-a planned integration**, not a connection demonstrated by this guide. External
-ACP clients can also use compatible engines directly, without Instance.
+### Reuse the planned platform and client foundations
+
+The [planned ownership boundaries](../../contracts/family.v1-candidate.md#planned-products-platforms-and-clients)
+explain how the new repositories fit. The groups below are a reading aid, not new
+API definitions. Planned homes describe intended extraction and adoption, not
+a verified repository-availability inventory or implemented integrations.
+
+| Group | Planned repository homes | How an experience could use them |
+| --- | --- | --- |
+| **Companion product** | `amplifier-companion` | Own calls, shared presentation and meaningful work follow-through while consuming shared capabilities. |
+| **Organize work and its evidence** | `amplifier-platform-scheduling`, `amplifier-platform-workspaces`, `amplifier-platform-resources`, `amplifier-platform-operations` | Reuse scheduling, workspaces, files/artifacts and durable operation observations while the engine and domain retain execution and effect authority. |
+| **Create, release and carry** | `amplifier-platform-canvas`, `amplifier-platform-publishing`, `amplifier-platform-portability` | Compose shared canvas, built-output preview/release and portability capabilities instead of rebuilding them inside each experience. |
+| **Live and relevant input** | `amplifier-platform-realtime`, `amplifier-platform-context` | Reuse live-media and authorized context access; source access rules and backend reasoning ownership remain distinct. |
+| **Client foundations** | `amplifier-client-web`, `amplifier-client-windows`, `amplifier-client-macos`, `amplifier-client-linux`, `amplifier-client-ios`, `amplifier-client-android` | Share client support across products without treating each operating system as a separate product or service. |
+
+Conversations continues to own its rooms, membership, messages and huddles. A
+planned Companion repository does not create a second conversation service.
+The [repository map](../../family.toml) locates the existing and planned homes;
+concrete APIs belong to their serving owners. External ACP clients can also use
+compatible engines directly, without Instance.
 
 ## Three kinds of interface
 
@@ -74,9 +94,10 @@ Amplifier Agent, keeps its own provider/dependency implementation. Consumers
 negotiate what the chosen engine supports instead of assuming all engines are
 interchangeable in every feature or saved-session format.
 
-An experience can separately own voice or media transport through its provider's
-supported interface. That does not move the backend reasoning engine into the
-experience or make those media protocols part of ACP.
+An experience can use the planned Realtime capability for voice or media transport
+while owning its interaction design. That does not move backend reasoning out of
+the selected engine or make media protocols part of ACP. The current implementation
+and supported interface still need to be checked with their owner.
 
 ## Follow one piece of work
 

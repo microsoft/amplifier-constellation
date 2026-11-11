@@ -22,10 +22,17 @@ within their demonstrated capabilities.
 
 ## A common foundation for different experiences
 
-Slack, Teams, Minecraft, Amplifier Unified and future web or native products
+Companion, Slack, Teams, Minecraft, Amplifier Unified and future web or native products
 should be able to draw on these capabilities without rebuilding an agent system
 for each surface. A person may talk, type, show something or work alongside an
 agent. Each experience can design the interaction that fits its setting.
+
+Products should also reuse shared Amplifier platform capabilities for organizing
+work, handling resources and results, and presenting information. Companion and
+Unified can draw on the same foundations while offering different experiences.
+Browser and native client foundations make those experiences available on the
+devices people use. They need not duplicate an agent system or a platform for
+each product and device.
 
 Underneath, the services should preserve the same essential meanings. A new
 conversation need not create a new individual. Relevant context can be retrieved
