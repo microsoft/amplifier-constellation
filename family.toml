@@ -82,16 +82,16 @@ contract = "https://github.com/microsoft/amplifier-unified/blob/main/contracts/c
 id = "companion"
 repository_name = "microsoft/amplifier-companion"
 kind = "product"
-boundary = "contracts/family.v1-candidate.md#experience-and-supporting-capability-ownership"
+boundary = "contracts/composition.md#experience-and-supporting-capability-ownership"
 
 [[planned_repository]]
 id = "platform-realtime"
 repository_name = "microsoft/amplifier-platform-realtime"
 kind = "platform"
-boundary = "contracts/family.v1-candidate.md#experience-and-supporting-capability-ownership"
+boundary = "contracts/composition.md#experience-and-supporting-capability-ownership"
 
 [[planned_repository]]
 id = "platform-context"
 repository_name = "microsoft/amplifier-platform-context"
 kind = "platform"
-boundary = "contracts/family.v1-candidate.md#experience-and-supporting-capability-ownership"
+boundary = "contracts/composition.md#experience-and-supporting-capability-ownership"
