@@ -1,239 +1,169 @@
 # Family composition and ownership — v1
 
-For owners of Constellation services, connectors and consumers.
-The promise: independently useful parts can be developed and operated separately
-while keeping the behavior that others rely on.
+For owners of Constellation services, connectors and consumers. The promise:
+independently useful parts can evolve separately while preserving the behavior
+others rely on.
 
 ## Responsibilities and connections
 
-| Responsibility | Component boundary |
+| Part | Responsibility |
 | --- | --- |
-| Installed individual | Instance owns identity, configuration, authorized context, responsibilities and installation controls. |
-| Reasoning and execution | The selected ACP engine owns its reasoning-provider calls, session history and tool execution. Native Runtime is one implementation. |
-| Conversation services | Conversations owns its rooms, membership, messages, source access and coordination services. External platforms retain ownership of their own conversations. |
-| Domain connection | Each connector owns platform authorization, source attribution, delivery, domain actions and its lifecycle. |
-| Composition and assistance | Experiences and optional administration clients use exposed controls. Persona preparation and evaluation remain independently usable capabilities. |
-| Shared direction | This umbrella owns the family map and cross-component expectations; concrete APIs and tests belong to the serving component. |
+| Instance | Installed identity, configuration, authorized context, responsibilities and installation controls. |
+| Selected ACP engine | Reasoning-provider calls, execution sessions, tools and engine recovery. Constellation Runtime is one choice. |
+| Conversations | Its rooms, membership, messages, source access and coordination. External platforms keep their conversations. |
+| Domain connector | Platform authorization, source attribution, delivery, domain actions and connector lifecycle. |
+| Experience | Interaction and presentation, using the services it needs. |
+| Observatory | Fleet observation and management through installations' exposed controls, without owning their state or bypassing their permissions. |
+| Umbrella | Shared direction and composition promises. Detailed APIs and tests belong to the serving component. |
 
-The [registry](../family.toml) locates repositories. It is documentation, not a
-required provisioning service or a grant of access. Repository count does not
-determine ownership: one owner can carry several components or an assembly.
+[family.toml](../family.toml) locates repositories; it is not a provisioning service
+or access grant. An owner may lead several components or an assembly.
 
 ## Composition relationships
 
-The [vision](../docs/VISION.md#what-each-part-means) defines the parts in everyday
-terms. Instance is the logical home hosting the selected runtime; it is not a
-requirement for an operating-system container or a mandatory gateway for every
-ACP client. The engine remains responsible for reasoning and execution history.
-One individual can participate in several conversations, and several individuals
-can participate in one conversation. Participation does not merge histories,
-audiences, grants or task authority. The engine may retain separate sessions;
-there is no universal one-to-one conversation/session mapping.
+Instance is the agent's logical home, hosting its selected engine. It requires no
+particular container technology and is not a mandatory gateway for every ACP
+client. One individual can participate in several conversations; several can
+share one. Participation does not merge histories, audiences, grants or task
+authority. There is no universal conversation-to-engine-session mapping.
 
 ## Experience and supporting capability ownership
 
-Companion is the Constellation experience for calls, camera input, shared
-presentation and useful result return. Its intended independent home is
-`amplifier-companion`; its preview currently lives in Conversations. Extraction
-does not transfer rooms, membership, messages or huddles to the product.
+Companion owns its live-call experience, including camera input, shared presentation
+and useful result return. Its intended home is `amplifier-companion`; extraction
+from Conversations leaves rooms, membership, messages and huddles with the service.
 
-**Amplifier is one external ACP client/experience in this map.** Its implementation
-lives in [Amplifier Unified](https://github.com/microsoft/amplifier-unified), which
-owns its own products, clients, platforms, repository map, vision and contracts.
-Its internal decomposition is outside this agreement. Constellation specifies the
-connection boundary, not Amplifier's internal ownership. The integration is
-planned; the diagram does not certify an available connection.
+Amplifier is one external ACP client/experience. [Amplifier Unified](https://github.com/microsoft/amplifier-unified)
+owns that product's internal clients, platforms and agreements, outside this map.
 
-The intended `amplifier-platform-realtime` home covers reusable live-media support;
-products retain call behavior and consent, while ACP engines retain backend
-reasoning and execution sessions. The intended `amplifier-platform-context` home
-covers authorized source discovery, retrieval and context selection; sources
-retain records and access rules, Instance retains installation grants, and engines
-retain execution history and model-context handling. These intended homes are not
-claims of available APIs or completed extraction. Existing serving owners remain
-authoritative until an interface moves through an explicit compatibility change.
-
-Exact interfaces and tests live with their serving owners. This agreement owns
-Constellation's composition promises; guides and diagrams only explain them.
-Reuse other ecosystems' capabilities through their published boundaries without
-copying their contracts here or requiring every installation to adopt them.
+The intended `amplifier-platform-realtime` home owns reusable live-media support;
+products retain call behavior and consent, engines retain reasoning and sessions.
+The intended `amplifier-platform-context` home owns authorized discovery, retrieval
+and context selection; sources retain records/access rules, Instance its grants,
+and engines history and model-context handling. Intended homes do not establish
+available APIs. Serving owners remain authoritative until an explicit compatible
+handoff. Persona Workshop and ACP Lab remain independently usable supporting parts.
 
 ## Information ownership
 
-The components preserve different kinds of records. Displaying or retrieving a
-record does not transfer its ownership or create another authoritative copy.
+Displaying or retrieving a record does not transfer ownership.
 
-| Record | Owner and meaning |
+| Record | Authority |
 | --- | --- |
-| Installed identity and configuration | Instance, when used, owns the individual's installation settings and exposed controls. |
-| Conversation, membership and original messages | The source platform or conversation service owns its conversations and current access rules. Conversations does not replace every platform's store. |
-| Model execution history and continuation state | The selected engine owns its session format and execution recovery. Source access and domain-effect recovery remain with their respective owners. |
-| Responsibility or assignment | The service that accepts it owns the record under its contract. Instance can expose responsibility records; a domain can own its task and effect limits. Recording work, starting it and authorizing effects remain distinct; no universal task database is required. |
-| Actual external state | The external system owns what exists there. A connector or domain service records action attempts, observed results and uncertainty; its receipt is evidence, not a substitute for the external state. |
-| Context access | The source's current authorization governs retrieval. A supplied excerpt retains provenance and coverage and does not itself grant access. |
-| Display and draft state | The experience owns its supported view state; selecting or drafting does not imply sending or authorizing work. |
+| Installed identity and configuration | Instance's installation settings and controls, when used. |
+| Conversation, membership and messages | Source platform or conversation service, including current access rules. |
+| Execution history and continuation | Selected engine; domain-effect recovery stays with the domain. |
+| Assignment | Accepting service under its contract. Recording, starting and authorizing effects are distinct; no universal task database is required. |
+| External state | External system. Domain receipts record attempts, observations and uncertainty, not a replacement reality. |
+| Retrieved context | Source's current authorization; excerpts retain provenance/coverage and grant no access. |
+| View and draft state | Experience. Selecting or drafting is not sending or authorizing work. |
 
 ## Interface responsibilities
 
-ACP carries client/engine interactions: capability discovery, supported sessions,
-input, output, tool activity, permissions and cancellation. MCP exposes declared
-tools and context. Service APIs expose their owner's resources and supported
-operations. These are separate responsibilities, not a universal envelope or a
-requirement for every client to use every interface.
-
-A connector can be both an ACP client bringing platform input to an agent and a
-tool/context service exposing permitted domain access. Its domain retains source
-attribution, delivery and effect enforcement. The selected engine owns its
-backend reasoning-provider integration. An experience may separately own voice
-or media transport through its provider interface; this does not make those
-protocols part of ACP or move backend reasoning ownership into the experience.
+ACP carries client/engine interactions; MCP exposes tools and context; service
+APIs expose their owner's resources and operations. A connector may both bring
+input to an engine and expose domain tools. Backend reasoning-provider integration
+belongs to the engine; an experience's voice/media transport remains separate.
 
 ### What crosses each connection
 
-These exchanges identify responsibilities, not new protocol fields or mandatory
-message sequences. A composition uses only supported and authorized operations.
+| Connection | Input and dependable return |
+| --- | --- |
+| Person ↔ experience | Direction, correction, shared material or Stop → response, inspectable work and results in the intended conversation. |
+| Experience / connector ↔ Instance | Attributed input, source/destination and supported controls → scoped availability, capabilities, output and operation outcomes. |
+| Instance ↔ engine | ACP discovery, supported create/load, input/context, permissions and cancellation → response, tool activity and interaction terminal. History stays with the engine. |
+| Runtime ↔ tools / domain services | Authorized reads/actions → source material, observed effects or explicit failure/uncertainty. A message alone is not proof of a claimed result. |
+| Experience / connector ↔ conversation source | Supported message, audience, membership and delivery operations → source-bound history and delivery evidence. |
+| Agents ↔ coordination conversation | Attributed peer exchanges → inspectable coordination and meaningful return to the original request. Invitation is not execution authority. |
+| Observatory ↔ installations | Authorized observation and management requests → scoped status and operation outcomes through advertised interfaces; ACP-only peers remain usable without management features. |
 
-| Connection | What goes across | What comes back / useful result |
-| --- | --- | --- |
-| Person ↔ experience | A request, correction, shared material or explicit control such as Stop. | A response, inspectable work or a meaningful result in the intended conversation. The experience owns how this is presented. |
-| Experience / domain connection ↔ Instance | Attributed input with its source and destination; supported configuration or lifecycle requests through owned APIs. | Agent availability, supported capabilities, interaction output and operation outcomes, scoped to that connection. |
-| Instance ↔ selected runtime | ACP capability discovery, supported session create/load, input and permitted context, permission handling and cancellation. | Response content, tool activity and the interaction terminal. Engine history stays with the runtime. |
-| Runtime ↔ tools / domain services | MCP or another supported tool interface carries authorized reads and actions. | Source material, observed effects or explicit failure/uncertainty. A returned message is not independent proof of every claimed outcome. |
-| Experience / connector ↔ conversation source | Owned APIs retain or retrieve messages, audiences, membership and supported deliveries. | Source-bound history and delivery evidence. Reading one source does not grant access to another. |
-| Participating agents ↔ coordination conversation | Attributed peer messages, questions and results under the room's access rules. | Inspectable coordination and a meaningful return to the original request. A huddle invitation is not execution authority. |
-
-Exact operations, fields, supported versions and failure behavior belong to the
-serving component or upstream protocol. The [interface map](README.md#go-to-the-interface-owner-for-details)
-links those definitions. Inspect the actual producer and consumer before relying
-on optional behavior. Shared outcome meanings live in the
-[interaction agreement](experience.v1-candidate.md), including the distinction
-between receipt, execution, delivery and verified completion.
+These are responsibilities, not new fields or mandatory sequences. Use supported,
+authorized operations. Exact versions, schemas and failures live with the
+[interface owner](README.md#go-to-the-interface-owner-for-details). Shared outcome
+meanings live in the [interaction agreement](experience.v1-candidate.md).
 
 ## Design commitments
 
-1. **Keep a standard agent boundary.** Ordinary ACP is sufficient for a compatible
-   client and agent to conduct a conversation. Instance, the native runtime and
-   optional management/context features are not mandatory for every ACP peer.
-   Negotiate additional capabilities and explain unsupported operations. Use the
-   [official SDK policy](protocol-sdk.v1-candidate.md); label custom transports
-   and extensions rather than implying they are part of base ACP.
-2. **Give each promise one home.** The serving component owns its detailed schema
-   and behavior tests. Consumers use declared interfaces, not another component's
-   private database or files. Shared expectations live here; guides link to them
-   rather than making competing definitions. Vision explains intended value;
-   contracts hold commitments; guides and diagrams illustrate and navigate them.
-   Removing a guide must not remove a commitment. When a promise changes, inspect
-   its linked examples in the same change rather than maintaining a separate
-   synchronization inventory.
-3. **Preserve identity and scope deliberately.** Different individuals retain
-   separate identities, state and credentials. The same individual's connections
-   retain distinct conversations, audiences and working sessions. Sharing context
-   requires current authorization; identity recognition alone grants nothing.
-4. **Keep engine choice explicit.** An installation selects its engine family at
-   creation and may update it. Changing families means a separate installation,
-   not implicit migration of private histories or active work. Model/provider
-   choices within an engine follow its supported configuration and the
-   [model policy](model-support.v1-candidate.md). A new catalog entry cannot
-   silently change a running task's execution context.
-5. **Separate reasons to engage from authority to act.** The installation owns
-   optional shared attention policy; adapters supply source facts. Admitted
-   reasoning can still choose silence. An offer, huddle invitation, persona or
-   exported responsibility is not permission to execute. The resource owner
-   validates the actual authority before effects; see
-   [task admission](task-admission.v1-candidate.md).
-6. **Keep products free to compose the services.** APIs and permissions define the
-   reusable capabilities. Existing control panels, preview clients and test
-   surfaces do not prescribe the UX of future products. A new experience can use
-   the subset it needs, keeping the [interaction promises](experience.v1-candidate.md).
+1. **Standard agent boundary.** Ordinary ACP supports compatible conversation
+   without Instance, native Runtime or optional extensions. Negotiate extras,
+   explain unsupported operations and follow the [SDK policy](protocol-sdk.v1-candidate.md).
+   Label custom transports and extensions honestly.
+2. **One home per promise.** Serving components own APIs and tests; consumers do
+   not depend on their private files/databases. Shared agreements live here;
+   explanations link them. Review linked examples when a promise changes.
+3. **Identity does not erase scope.** Individuals retain separate state and
+   credentials; their connections retain audiences, conversations and sessions.
+   Sharing requires current authorization.
+4. **Explicit engine choice.** Creation selects an engine family. Updates preserve
+   it; changing families requires a separate installation, not implicit history
+   migration. Model/provider choices follow supported configuration and the
+   [model policy](model-support.v1-candidate.md). Catalog changes cannot silently
+   alter a running task's execution context.
+5. **Engagement is not effect authority.** Instance owns optional shared attention
+   policy; adapters supply facts. Reasoning may choose silence. Offers, personas,
+   invitations and exported responsibilities grant no execution authority; the
+   resource owner enforces [task admission](task-admission.v1-candidate.md).
+6. **Products choose their UX.** Reusable APIs and permissions enable different
+   experiences. Admin panels and previews do not prescribe future product design.
 
-These choices favor independent ownership and reuse over a single tightly coupled
-application. The tradeoff is explicit integration and capability checks. Evaluate
-whether the boundaries actually reduce duplicated work and coordination effort;
-changing a shared commitment follows the ownership process below.
+These choices trade tighter coupling for explicit compatibility checks. Revisit
+boundaries when integration and coordination cost outweigh independent reuse.
 
 ## Self-contained installation baseline
 
-Each agent and connector has a standalone path for setup, authorization,
-credential renewal, connection and image updates, recovery and disconnection.
-Platform-specific operations belong to the connector, not the ACP runtime.
+Each agent and connector owns standalone setup, authorization, renewal,
+connection/image updates, recovery and disconnection. Platform-specific work
+belongs to the connector, not the engine. Local tools/helpers may automate it;
+external permissions still apply.
 
-Local platform tools and installation-owned helpers may automate that path.
-External platform permissions still apply. Operation must not require a shared
-Constellation provisioning, enrollment, credential or identity service, another
-owner's administrator credentials, or a fleet dashboard. Optional fleet clients
-invoke the installation's controls and do not become the sole owners of its
-state or lifecycle.
+No shared provisioning, enrollment, credential, identity service, other owner's
+administrator credentials or fleet dashboard is required. Optional clients invoke
+installation controls without becoming sole owners of state or lifecycle.
+Independent owners may use different machines, versions and implementations;
+one upgrade must not require an unrelated owner's upgrade.
 
-Different owners can use different machines, versions and implementations within
-the declared compatibility boundary. Updating one installation must not require
-an unrelated owner's upgrade. The [update](installation-updates.v1-candidate.md)
-and [saved connection](service-connections.v1-candidate.md) agreements preserve
-identity, sessions, task limits, consumed work and unknown effects through their
-respective operations. Recovery inspects effects before retrying; it does not
-restore old state over newly arrived observations.
-
-Measure setup and recovery effort for users and administrators together. Moving
-work to an operator does not count as removing it.
+[Updates](installation-updates.v1-candidate.md) and
+[connections](service-connections.v1-candidate.md) preserve identity, sessions,
+authority, consumed work and unknown effects. Inspect effects before retrying;
+never overwrite newer observations with old state. Count administrator effort
+alongside end-user effort.
 
 ## Execution resources remain separate
 
-Hosting an agent and providing resources for its assignments are separate
-responsibilities. Project tools, repository objects and build caches can be
-shared deliberately while each agent keeps its identity, credentials, history
-and grants. Separate working copies are the default; shared writable folders
-require an explicit choice. A social room does not grant filesystem access.
+Hosting an agent and supplying assignment resources are separate responsibilities.
+Deliberately shared tools, repository objects and caches do not merge identities,
+credentials, histories or grants. Separate working copies are the default; shared
+writable folders require explicit choice. A room grants no filesystem access.
 
-An execution boundary can host one agent or several. Retain Internet access
-while restricting host filesystem access; external service authorization still
-applies. Containment must not silently grant host administration or another
-agent's credentials. These boundaries do not choose a new environment product,
-provisioning API or container technology.
+An execution boundary may host one or several agents. Retain Internet access
+while restricting host filesystem access and preserving external authorization.
+Containment grants neither host administration nor another agent's credentials;
+it does not mandate a particular environment product or container technology.
 
 ## Developing the family
 
-Apply [Converge](https://github.com/microsoft/amplifier-converge) to the current
-assignment, using existing repositories, issues, PRs and agent tools:
+Use [Converge](https://github.com/microsoft/amplifier-converge) for ownership,
+delegation, agreement changes and combined verification. Name an accountable
+outcome owner, authority and integration check in the existing work record.
+Responsibility transfers only on acceptance. Local choices within authority
+proceed; settle changed shared promises before dependent work, while unaffected
+work continues. Carry changed direction into assignments and checks.
 
-- **Name who owns the outcome, including its integration.** Record the useful
-  result, authority, limits, affected interfaces and completion evidence in the
-  work's existing record. Delegation retains accountability;
-  responsibility moves only when the receiving owner accepts it.
-- **Decide independently within agreed boundaries.** Ordinary implementation and
-  reversible experiments do not need new approval. Consequential delegated
-  choices need proportionate evidence. A shared-promise change identifies its
-  affected owners and is settled before dependent work relies on it; unrelated
-  authorized work continues.
-- **Make expertise effective.** Bring the outcome, relevant promise or example,
-  evidence and unresolved question. Leave room for a colleague to reshape the
-  question. Carry the resulting decision into the agreement, active work and
-  checks without requiring that colleague to supervise implementation.
-- **Verify the combined outcome.** Check both ends of an affected interface and
-  the intended journey. A producer's claim, passing unit tests, release authority
-  and a useful delivered result are separate facts. Missing evidence is not a
-  pass and does not automatically require another human approval.
-- **Re-evaluate from intent and reality.** Inspect current behavior when choosing
-  work and when direction changes. Keep active assignments resumable, but do not
-  maintain an umbrella release diary or a parallel inventory of gaps. Retain
-  evidence where it supports a current decision, claim or reusable check.
-
-[Working together](../docs/working-together.md) illustrates these commitments.
-It does not assign new owners or expand anyone's installation or release rights.
+[Working together](../docs/working-together.md) points contributors into that
+method. Evaluate current behavior against intent; keep relevant evidence without
+a second umbrella release diary or maintained gap inventory.
 
 ## Checks that matter
 
-- Compose ordinary chat with an ACP peer that lacks every optional extension.
-- Operate two independent installations with optional fleet services absent;
-  update one without changing the other's state or permissions.
-- Exercise standalone setup, renewal, connection, recovery and disconnection,
-  counting administrator effort as well as visible user steps.
-- Trace each cross-component call to an owned interface, with explicit capability
-  and authorization failures instead of an undeclared private-state dependency.
-- Give two owners independent changes, then a change to a shared promise. Verify
-  that local work proceeds, the affected promise is negotiated, and the integrated
-  result is checked. Repeat with a human temporarily unavailable.
-- Change the intended outcome. Affected work must receive the new direction;
-  useful progress stays, obsolete plans do not continue by inertia.
+- Converse with an ordinary ACP peer lacking optional features.
+- Set up, renew, connect, recover and disconnect without fleet services; update
+  one installation without changing another's state or permissions.
+- Trace composition to owned interfaces, with explicit unsupported/access failures.
+- Make independent changes, then a shared-promise change: local work proceeds,
+  affected owners agree and the combined result is checked, including when a
+  human is unavailable.
+- Change direction: affected work receives it, useful progress survives and
+  obsolete plans stop.
 
-This agreement does not define a universal agent-state format, automatic trust
-federation or a required shared execution service. Any such choice needs its own
-concrete purpose and agreement.
+No universal state format, automatic trust federation or shared execution service
+is implied.

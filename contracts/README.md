@@ -41,6 +41,7 @@ when choosing work or claiming support.
 - **Installed-agent controls:** [Instance API](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/api.md),
   [saved connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md)
   and [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md).
+- **Fleet observation and management:** [Observatory interfaces](https://github.com/microsoft/amplifier-constellation-observatory/blob/main/docs/contracts.md).
 - **Conversation services:** [API](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/api.md)
   and [huddles](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md).
 - **Domain operations:** [Slack](https://github.com/microsoft/amplifier-acp-slack),

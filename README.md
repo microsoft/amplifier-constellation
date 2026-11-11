@@ -1,87 +1,47 @@
 # Amplifier Constellation
 
-Reusable services for persistent agents that work with people across their tools.
+Persistent agents, reusable services and connections to the places people work.
+Each part can develop independently while people collaborate with the same agents
+across experiences.
 
-An installed agent can retain its identity and accepted responsibilities across
-conversations, use authorized context, and coordinate with other agents.
-Experiences connect to those capabilities through explicit interfaces. Each owner
-can develop and operate their part without requiring a single application,
-engine or central Constellation service.
+[![Agents, experiences and an optional Observatory fleet view](docs/system-map.svg)](docs/VISION.md)
 
-This repository is the primary map and shared direction for the family. It does
-not define the final product UX. Existing control panels and preview clients are
-development and administration access; future experiences can take different forms.
-
-## Get the lay of the land
-
-[![Persistent agents connect to conversations across experiences](docs/system-map.svg)](docs/VISION.md)
-
-Start with the [vision](docs/VISION.md): the spatial picture, definitions of the
-parts, their connections and the value for people. It is the approachable story;
-there is no separately authored guide to keep in sync.
-
-| Read next | What it answers |
-| --- | --- |
-| [Family agreement](contracts/family.v1-candidate.md) | What must remain dependable between independently owned parts? |
-| [Contract map](contracts/README.md) | Where is the exact promise or serving interface for my work? |
-| [Working together](docs/working-together.md) | How do owners and agents develop and combine their contributions? |
-
-We use [Amplifier Converge](https://github.com/microsoft/amplifier-converge) as the
-working method. Shared intent and agreements guide the work. Contributors inspect
-current reality to choose the next useful outcome; this umbrella does not keep a
-parallel release history or gap inventory.
+Start with the [vision](docs/VISION.md): what the parts mean, how they connect and
+why they matter. Read the [contract map](contracts/README.md) for promises relevant
+to your work, and [Working together](docs/working-together.md) for applying
+[Converge](https://github.com/microsoft/amplifier-converge) here.
 
 ## Find the owning component
 
 | Capability | Repository |
 | --- | --- |
-| Installed identity, configuration, authorized context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
-| Native reasoning, model/provider integration, tools and durable execution sessions | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
-| Conversation, membership, message, context and observable coordination services | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
-| Connections to external conversations and domain actions | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
+| Installed identity, configuration, context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
+| Native reasoning, providers, tools and durable execution | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
+| Rooms, membership, messages and observable coordination | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
+| External conversations and domain actions | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
 | Portable communication and working-style profiles | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
-| Independent collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
-| Optional administration across independent installations | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
+| Collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
+| Fleet observation and management | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
 
-[family.toml](family.toml) is the machine-readable repository map. Its existing
-components, related products and planned homes are separate; an entry does not
-claim an interface is implemented or an extraction is complete. The small
-[ACP connection library](crates/acp-connection/README.md) is a shared code
-integration, not a required running service. Concrete APIs, setup instructions,
-compatibility and tests belong to their component owners.
+[family.toml](family.toml) indexes components, related products and intended homes,
+including Companion and reusable Context/Realtime capabilities. Intended homes do
+not certify available APIs. The [family agreement](contracts/family.v1-candidate.md)
+owns their boundaries; serving repositories own setup, API definitions and tests.
+The [ACP connection library](crates/acp-connection/README.md) is shared code,
+not a required service.
 
-Slack, Teams and Minecraft connect their platforms. Bespoke web/native products
-can compose the same services. [Amplifier Unified](https://github.com/microsoft/amplifier-unified)
-implements the Amplifier experience, whose Constellation connection is planned.
-The native Runtime and the separate [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
-are distinct engines. Standard ACP and negotiated capabilities allow alternatives.
+Amplifier is one external experience, implemented by
+[Amplifier Unified](https://github.com/microsoft/amplifier-unified); its internal
+ecosystem stays there. [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
+is a distinct engine choice.
 
-## Experiences and their connections
+## Contribute
 
-Companion, Slack, Teams, Minecraft and **Amplifier** are places where people can
-work with agents. This map shows their connections to Constellation. Amplifier's
-own clients, platforms and repository structure belong to its
-[separate ecosystem](https://github.com/microsoft/amplifier-unified).
-
-The [family agreement](contracts/family.v1-candidate.md#composition-relationships)
-defines each part, and [its connection table](contracts/family.v1-candidate.md#what-crosses-each-connection)
-explains what passes between them. Companion's planned product home is
-`amplifier-companion`. Reusable Realtime and Context capabilities have intended
-homes in `amplifier-platform-realtime` and `amplifier-platform-context`; this is
-not a claim of completed extraction or available interfaces.
-
-## Make a contribution fit
-
-Start from the current vision and the boundary you will change. Name the outcome,
-owner, authority and integrated check in the existing assignment or PR. Local
-implementation decisions stay with that owner. A change to a shared promise
-identifies affected consumers and is settled with the responsible owners before
-dependent work relies on it.
-
-Accepted design commitments retain their scope; a new proposal or a diagram
-does not ratify new interfaces. Read only the
-contracts relevant to your work. Keep implementation details and private evidence
-out of the shared vision, and evaluate actual behavior when making a claim.
+Name an outcome, owner, authority and combined check in the existing assignment
+or PR. Local implementation choices stay with the owner; settle changed shared
+promises with affected owners before dependent work relies on them. Inspect actual
+behavior rather than a maintained gap list. Keep private evidence outside this
+repository and shared promises in one place.
 
 Constellation is part of the broader [Amplifier ecosystem](https://github.com/microsoft/amplifier).
 
