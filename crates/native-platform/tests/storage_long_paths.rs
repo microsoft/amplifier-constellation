@@ -3,7 +3,7 @@
 use amplifier_native_platform::{
     private_create, private_dir, private_write, protect_file, publish_directory_if_absent,
 };
-use std::{fs, path::PathBuf};
+use std::{fs, os::windows::ffi::OsStrExt, path::PathBuf};
 
 fn deep_path(root: &std::path::Path) -> PathBuf {
     // Exercise ordinary caller paths, not a caller-supplied verbatim prefix.
@@ -13,7 +13,7 @@ fn deep_path(root: &std::path::Path) -> PathBuf {
         .strip_prefix(r"\\?\")
         .unwrap_or(root.to_str().unwrap());
     let mut path = PathBuf::from(text);
-    while path.as_os_str().len() < 340 {
+    while path.as_os_str().encode_wide().count() < 340 {
         path.push("installation-private-files-café-雪-0123456789");
     }
     path
