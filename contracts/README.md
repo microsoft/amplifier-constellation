@@ -30,7 +30,7 @@ Exact wire formats, configuration and executable checks belong with their owner:
 | Tools, context and engine input | [Runtime architecture](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/architecture.md) · [steering](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/steering-design.md) |
 | Installation controls | [Instance API](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/api.md) · [connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md) · [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md) |
 | Conversation services | [API](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/api.md) · [huddles](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/huddles.md) |
-| Fleet controls | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory/blob/main/docs/contracts.md) |
+| Fleet controls | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory/blob/main/docs/api.md) |
 
 [family.toml](../family.toml) locates connector and other component repositories.
 Focused [reference material](../reference/README.md) retains shared specifications
