@@ -1,11 +1,8 @@
 use anyhow::{Context, Result, ensure};
-#[cfg(unix)]
 use std::fs::File;
-use std::{
-    fs::{self, OpenOptions},
-    io::Write,
-    path::Path,
-};
+#[cfg(unix)]
+use std::fs::OpenOptions;
+use std::{fs, io::Write, path::Path};
 
 /// Create or restrict an application-owned directory to this user.
 pub fn private_dir(path: &Path) -> Result<()> {
@@ -141,18 +138,10 @@ fn write_atomic(path: &Path, bytes: &[u8], create_only: bool) -> Result<()> {
         !path.exists() || path.is_file(),
         "Private file is not an ordinary file"
     );
-    private_dir(parent)?;
+    prepare_parent(parent)?;
     let temporary = parent.join(format!(".save-{}.tmp", uuid::Uuid::new_v4()));
     let result = (|| -> Result<()> {
-        let mut options = OpenOptions::new();
-        options.write(true).create_new(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let mut file = options.open(&temporary)?;
-        private_permissions(&temporary, false)?;
+        let mut file = create_private_file(&temporary)?;
         file.write_all(bytes)?;
         file.sync_all()?;
         drop(file);
@@ -165,6 +154,145 @@ fn write_atomic(path: &Path, bytes: &[u8], create_only: bool) -> Result<()> {
         let _ = fs::remove_file(&temporary);
     }
     result
+}
+
+/// Writing a token into Documents must not change Documents' permissions.
+/// Only directories created by this operation receive our private policy.
+fn prepare_parent(path: &Path) -> Result<()> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) => {
+            ensure!(
+                metadata.is_dir() && !metadata.file_type().is_symlink(),
+                "Private file parent must be an ordinary directory"
+            );
+            return Ok(());
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+        Err(error) => return Err(error.into()),
+    }
+    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        prepare_parent(parent)?;
+    }
+    match create_private_directory(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            // Another caller created it after our inspection. Do not chmod it.
+            let metadata = fs::symlink_metadata(path)?;
+            ensure!(
+                metadata.is_dir() && !metadata.file_type().is_symlink(),
+                "Private file parent changed during creation"
+            );
+            Ok(())
+        }
+        Err(error) => Err(error.into()),
+    }
+}
+
+#[cfg(unix)]
+fn create_private_directory(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::DirBuilderExt;
+    fs::DirBuilder::new().mode(0o700).create(path)
+}
+#[cfg(unix)]
+fn create_private_file(path: &Path) -> Result<File> {
+    use std::os::unix::fs::OpenOptionsExt;
+    Ok(OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)?)
+}
+
+#[cfg(windows)]
+struct PrivateSecurity(windows_sys::Win32::Security::PSECURITY_DESCRIPTOR);
+#[cfg(windows)]
+impl PrivateSecurity {
+    fn new(directory: bool) -> Result<Self> {
+        use std::ptr;
+        use windows_sys::Win32::Security::Authorization::{
+            ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
+        };
+        let sid = current_user_sid()?;
+        let inherit = if directory { "OICI" } else { "" };
+        let sddl: Vec<u16> = format!("D:P(A;{inherit};FA;;;SY)(A;{inherit};FA;;;{sid})")
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
+        let mut descriptor = ptr::null_mut();
+        ensure!(
+            unsafe {
+                ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                    sddl.as_ptr(),
+                    SDDL_REVISION_1,
+                    &mut descriptor,
+                    ptr::null_mut(),
+                )
+            } != 0,
+            "Cannot create private storage policy"
+        );
+        Ok(Self(descriptor))
+    }
+    fn attributes(&self) -> windows_sys::Win32::Security::SECURITY_ATTRIBUTES {
+        windows_sys::Win32::Security::SECURITY_ATTRIBUTES {
+            nLength: size_of::<windows_sys::Win32::Security::SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: self.0,
+            bInheritHandle: 0,
+        }
+    }
+}
+#[cfg(windows)]
+impl Drop for PrivateSecurity {
+    fn drop(&mut self) {
+        unsafe {
+            windows_sys::Win32::Foundation::LocalFree(self.0.cast());
+        }
+    }
+}
+#[cfg(windows)]
+fn wide_path(path: &Path) -> Result<Vec<u16>> {
+    use std::os::windows::ffi::OsStrExt;
+    let mut path: Vec<u16> = path.as_os_str().encode_wide().collect();
+    ensure!(!path.contains(&0), "Private path contains a null character");
+    path.push(0);
+    Ok(path)
+}
+#[cfg(windows)]
+fn create_private_directory(path: &Path) -> std::io::Result<()> {
+    use windows_sys::Win32::Storage::FileSystem::CreateDirectoryW;
+    let security = PrivateSecurity::new(true).map_err(std::io::Error::other)?;
+    let path = wide_path(path).map_err(std::io::Error::other)?;
+    if unsafe { CreateDirectoryW(path.as_ptr(), &security.attributes()) } == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+#[cfg(windows)]
+fn create_private_file(path: &Path) -> Result<File> {
+    use std::{os::windows::io::FromRawHandle, ptr};
+    use windows_sys::Win32::{
+        Foundation::{GENERIC_WRITE, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{CREATE_NEW, CreateFileW, FILE_ATTRIBUTE_NORMAL},
+    };
+    let security = PrivateSecurity::new(false)?;
+    let path = wide_path(path)?;
+    // Set the protected user/SYSTEM DACL at CREATE_NEW, before any file exists
+    // or bytes are written. The parent ACL is neither inherited nor modified.
+    let handle = unsafe {
+        CreateFileW(
+            path.as_ptr(),
+            GENERIC_WRITE,
+            0,
+            &security.attributes(),
+            CREATE_NEW,
+            FILE_ATTRIBUTE_NORMAL,
+            ptr::null_mut(),
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        return Err(std::io::Error::last_os_error())
+            .context("Cannot create private temporary file");
+    }
+    Ok(unsafe { File::from_raw_handle(handle) })
 }
 #[cfg(not(windows))]
 fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
@@ -249,4 +377,83 @@ fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
 #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
     anyhow::bail!("Atomic installation publication is not supported on this platform")
+}
+
+#[cfg(all(test, windows))]
+mod creation_tests {
+    use super::*;
+    #[test]
+    fn temporary_file_is_protected_at_creation_before_any_write() {
+        use std::{collections::BTreeSet, os::windows::io::AsRawHandle, ptr};
+        use windows_sys::Win32::{
+            Foundation::LocalFree,
+            Security::{
+                ACCESS_ALLOWED_ACE,
+                Authorization::{ConvertSidToStringSidW, GetSecurityInfo, SE_FILE_OBJECT},
+                DACL_SECURITY_INFORMATION, GetAce, GetSecurityDescriptorControl, INHERITED_ACE,
+                SE_DACL_PROTECTED,
+            },
+            Storage::FileSystem::FILE_ALL_ACCESS,
+        };
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("unwritten private file");
+        let file = create_private_file(&path).unwrap();
+        assert_eq!(file.metadata().unwrap().len(), 0);
+        unsafe {
+            let mut descriptor = ptr::null_mut();
+            let mut acl = ptr::null_mut();
+            assert_eq!(
+                GetSecurityInfo(
+                    file.as_raw_handle(),
+                    SE_FILE_OBJECT,
+                    DACL_SECURITY_INFORMATION,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    &mut acl,
+                    ptr::null_mut(),
+                    &mut descriptor
+                ),
+                0
+            );
+            let mut control = 0;
+            let mut revision = 0;
+            assert_ne!(
+                GetSecurityDescriptorControl(descriptor, &mut control, &mut revision),
+                0
+            );
+            assert_ne!(control & SE_DACL_PROTECTED, 0);
+            assert!(!acl.is_null());
+            assert_eq!((*acl).AceCount, 2);
+            let mut principals = BTreeSet::new();
+            for index in 0..(*acl).AceCount {
+                let mut raw = ptr::null_mut();
+                assert_ne!(GetAce(acl, u32::from(index), &mut raw), 0);
+                let ace = &*raw.cast::<ACCESS_ALLOWED_ACE>();
+                assert_eq!(ace.Header.AceType, 0);
+                assert_eq!(u32::from(ace.Header.AceFlags) & INHERITED_ACE, 0);
+                assert_eq!(ace.Mask, FILE_ALL_ACCESS);
+                let mut text = ptr::null_mut();
+                assert_ne!(
+                    ConvertSidToStringSidW(
+                        ptr::addr_of!(ace.SidStart).cast_mut().cast(),
+                        &mut text
+                    ),
+                    0
+                );
+                let mut len = 0;
+                while *text.add(len) != 0 {
+                    len += 1;
+                }
+                principals.insert(String::from_utf16_lossy(std::slice::from_raw_parts(
+                    text, len,
+                )));
+                LocalFree(text.cast());
+            }
+            LocalFree(descriptor);
+            assert_eq!(
+                principals,
+                BTreeSet::from([current_user_sid().unwrap(), "S-1-5-18".to_owned()])
+            );
+        }
+    }
 }
