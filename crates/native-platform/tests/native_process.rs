@@ -150,3 +150,20 @@ fn linux_identity_preserves_existing_python_record_exactly() {
     forged_boot["boot_id"] = json!("00000000-0000-0000-0000-000000000000");
     assert!(!matches(&forged_boot).unwrap());
 }
+
+#[test]
+fn child_parent_evidence_binds_both_generations() {
+    let home = tempfile::tempdir().unwrap();
+    let mut child = child(home.path());
+    let generation = identity(child.0.id()).unwrap().unwrap();
+    let parent = amplifier_native_platform::process::parent_identity(&generation)
+        .unwrap()
+        .unwrap();
+    assert_eq!(parent, identity(std::process::id()).unwrap().unwrap());
+    let mut invalid = generation.clone();
+    invalid["pid"] = json!(0);
+    assert!(amplifier_native_platform::process::parent_identity(&invalid).is_err());
+    child.0.kill().unwrap();
+    child.0.wait().unwrap();
+    assert!(amplifier_native_platform::process::parent_identity(&generation).is_err());
+}

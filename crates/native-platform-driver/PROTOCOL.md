@@ -24,12 +24,16 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `lock.acquire`, `lock.release` | `name` | named lock held/released by this process |
 | `process.identity` | `pid` | generation identity or null when absent |
 | `process.matches`, `process.status` | `identity` | `{matches: boolean}`; observation errors remain errors |
+| `service.register` | `name` | `{created: boolean}`; configured fresh registration without start |
 | `service.snapshot` | `name` | exact native definition/state and process generation |
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
 | `storage.remove` | `root`, `path` | durable ordinary-file removal |
 | `storage.mkdir` | `root`, `path` | private child directory under an existing private parent; existing policies are not changed |
 | `process.launch` | `name`, optional `result` | detached supervisor generation identity |
+| `exchange.inspect` | `name`, optional `entry: {root,path}` | filesystem identity or null for absent; omitted entry selects configured current |
+| `exchange.prepare_pointer` | `name`, `prepared`, `target`, `expected_target` | actual Unix directory symlink / Windows junction identity |
+| `exchange.apply` | `name`, `incoming`, `retained`, `expected_current`, `expected_incoming` | observed current/incoming/retained after two no-replace renames |
 
 Unknown fields and unenrolled names reject. `path` and `result` are relative
 paths under configured storage roots, with no traversal, links or reparse
@@ -39,7 +43,8 @@ Linux generation identity retains `{pid, start_ticks, boot_id}` exactly, includi
 the string start_ticks used by existing receipts. Other platforms identify their
 own generation format; consumers must not translate a retained Linux receipt.
 
-Configuration has `version:1` and maps `roots`, `locks`, `services`, `commands`.
+Configuration has `version:1` and maps `roots`, `locks`, `services`, `commands`,
+optional `registrations`, `service_applications`, and `exchanges`.
 All filesystem locations are absolute, owner-controlled installation paths.
 Services name a native manager (`systemd_user`, `launch_agent`, `scheduled_task`),
 its fixed `name`, and optional fixed `definition_path`. Commands contain a fixed
@@ -63,9 +68,45 @@ atomic compare-and-swap: this check narrows drift but cannot lock out an externa
 administrator between observation and dispatch. The owner observes settlement
 and owns restore planning; independent pauses stay paused.
 
-Protected JSON writes do **not** implement source-directory exchange. Managed
-app/venv pointer swaps and rollback need their own explicit platform proof before
-enrollment claims that capability. This protocol makes no such capability claim.
+Fresh service setup uses `registrations[name] = {executable,args,cwd,description,
+autostart:false}` for an already configured service name. No request supplies these
+values. Creation does not start the service; repeats only observe exact existing
+definitions. Existing mismatches, masks and disable settings are preserved.
+`autostart` selects future login behavior on fresh registration only.
+
+Snapshots retain `schema`, `service`, `definition`, `effective_definition`,
+`definition_matches`, `enabled`, `start_allowed`, `masked`, `loaded`, `active`,
+`transitioning`, `processes`, and `native`. Native fields/roles are not translated
+into invented systemd values. Raw Task Scheduler engine identity is not controller
+identity.
+
+For a separately configured `service_applications[name] = {executable,args,cwd,
+identity_path}`, the enrolled service runs this fixed driver as
+`--config OWNER_CONFIG service-run --service NAME`. This long-running wrapper
+owns the application and records its actual process generation under the protected
+identity path. It has a service lifetime, independent of bounded probe commands.
+POSIX launch proof requires successful executable replacement; invalid images
+never fall back to a shell. The snapshot adds `application.status` as `running`,
+`absent`, or `unconfirmed`. Running evidence includes the application `identity`,
+`supervisor`, `manager_process`, both generation-checked ancestry chains, and
+`profile_sha256`. An inactive native service with a retained live child remains
+unconfirmed. Old installations without this optional profile retain raw snapshots.
+
+Source exchange is an explicit operation, separate from JSON publication.
+`exchanges[name] = {lock: ENROLLED_LOCK, profile: {current: ABSOLUTE_PATH,
+roots: {NAME: ABSOLUTE_DIRECTORY}}}` selects fixed owner paths. An entry is a
+relative `{root,path}` under those roots. The configured lock must remain held
+for preparation/exchange and the caller's surrounding transaction. Inspection
+identifies objects and targets; it does not certify source contents.
+
+Prepare creates a real directory pointer without replacing anything. Apply checks
+expected identities and an absent retained destination, then moves current to
+retained and incoming to current. These are **two** no-replace native renames,
+with an observable gap; app+venv is not an atomic pair. A partial error is unknown
+and leaves all surviving entries inspectable. Explicit rollback uses retained as
+the next incoming and a fresh retention destination. No deletion, automatic retry,
+or whole-state rollback is provided. Domain owners still journal operations,
+verify source fingerprints, close admission and settle services.
 
 Tests must distinguish actual OS lifecycle/descendant behavior from fixtures,
 and each of the six target OS/architecture runs from cross-compilation. No live

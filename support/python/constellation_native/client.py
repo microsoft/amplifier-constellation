@@ -83,6 +83,10 @@ def _read_responses(stream: Any, responses: queue.Queue[Any]) -> None:
                 return
     except (OSError, ValueError) as error:
         deliver(error)
+    finally:
+        # A detached descendant may delay EOF beyond Session.close's join bound.
+        # The reader still owns this pipe and closes it when it eventually ends.
+        stream.close()
 
 
 class Session:
@@ -318,6 +322,48 @@ class Session:
                 "protocol_result", "Native process match result is not a boolean", False
             )
         return result["matches"]
+
+    def service_register(self, name: str) -> Any:
+        return self._call("service.register", mutating=True, name=name)
+
+    def exchange_inspect(
+        self, name: str, entry: Mapping[str, str] | None = None
+    ) -> Any:
+        return self._call("exchange.inspect", name=name, entry=entry)
+
+    def exchange_prepare_pointer(
+        self,
+        name: str,
+        prepared: Mapping[str, str],
+        target: Mapping[str, str],
+        expected_target: Any,
+    ) -> Any:
+        return self._call(
+            "exchange.prepare_pointer",
+            mutating=True,
+            name=name,
+            prepared=prepared,
+            target=target,
+            expected_target=expected_target,
+        )
+
+    def exchange_apply(
+        self,
+        name: str,
+        incoming: Mapping[str, str],
+        retained: Mapping[str, str],
+        expected_current: Any,
+        expected_incoming: Any,
+    ) -> Any:
+        return self._call(
+            "exchange.apply",
+            mutating=True,
+            name=name,
+            incoming=incoming,
+            retained=retained,
+            expected_current=expected_current,
+            expected_incoming=expected_incoming,
+        )
 
     def service_snapshot(self, name: str) -> Any:
         return self._call("service.snapshot", name=name)

@@ -12,7 +12,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-fn reap_bounded(child: &mut Child) -> Result<()> {
+pub(crate) fn reap_bounded(child: &mut Child) -> Result<()> {
     let deadline = Instant::now() + Duration::from_secs(2);
     loop {
         if child.try_wait()?.is_some() {
@@ -115,7 +115,11 @@ pub fn run(
     let child_identity =
         process::identity(child.id())?.context("Owned child exited during setup")?;
     #[cfg(unix)]
-    let mut watcher = match spawn_watch(enrollment, &child_identity, profile.timeout_seconds + 5) {
+    let mut watcher = match spawn_watch(
+        enrollment,
+        &child_identity,
+        Some(profile.timeout_seconds + 5),
+    ) {
         Ok(w) => w,
         Err(e) => {
             let _ = child.kill();
@@ -207,7 +211,9 @@ pub fn execute(enrollment: &Enrollment, name: &str, result: Option<&str>) -> Res
     ensure!(&gate == b"RUN\n", "Owned command was not released");
     enrollment.unchanged()?;
     let (profile, args) = enrollment.command(name, result)?;
-    let mut command = Command::new(profile.executable);
+    #[cfg(windows)]
+    let mut command = Command::new(&profile.executable);
+    #[cfg(windows)]
     command
         .args(args)
         .current_dir(profile.cwd)
@@ -216,8 +222,7 @@ pub fn execute(enrollment: &Enrollment, name: &str, result: Option<&str>) -> Res
         .stderr(Stdio::inherit());
     #[cfg(unix)]
     {
-        use std::os::unix::process::CommandExt;
-        Err(command.exec().into())
+        Err(exec_exact(&profile.executable, &args, &profile.cwd).into())
     }
     #[cfg(windows)]
     {
@@ -227,7 +232,11 @@ pub fn execute(enrollment: &Enrollment, name: &str, result: Option<&str>) -> Res
 }
 
 #[cfg(unix)]
-fn spawn_watch(enrollment: &Enrollment, child: &Value, seconds: u64) -> Result<Child> {
+pub(crate) fn spawn_watch(
+    enrollment: &Enrollment,
+    child: &Value,
+    seconds: Option<u64>,
+) -> Result<Child> {
     let mut command = Command::new(std::env::current_exe()?);
     command
         .arg("--config")
@@ -279,11 +288,16 @@ pub fn watch() -> Result<i32> {
         .get("child")
         .context("Missing owned generation")?
         .clone();
-    let seconds = value
-        .get("seconds")
-        .and_then(Value::as_u64)
-        .filter(|s| (1..=305).contains(s))
-        .context("Invalid watcher deadline")?;
+    let seconds = match value.get("seconds") {
+        Some(Value::Null) => None, // An enrolled service has a manager-owned lifetime.
+        Some(value) => Some(
+            value
+                .as_u64()
+                .filter(|s| (1..=305).contains(s))
+                .context("Invalid watcher deadline")?,
+        ),
+        None => anyhow::bail!("Missing watcher deadline"),
+    };
     ensure!(
         process::matches(&parent)? && process::matches(&child)?,
         "Process ownership changed before start"
@@ -307,10 +321,10 @@ pub fn watch() -> Result<i32> {
         let _ = io::stdin().read(&mut byte);
         let _ = tx.send(());
     });
-    let deadline = Instant::now() + Duration::from_secs(seconds);
+    let deadline = seconds.map(|seconds| Instant::now() + Duration::from_secs(seconds));
     let mut observation_error = None;
     loop {
-        if rx.try_recv().is_ok() || Instant::now() >= deadline {
+        if rx.try_recv().is_ok() || deadline.is_some_and(|deadline| Instant::now() >= deadline) {
             break;
         }
         match process::matches(&parent) {
@@ -384,7 +398,7 @@ fn windows_parent() -> Result<u32> {
 }
 
 #[cfg(windows)]
-fn install_job() -> Result<()> {
+pub(crate) fn install_job() -> Result<()> {
     use windows_sys::Win32::{
         Foundation::CloseHandle,
         System::{
@@ -417,4 +431,34 @@ fn install_job() -> Result<()> {
         // supervisor too. OS teardown closes it on success, failure or crash.
         Ok(())
     }
+}
+
+/// Execute exactly the configured image. execvp-style ENOEXEC shell fallback
+/// would turn an invalid image into a different interpreter without enrollment.
+#[cfg(unix)]
+pub(crate) fn exec_exact(
+    executable: &std::path::Path,
+    args: &[String],
+    cwd: &std::path::Path,
+) -> io::Error {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt};
+    let prepare = (|| -> io::Result<_> {
+        let image = CString::new(executable.as_os_str().as_bytes())?;
+        let mut argv = vec![image.clone()];
+        for argument in args {
+            argv.push(CString::new(argument.as_bytes())?);
+        }
+        std::env::set_current_dir(cwd)?;
+        Ok((image, argv))
+    })();
+    let (image, argv) = match prepare {
+        Ok(value) => value,
+        Err(error) => return error,
+    };
+    let mut pointers: Vec<_> = argv.iter().map(|v| v.as_ptr()).collect();
+    pointers.push(std::ptr::null());
+    unsafe {
+        libc::execv(image.as_ptr(), pointers.as_ptr());
+    }
+    io::Error::last_os_error()
 }

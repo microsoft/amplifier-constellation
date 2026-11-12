@@ -65,7 +65,7 @@ fn unknown(code: &str, message: &str) -> ActionOutcome {
     }
 }
 impl Service {
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         ensure!(
             !self.name.is_empty() && self.name.len() <= 240,
             "Invalid enrolled service name"
@@ -250,14 +250,14 @@ impl std::fmt::Display for NotStarted {
 }
 impl std::error::Error for NotStarted {}
 
-struct Captured {
-    status: ExitStatus,
-    stdout: String,
-    stderr: String,
+pub(crate) struct Captured {
+    pub(crate) status: ExitStatus,
+    pub(crate) stdout: String,
+    pub(crate) stderr: String,
 }
 /// Fixed short-lived OS tools only. Drain both pipes with bounded retained output;
 /// a timeout after spawn is ambiguous for a mutation, never a safe retry signal.
-fn execute(mut command: Command) -> Result<Captured> {
+pub(crate) fn execute(mut command: Command) -> Result<Captured> {
     command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -314,7 +314,7 @@ fn execute(mut command: Command) -> Result<Captured> {
         stderr: String::from_utf8(streams[1].clone())?,
     })
 }
-fn checked(command: Command) -> Result<String> {
+pub(crate) fn checked(command: Command) -> Result<String> {
     let result = execute(command)?;
     ensure!(
         result.status.success(),
@@ -346,7 +346,7 @@ fn mutation(command: Command) -> ActionOutcome {
 }
 
 const SYSTEMD_PROPERTIES: &str = "Id,Names,LoadState,ActiveState,SubState,UnitFileState,FragmentPath,SourcePath,DropInPaths,MainPID,ControlPID,InvocationID,NeedDaemonReload,RefuseManualStart,RefuseManualStop,ExecStart,ExecStop,Restart,KillMode,Type";
-fn systemctl(args: &[&str]) -> Command {
+pub(crate) fn systemctl(args: &[&str]) -> Command {
     let mut command = Command::new("/usr/bin/systemctl");
     command
         .args(["--user", "--no-pager", "--no-ask-password"])
@@ -501,7 +501,7 @@ fn launch_properties(text: &str) -> Result<BTreeMap<String, String>> {
     Ok(result)
 }
 #[cfg(any(target_os = "macos", test))]
-fn disabled_override(text: &str, name: &str) -> Result<Option<bool>> {
+pub(crate) fn disabled_override(text: &str, name: &str) -> Result<Option<bool>> {
     ensure!(
         text.contains("disabled services = {"),
         "Unrecognized launchd disabled-state response"
@@ -597,71 +597,8 @@ fn launch_snapshot(_service: &Service) -> Result<Value> {
 }
 
 #[cfg(windows)]
-const TASK_SCRIPT: &str = r#"
-$ErrorActionPreference='Stop'
-[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
-$service=New-Object -ComObject 'Schedule.Service'
-$service.Connect()
-$task=$service.GetFolder('\').GetTask($env:CONSTELLATION_SERVICE_NAME)
-$sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$principal=$task.Definition.Principal
-$account=[System.Security.Principal.NTAccount]::new([string]$principal.UserId)
-try {$owner=$account.Translate([System.Security.Principal.SecurityIdentifier]).Value} catch {
- $owner=([System.Security.Principal.SecurityIdentifier]::new([string]$principal.UserId)).Value
-}
-if ($owner -ne $sid -or [int]$principal.RunLevel -ne 0) {throw 'Task is not a least-privilege current-user task'}
-$instances=@($task.GetInstances(0) | ForEach-Object {
- $_.Refresh()
- [ordered]@{instance_guid=[string]$_.InstanceGuid;engine_pid=[uint32]$_.EnginePID;state=[int]$_.State;current_action=[string]$_.CurrentAction}
-} | Sort-Object instance_guid)
-$view=[ordered]@{path=[string]$task.Path;xml=[string]$task.Xml;enabled=[bool]$task.Enabled;state=[int]$task.State;owner_sid=$owner;logon_type=[int]$principal.LogonType;security_descriptor=[string]$task.GetSecurityDescriptor(7);instances=$instances}
-$json=ConvertTo-Json -InputObject $view -Depth 12 -Compress
-if ($env:CONSTELLATION_SERVICE_ACTION -eq 'snapshot') {$json;exit 0}
-# Compare the same task again in this manager process before invoking it. No
-# registration/enablement and no caller-supplied executable or PowerShell code.
-$expected=ConvertFrom-Json -InputObject $env:CONSTELLATION_EXPECTED_TASK
-foreach ($field in @('path','xml','enabled','state','owner_sid','logon_type','security_descriptor')) {
- if ($view[$field] -cne $expected.$field) {throw 'Task changed before manager dispatch'}
-}
-if ($view.instances.Count -ne $expected.instances.Count) {throw 'Task instances changed before dispatch'}
-for ($i=0;$i -lt $view.instances.Count;$i++) {
- foreach ($field in @('instance_guid','engine_pid','state','current_action')) {
-  if ($view.instances[$i][$field] -cne $expected.instances[$i].$field) {throw 'Task instance changed before dispatch'}
- }
-}
-if ($env:CONSTELLATION_SERVICE_ACTION -eq 'start') {
- if (-not $task.Enabled) {throw 'Task is independently disabled'}
- $null=$task.Run($null)
-} elseif ($env:CONSTELLATION_SERVICE_ACTION -eq 'stop') {
- foreach ($running in @($task.GetInstances(0))) {$running.Stop()}
-} else {throw 'Unsupported fixed service action'}
-'accepted'
-"#;
-#[cfg(windows)]
-fn task_command(service: &Service, action: &str, expected: Option<&Value>) -> Result<Command> {
-    let root = std::env::var_os("SystemRoot").context("SystemRoot unavailable")?;
-    let path = PathBuf::from(root).join("System32/WindowsPowerShell/v1.0/powershell.exe");
-    ensure!(path.is_absolute(), "PowerShell path must be absolute");
-    let mut command = Command::new(path);
-    command.args(["-NoProfile", "-NonInteractive", "-Command", TASK_SCRIPT]);
-    command
-        .env("CONSTELLATION_SERVICE_NAME", &service.name)
-        .env("CONSTELLATION_SERVICE_ACTION", action);
-    if let Some(expected) = expected {
-        command.env(
-            "CONSTELLATION_EXPECTED_TASK",
-            serde_json::to_string(expected)?,
-        );
-    }
-    Ok(command)
-}
-#[cfg(windows)]
 fn task_snapshot(service: &Service) -> Result<Value> {
-    let native: Value = serde_json::from_str(
-        checked(task_command(service, "snapshot", None)?)?
-            .trim_start_matches('\u{feff}')
-            .trim(),
-    )?;
+    let native = crate::installation_windows::observe(&service.name)?;
     let xml = native["xml"]
         .as_str()
         .context("Missing ScheduledTask XML")?;
@@ -751,14 +688,9 @@ fn dispatch(service: &Service, action: ServiceAction, current: &Value) -> Result
             Ok(mutation(command))
         }
         #[cfg(windows)]
-        ServiceManager::ScheduledTask => Ok(mutation(task_command(
-            service,
-            match action {
-                ServiceAction::Start => "start",
-                ServiceAction::Stop => "stop",
-            },
-            Some(&current["native"]),
-        )?)),
+        ServiceManager::ScheduledTask => {
+            crate::installation_windows::dispatch(&service.name, action, &current["native"])
+        }
         #[allow(unreachable_patterns)]
         _ => bail!("Service manager is unsupported on this platform"),
     }

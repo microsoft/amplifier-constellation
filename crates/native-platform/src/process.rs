@@ -30,6 +30,124 @@ pub fn matches(expected: &Value) -> Result<bool> {
     Ok(identity(pid)?.as_ref() == Some(expected))
 }
 
+/// Observe a direct parent only while both generations still match. A recycled
+/// numeric parent PID cannot become evidence of service/application ownership.
+pub fn parent_identity(child: &Value) -> Result<Option<Value>> {
+    ensure!(
+        matches(child)?,
+        "Child generation changed before parent observation"
+    );
+    let pid = child["pid"].as_u64().context("Missing child PID")? as u32;
+    let parent_pid = platform_parent(pid)?;
+    if parent_pid == 0 || parent_pid == pid {
+        return Ok(None);
+    }
+    let parent = identity(parent_pid)?;
+    ensure!(
+        matches(child)? && platform_parent(pid)? == parent_pid,
+        "Child or parent changed during observation"
+    );
+    if let Some(parent) = &parent {
+        ensure!(
+            birth_order(parent)? <= birth_order(child)?,
+            "Parent PID has been reused"
+        );
+        ensure!(
+            matches(parent)?,
+            "Parent generation changed during observation"
+        );
+    }
+    Ok(parent)
+}
+
+fn birth_order(identity: &Value) -> Result<u128> {
+    #[cfg(target_os = "linux")]
+    return Ok(identity["start_ticks"]
+        .as_str()
+        .context("Missing start ticks")?
+        .parse()?);
+    #[cfg(target_os = "macos")]
+    return Ok(identity["start_seconds"]
+        .as_str()
+        .context("Missing start seconds")?
+        .parse::<u128>()?
+        * 1_000_000
+        + identity["start_microseconds"]
+            .as_str()
+            .context("Missing start microseconds")?
+            .parse::<u128>()?);
+    #[cfg(windows)]
+    return Ok(identity["creation_time_100ns"]
+        .as_str()
+        .context("Missing creation time")?
+        .parse()?);
+}
+
+#[cfg(target_os = "linux")]
+fn platform_parent(pid: u32) -> Result<u32> {
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
+    let fields = stat
+        .rsplit_once(')')
+        .context("Malformed native process record")?
+        .1;
+    Ok(fields
+        .split_whitespace()
+        .nth(1)
+        .context("Missing parent PID")?
+        .parse()?)
+}
+
+#[cfg(target_os = "macos")]
+fn platform_parent(pid: u32) -> Result<u32> {
+    let mut info: libc::proc_bsdinfo = unsafe { std::mem::zeroed() };
+    let size = std::mem::size_of::<libc::proc_bsdinfo>();
+    let read = unsafe {
+        libc::proc_pidinfo(
+            pid as i32,
+            libc::PROC_PIDTBSDINFO,
+            0,
+            (&mut info as *mut libc::proc_bsdinfo).cast(),
+            size as i32,
+        )
+    };
+    ensure!(
+        read == size as i32 && info.pbi_pid == pid,
+        "Cannot establish native parent"
+    );
+    Ok(info.pbi_ppid)
+}
+
+#[cfg(windows)]
+fn platform_parent(pid: u32) -> Result<u32> {
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
+        System::Diagnostics::ToolHelp::{
+            CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+            TH32CS_SNAPPROCESS,
+        },
+    };
+    unsafe {
+        let handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        ensure!(
+            handle != INVALID_HANDLE_VALUE,
+            "Cannot inspect native process parent"
+        );
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = size_of::<PROCESSENTRY32W>() as u32;
+        let mut parent = None;
+        let mut next = Process32FirstW(handle, &mut entry);
+        while next != 0 {
+            if entry.th32ProcessID == pid {
+                parent = Some(entry.th32ParentProcessID);
+                break;
+            }
+            next = Process32NextW(handle, &mut entry);
+        }
+        CloseHandle(handle);
+        parent.context("Native process disappeared before parent observation")
+    }
+}
+
 fn decimal(value: &Value, key: &str) -> Result<()> {
     let text = value
         .get(key)

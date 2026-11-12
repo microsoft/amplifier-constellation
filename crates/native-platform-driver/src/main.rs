@@ -1,10 +1,13 @@
 mod config;
+mod service_application;
 mod supervision;
 
 use amplifier_native_platform::{
     installation::{self, ActionOutcome, ServiceAction},
+    installation_exchange::{self, EntryRef, MutationOutcome},
     locking::InstallationLock,
     process,
+    registration::{self, RegistrationOutcome},
 };
 use anyhow::{Context, Result, ensure};
 use config::Enrollment;
@@ -40,6 +43,28 @@ enum Operation {
     ProcessIdentity { pid: u32 },
     #[serde(rename = "process.matches", alias = "process.status")]
     ProcessMatches { identity: Value },
+    #[serde(rename = "service.register")]
+    ServiceRegister { name: String },
+    #[serde(rename = "exchange.inspect")]
+    ExchangeInspect {
+        name: String,
+        entry: Option<EntryRef>,
+    },
+    #[serde(rename = "exchange.prepare_pointer")]
+    ExchangePrepare {
+        name: String,
+        prepared: EntryRef,
+        target: EntryRef,
+        expected_target: Value,
+    },
+    #[serde(rename = "exchange.apply")]
+    ExchangeApply {
+        name: String,
+        incoming: EntryRef,
+        retained: EntryRef,
+        expected_current: Value,
+        expected_incoming: Value,
+    },
     #[serde(rename = "service.snapshot")]
     ServiceSnapshot { name: String },
     #[serde(rename = "service.action")]
@@ -124,7 +149,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":false}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -158,16 +183,120 @@ impl Session {
             Operation::ProcessMatches { identity } => {
                 Ok(Outcome::ok(json!({"matches":process::matches(&identity)?})))
             }
-            Operation::ServiceSnapshot { name } => Ok(Outcome::ok(installation::snapshot(
-                cfg.services.get(&name).context("Unenrolled service")?,
-            )?)),
+            Operation::ServiceRegister { name } => {
+                let service = cfg.services.get(&name).context("Unenrolled service")?;
+                let profile = cfg
+                    .registrations
+                    .get(&name)
+                    .context("Unenrolled service registration")?;
+                Ok(match registration::register(service, profile)? {
+                    RegistrationOutcome::Registered { created } => {
+                        Outcome::ok(json!({"created":created}))
+                    }
+                    RegistrationOutcome::Refused { code, message } => {
+                        Outcome::failure("refused", &code, message)
+                    }
+                    RegistrationOutcome::Unknown { code, message } => {
+                        Outcome::failure("unknown", &code, message)
+                    }
+                })
+            }
+            Operation::ExchangeInspect { name, entry } => {
+                let exchange = cfg
+                    .exchanges
+                    .get(&name)
+                    .context("Unenrolled source exchange")?;
+                Ok(Outcome::ok(installation_exchange::inspect(
+                    &exchange.profile,
+                    entry.as_ref(),
+                )?))
+            }
+            Operation::ExchangePrepare {
+                name,
+                prepared,
+                target,
+                expected_target,
+            } => {
+                let exchange = cfg
+                    .exchanges
+                    .get(&name)
+                    .context("Unenrolled source exchange")?;
+                if !self.locks.contains_key(&exchange.lock) {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "lock_not_held",
+                        "Hold the configured exchange lock for the whole critical section",
+                    ));
+                }
+                Ok(exchange_outcome(installation_exchange::prepare_pointer(
+                    &exchange.profile,
+                    &prepared,
+                    &target,
+                    &expected_target,
+                )?))
+            }
+            Operation::ExchangeApply {
+                name,
+                incoming,
+                retained,
+                expected_current,
+                expected_incoming,
+            } => {
+                let exchange = cfg
+                    .exchanges
+                    .get(&name)
+                    .context("Unenrolled source exchange")?;
+                if !self.locks.contains_key(&exchange.lock) {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "lock_not_held",
+                        "Hold the configured exchange lock for the whole critical section",
+                    ));
+                }
+                Ok(exchange_outcome(installation_exchange::exchange(
+                    &exchange.profile,
+                    &incoming,
+                    &retained,
+                    &expected_current,
+                    &expected_incoming,
+                )?))
+            }
+            Operation::ServiceSnapshot { name } => {
+                let mut snapshot =
+                    installation::snapshot(cfg.services.get(&name).context("Unenrolled service")?)?;
+                service_application::augment(&self.enrollment, &name, &mut snapshot)?;
+                Ok(Outcome::ok(snapshot))
+            }
             Operation::ServiceAction {
                 name,
                 action,
                 expected,
             } => {
                 let service = cfg.services.get(&name).context("Unenrolled service")?;
-                match installation::request_state(service, action, &expected)? {
+                let mut expected_native = expected.clone();
+                if cfg.service_applications.contains_key(&name) {
+                    let mut current = installation::snapshot(service)?;
+                    service_application::augment(&self.enrollment, &name, &mut current)?;
+                    if current != expected {
+                        return Ok(Outcome::failure(
+                            "refused",
+                            "stale_snapshot",
+                            "Service/application generation changed",
+                        ));
+                    }
+                    if current["application"]["status"] == "unconfirmed" {
+                        return Ok(Outcome::failure(
+                            "refused",
+                            "application_unconfirmed",
+                            "Cannot establish owned service application",
+                        ));
+                    }
+                    expected_native
+                        .as_object_mut()
+                        .context("Snapshot must be an object")?
+                        .remove("application");
+                }
+                match installation::request_state(service, action, &expected_native)? {
                     ActionOutcome::Accepted => Ok(Outcome::ok(json!({"accepted":true}))),
                     ActionOutcome::Refused { code, message } => {
                         Ok(Outcome::failure("refused", &code, message))
@@ -255,6 +384,16 @@ impl Session {
     }
 }
 
+fn exchange_outcome(outcome: MutationOutcome) -> Outcome {
+    match outcome {
+        MutationOutcome::Applied { state } => Outcome::ok(state),
+        MutationOutcome::Refused { reason } => {
+            Outcome::failure("refused", "source_changed", reason)
+        }
+        MutationOutcome::Unknown { phase, error } => Outcome::failure("unknown", phase, error),
+    }
+}
+
 fn serve(enrollment: Enrollment) -> Result<()> {
     let mut session = Session {
         enrollment,
@@ -287,6 +426,26 @@ fn serve(enrollment: Enrollment) -> Result<()> {
             }
             Some("process.identity") => &["version", "id", "op", "pid"],
             Some("process.matches" | "process.status") => &["version", "id", "op", "identity"],
+            Some("exchange.inspect") => &["version", "id", "op", "name", "entry"],
+            Some("exchange.prepare_pointer") => &[
+                "version",
+                "id",
+                "op",
+                "name",
+                "prepared",
+                "target",
+                "expected_target",
+            ],
+            Some("exchange.apply") => &[
+                "version",
+                "id",
+                "op",
+                "name",
+                "incoming",
+                "retained",
+                "expected_current",
+                "expected_incoming",
+            ],
             Some("service.action") => &["version", "id", "op", "name", "action", "expected"],
             Some("storage.write") => &[
                 "version",
@@ -352,6 +511,23 @@ fn run() -> Result<i32> {
         ensure!(args.next().is_none(), "Unexpected argument");
         serve(enrollment)?;
         return Ok(0);
+    }
+    if mode == "service-run" || mode == "internal-service-execute" {
+        ensure!(
+            args.next().as_deref() == Some(std::ffi::OsStr::new("--service")),
+            "Service name required"
+        );
+        let name = args
+            .next()
+            .context("Missing service")?
+            .into_string()
+            .map_err(|_| anyhow::anyhow!("Invalid service name"))?;
+        ensure!(args.next().is_none(), "Unexpected argument");
+        return if mode == "service-run" {
+            service_application::run(&enrollment, &name)
+        } else {
+            service_application::execute(&enrollment, &name)
+        };
     }
     #[cfg(unix)]
     if mode == "internal-watch" {

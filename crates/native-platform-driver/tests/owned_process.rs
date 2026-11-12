@@ -390,3 +390,71 @@ fn start_barrier_preserves_bytes_already_waiting_for_endpoint() {
         "Trampoline must not buffer and discard the first protocol frame"
     );
 }
+
+#[test]
+fn service_receipt_identifies_application_and_crash_reaps_its_tree() {
+    let fixture = Fixture::new(1);
+    let mut config: Value = serde_json::from_slice(&fs::read(&fixture.config).unwrap()).unwrap();
+    config["services"] = json!({"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"disposable-controller","definition_path":null}});
+    config["service_applications"] = json!({"controller":{"executable":std::env::current_exe().unwrap(),"args":["--exact","process_fixture","--nocapture"],"cwd":fixture.home,"identity_path":fixture.home.join("application.json")}});
+    private_write(&fixture.config, &serde_json::to_vec(&config).unwrap()).unwrap();
+    let mut command = fixture.command("endpoint", "service-run", None);
+    command.args(["--service", "controller"]);
+    let mut wrapper = OwnedChild(command.spawn().unwrap());
+    let endpoints = fixture.endpoint();
+    let record = read_record(&fixture.home.join("application.json"));
+    assert_eq!(
+        record["application"], endpoints["endpoint"],
+        "Actual application must not be confused with launcher or scheduler"
+    );
+    assert_eq!(
+        record["supervisor"],
+        process::identity(wrapper.0.id()).unwrap().unwrap()
+    );
+    let mut current = record["application"].clone();
+    let mut found = false;
+    for _ in 0..4 {
+        if current == record["supervisor"] {
+            found = true;
+            break;
+        }
+        current = process::parent_identity(&current).unwrap().unwrap();
+    }
+    assert!(found, "Application parent chain must reach its supervisor");
+    // Bounded verifier settings do not turn an ordinary service into a timed job.
+    thread::sleep(Duration::from_millis(1200));
+    assert!(process::matches(&record["application"]).unwrap());
+    let duplicate = command.output().unwrap();
+    assert!(!duplicate.status.success());
+    assert_eq!(read_record(&fixture.home.join("application.json")), record);
+    wrapper.0.kill().unwrap();
+    wrapper.0.wait().unwrap();
+    wait_absent(&[&record["application"], &endpoints["leaf"]]);
+}
+
+#[test]
+fn failed_application_exec_never_publishes_running_identity() {
+    let fixture = Fixture::new(1);
+    let bad = fixture.home.join(if cfg!(windows) {
+        "invalid.exe"
+    } else {
+        "invalid"
+    });
+    private_write(&bad, b"not an executable image").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&bad, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    let config = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"disposable-controller","definition_path":null}},
+        "service_applications":{"controller":{"executable":bad,"args":[],"cwd":fixture.home,"identity_path":fixture.home.join("application.json")}}});
+    private_write(&fixture.config, &serde_json::to_vec(&config).unwrap()).unwrap();
+    let mut command = fixture.command("endpoint", "service-run", None);
+    command.args(["--service", "controller"]);
+    let mut wrapper = OwnedChild(command.spawn().unwrap());
+    assert!(!wait_exit(&mut wrapper.0).success());
+    assert!(
+        !fixture.home.join("application.json").exists(),
+        "A failed executable must not receive a running receipt"
+    );
+}

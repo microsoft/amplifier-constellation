@@ -28,6 +28,11 @@ for line in sys.stdin.buffer:
     with open(capture, "a", encoding="utf-8") as out:
         out.write(json.dumps(request) + "\n")
     response = {"version": 1, "id": request["id"], "outcome": "ok", "result": request}
+    if mode == "delayed_eof":
+        import subprocess
+        subprocess.Popen([sys.executable, "-c", "import time; time.sleep(1.5)"],
+                         stdin=subprocess.DEVNULL, stdout=sys.stdout,
+                         stderr=subprocess.DEVNULL)
     if mode == "locked_no_read" and request["op"] == "lock.acquire":
         held = open(Path(capture).with_suffix(".lock"), "a+b", buffering=0)
         held.write(b"x")
@@ -181,6 +186,16 @@ class TransportTests(unittest.TestCase):
         with self.assertRaises(DriverError):
             session.describe()
         self.assertEqual(self.requests(), [])
+
+    def test_reader_closes_pipe_after_delayed_descendant_eof(self):
+        session = self.session("delayed_eof")
+        session.describe()
+        session.close()
+        deadline = time.monotonic() + 5
+        while session._reader.is_alive() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertFalse(session._reader.is_alive())
+        self.assertTrue(session._process.stdout.closed)
 
     def test_timeout_releases_held_process_lock_before_returning(self):
         # Real kernel lock in a stalled transport fixture, not native lock proof.

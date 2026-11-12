@@ -2,6 +2,10 @@
 //! Applications retain their own installation, credentials and startup ownership.
 #[cfg(feature = "installation")]
 pub mod installation;
+#[cfg(feature = "installation")]
+pub mod installation_exchange;
+#[cfg(all(windows, feature = "installation"))]
+mod installation_windows;
 #[cfg(feature = "local-auth")]
 pub mod local_auth;
 #[cfg(feature = "installation")]
@@ -9,6 +13,8 @@ pub mod locking;
 pub mod platform;
 #[cfg(feature = "installation")]
 pub mod process;
+#[cfg(feature = "installation")]
+pub mod registration;
 mod storage;
 use anyhow::{Result, ensure};
 pub use platform::*;

@@ -57,7 +57,13 @@ jobs:
       - name: Actual native service capture, drift, start, stop and independent pause
         env:
           CONSTELLATION_INSTALLATION_SMOKE: '1'
-        run: cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_installation -- --ignored --nocapture
+        run: |
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_installation -- --ignored --nocapture
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_registration -- --ignored --nocapture
+      - name: Actual fresh no-start registration and controller identity through Python
+        env:
+          CONSTELLATION_INSTALLATION_SMOKE: '1'
+        run: python -m unittest discover -s tests/native_python -p test_service.py -v
       - name: Record the executed native artifact and target
         run: |
           python - <<'PY'

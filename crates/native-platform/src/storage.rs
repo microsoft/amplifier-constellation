@@ -189,7 +189,7 @@ fn prepare_parent(path: &Path) -> Result<()> {
 }
 
 #[cfg(unix)]
-fn create_private_directory(path: &Path) -> std::io::Result<()> {
+pub(crate) fn create_private_directory(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::DirBuilderExt;
     fs::DirBuilder::new().mode(0o700).create(path)
 }
@@ -257,7 +257,7 @@ fn wide_path(path: &Path) -> Result<Vec<u16>> {
     Ok(path)
 }
 #[cfg(windows)]
-fn create_private_directory(path: &Path) -> std::io::Result<()> {
+pub(crate) fn create_private_directory(path: &Path) -> std::io::Result<()> {
     use windows_sys::Win32::Storage::FileSystem::CreateDirectoryW;
     let security = PrivateSecurity::new(true).map_err(std::io::Error::other)?;
     let path = wide_path(path).map_err(std::io::Error::other)?;
@@ -347,7 +347,7 @@ pub fn publish_directory_if_absent(from: &Path, to: &Path) -> Result<()> {
     Ok(())
 }
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     use std::{ffi::CString, os::unix::ffi::OsStrExt};
     let from = CString::new(from.as_os_str().as_bytes())?;
     let to = CString::new(to.as_os_str().as_bytes())?;
@@ -371,11 +371,11 @@ fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     Ok(())
 }
 #[cfg(windows)]
-fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     commit(from, to, true)
 }
 #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
-fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
     anyhow::bail!("Atomic installation publication is not supported on this platform")
 }
 

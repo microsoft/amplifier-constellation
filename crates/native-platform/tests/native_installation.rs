@@ -123,7 +123,14 @@ fn local_manager() -> ServiceManager {
 fn wait(service: &Service, active: bool) -> Value {
     let until = Instant::now() + Duration::from_secs(20);
     loop {
-        match installation::snapshot(service) {
+        let started = Instant::now();
+        let observed = installation::snapshot(service);
+        println!(
+            "native service observation: elapsed_ms={} success={} desired_active={active}",
+            started.elapsed().as_millis(),
+            observed.is_ok()
+        );
+        match observed {
             Ok(value) if value["active"] == active && value["transitioning"] == false => {
                 return value;
             }

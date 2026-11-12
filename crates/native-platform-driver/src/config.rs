@@ -1,4 +1,7 @@
-use amplifier_native_platform::installation::Service;
+use amplifier_native_platform::{
+    installation::Service, installation_exchange::Profile as ExchangeProfile,
+    registration::Registration,
+};
 use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -20,6 +23,19 @@ pub struct Config {
     pub services: BTreeMap<String, Service>,
     #[serde(default)]
     pub commands: BTreeMap<String, CommandProfile>,
+    #[serde(default)]
+    pub service_applications: BTreeMap<String, crate::service_application::Profile>,
+    #[serde(default)]
+    pub registrations: BTreeMap<String, Registration>,
+    #[serde(default)]
+    pub exchanges: BTreeMap<String, EnrolledExchange>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnrolledExchange {
+    pub profile: ExchangeProfile,
+    pub lock: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -52,6 +68,9 @@ impl Enrollment {
             .chain(config.locks.keys())
             .chain(config.services.keys())
             .chain(config.commands.keys())
+            .chain(config.service_applications.keys())
+            .chain(config.registrations.keys())
+            .chain(config.exchanges.keys())
         {
             ensure!(valid_name(name), "Invalid enrolled name");
         }
@@ -97,6 +116,35 @@ impl Enrollment {
                     placeholders == 0,
                     "Result placeholder needs an enrolled root"
                 ),
+            }
+        }
+        for (name, application) in &config.service_applications {
+            ensure!(
+                config.services.contains_key(name),
+                "Application needs an enrolled service"
+            );
+            application.validate()?;
+        }
+        for name in config.registrations.keys() {
+            ensure!(
+                config.services.contains_key(name),
+                "Registration needs an enrolled service"
+            );
+        }
+        for exchange in config.exchanges.values() {
+            ensure!(
+                config.locks.contains_key(&exchange.lock),
+                "Exchange needs its enrolled critical-section lock"
+            );
+            protected_directory(
+                exchange
+                    .profile
+                    .current
+                    .parent()
+                    .context("Current entry needs a parent")?,
+            )?;
+            for root in exchange.profile.roots.values() {
+                protected_directory(root)?;
             }
         }
         Ok(Self {
