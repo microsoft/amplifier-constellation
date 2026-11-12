@@ -9,7 +9,10 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex, MutexGuard},
+    task::Poll,
 };
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -24,6 +27,7 @@ pub use relay::{Relay, RelaySender, is_message, parse_message};
 
 type Responders = Arc<Mutex<HashMap<String, acp::Responder<Value>>>>;
 type Events = mpsc::Sender<Result<Value>>;
+type Drain = Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 
 #[derive(Clone)]
 enum Wire {
@@ -37,15 +41,18 @@ pub struct Sender {
     wire: Wire,
     responders: Responders,
     events: Events,
+    closing: Arc<Mutex<bool>>,
 }
 
 /// Receiving half and lifetime of an SDK connection.
 pub struct Connection {
     pub sender: Sender,
     events: mpsc::Receiver<Result<Value>>,
-    driver: JoinHandle<()>,
+    driver: JoinHandle<Result<()>>,
     bridge: Option<JoinHandle<()>>,
     ended: bool,
+    close: Option<oneshot::Sender<()>>,
+    close_result: Option<std::result::Result<(), String>>,
 }
 
 impl Drop for Connection {
@@ -58,6 +65,45 @@ impl Drop for Connection {
 }
 
 impl Connection {
+    /// End protocol dispatch, flush accepted SDK output and shut down the writer,
+    /// then discard remaining input until EOF. This is terminal cleanup, not a
+    /// half-close that continues delivering callbacks, responses or metadata.
+    /// Consumers stop application handling when they begin closing: queued or
+    /// in-flight SDK callbacks can finish before foreground shutdown is observed,
+    /// and previously accepted events may remain readable after cancelling this
+    /// wait. Further application delivery is not promised.
+    /// Already cancelled SDK requests are not revived by closing.
+    ///
+    /// All Sender clones refuse new sends once this future is first polled.
+    /// Cancelling the wait leaves shutdown running; another call can await it.
+    /// Drop still aborts immediately. The caller owns any deadline and process
+    /// cleanup; EOF does not establish child exit or completion of external work.
+    /// Message-backed connections return an error without changing their state.
+    pub async fn close_and_drain(&mut self) -> Result<()> {
+        if let Some(result) = &self.close_result {
+            return result.clone().map_err(anyhow::Error::msg);
+        }
+        if let Some(close) = self.close.take() {
+            // Serialize sealing against every synchronous SDK enqueue, including
+            // sends through clones. No guard survives an await.
+            *self.sender.closing.lock().unwrap() = true;
+            let _ = close.send(());
+        } else if !*self.sender.closing.lock().unwrap() {
+            bail!("ACP terminal close requires a byte-stream connection");
+        }
+        let result = if self.ended {
+            Err(anyhow::anyhow!("ACP connection already ended"))
+        } else {
+            (&mut self.driver)
+                .await
+                .context("ACP connection task ended")
+                .and_then(|result| result)
+        };
+        self.ended = true;
+        self.close_result = Some(result.as_ref().map(|_| ()).map_err(ToString::to_string));
+        result
+    }
+
     /// Read application events in SDK dispatch order. Replies are enqueued in
     /// the same ordered lane as notifications, not by independent waiter tasks.
     pub async fn recv(&mut self) -> Result<Option<Value>> {
@@ -164,7 +210,7 @@ impl Connection {
             };
             tokio::select! { _ = receive => {}, _ = send => {} }
         });
-        match Self::start_on(endpoint, agent).await {
+        match Self::start_on(endpoint, agent, Arc::default(), None).await {
             Ok(mut connection) => {
                 connection.bridge = Some(bridge);
                 Ok(connection)
@@ -181,8 +227,33 @@ impl Connection {
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
     {
-        let incoming = FramedRead::new(reader, LinesCodec::new_with_max_length(max_frame))
-            .map(|r| r.map_err(std::io::Error::other));
+        let closing = Arc::new(Mutex::new(false));
+        // Keep the original framed reader (including its buffered bytes) after
+        // SDK foreground completion. Only this driver ever polls either view.
+        let reader = Arc::new(Mutex::new(FramedRead::new(
+            reader,
+            LinesCodec::new_with_max_length(max_frame),
+        )));
+        let incoming = futures_util::stream::poll_fn({
+            let reader = reader.clone();
+            let closing = closing.clone();
+            move |cx| {
+                for _ in 0..16 {
+                    let item = futures_util::ready!(reader.lock().unwrap().poll_next_unpin(cx));
+                    if !*closing.lock().unwrap() || matches!(item, Some(Err(_))) {
+                        return Poll::Ready(item.map(|r| r.map_err(std::io::Error::other)));
+                    }
+                    // During terminal close, discard input but do not deliver
+                    // EOF to the SDK before its accepted output has drained.
+                    // Keep reading while writes flush to avoid pipe deadlock.
+                    if item.is_none() {
+                        return Poll::Pending;
+                    }
+                }
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            }
+        });
         let outgoing = <FramedWrite<W, LinesCodec> as SinkExt<String>>::sink_map_err(
             FramedWrite::new(writer, LinesCodec::new_with_max_length(max_frame)),
             std::io::Error::other,
@@ -195,10 +266,27 @@ impl Connection {
             }
         });
         let transport = acp::Lines::new(outgoing, incoming);
-        Self::start_on(transport, agent).await
+        let (close, requested) = oneshot::channel();
+        let drain: Drain = Box::pin(async move {
+            let mut remaining =
+                futures_util::stream::poll_fn(move |cx| reader.lock().unwrap().poll_next_unpin(cx));
+            while let Some(line) = remaining.next().await {
+                line.context("ACP input failed during terminal drain")?;
+            }
+            Ok(())
+        });
+        let mut connection =
+            Self::start_on(transport, agent, closing, Some((requested, drain))).await?;
+        connection.close = Some(close);
+        Ok(connection)
     }
 
-    async fn start_on<T>(transport: T, agent: bool) -> Result<Self>
+    async fn start_on<T>(
+        transport: T,
+        agent: bool,
+        closing: Arc<Mutex<bool>>,
+        shutdown: Option<(oneshot::Receiver<()>, Drain)>,
+    ) -> Result<Self>
     where
         T: acp::ConnectTo<acp::Agent> + acp::ConnectTo<acp::Client>,
     {
@@ -213,6 +301,10 @@ impl Connection {
         let sender_responders = responders.clone();
         let sender_events = events.clone();
         let driver = tokio::spawn(async move {
+            let (requested, drain) = match shutdown {
+                Some((requested, drain)) => (Some(requested), Some(drain)),
+                None => (None, None),
+            };
             // The two concrete SDK roles have different counterpart types.
             // Both use the same application callbacks and the SDK v1 guard.
             macro_rules! run {
@@ -242,8 +334,13 @@ impl Connection {
                         })
                         .connect_with(transport, async move |wire| {
                             let sender = Sender { wire: Wire::$variant(wire),
-                                responders: sender_responders, events: sender_events };
+                                responders: sender_responders, events: sender_events,
+                                closing };
                             let _ = ready_tx.send(sender);
+                            if let Some(requested) = requested
+                                && requested.await.is_ok() {
+                                return Ok(());
+                            }
                             std::future::pending::<Result<(), acp::Error>>().await
                         }).await
                 }
@@ -256,6 +353,11 @@ impl Connection {
             if result.is_err() {
                 let _ = error_events.try_send(Err(anyhow::anyhow!("ACP connection ended")));
             }
+            result?;
+            if let Some(drain) = drain {
+                drain.await?;
+            }
+            Ok(())
         });
         let sender = ready_rx.await.context("ACP connection could not start")?;
         Ok(Self {
@@ -264,6 +366,8 @@ impl Connection {
             driver,
             bridge: None,
             ended: false,
+            close: None,
+            close_result: None,
         })
     }
 }
@@ -275,9 +379,18 @@ fn enqueue(events: &Events, value: Value) -> Result<(), acp::Error> {
 }
 
 impl Sender {
+    fn open(&self) -> Result<MutexGuard<'_, bool>> {
+        let closing = self.closing.lock().unwrap();
+        if *closing {
+            bail!("ACP output is closing");
+        }
+        Ok(closing)
+    }
+
     /// Publish a request with an SDK-assigned ID. Terminal results arrive via
     /// Connection::recv, after preceding notifications on that connection.
     pub fn request(&self, method: &str, params: Value) -> Result<Value> {
+        let _open = self.open()?;
         let message = acp::UntypedMessage::new(method, params)?;
         let prepared = match &self.wire {
             Wire::Client(c) => c.prepare_request(message),
@@ -300,14 +413,18 @@ impl Sender {
     /// registry or request-ID generator is involved.
     pub async fn call(&self, method: &str, params: Value) -> Result<Value> {
         let request = acp::UntypedMessage::new(method, params)?;
-        let reply = match &self.wire {
-            Wire::Client(c) => c.send_request(request),
-            Wire::Agent(c) => c.send_request(request),
+        let reply = {
+            let _open = self.open()?;
+            match &self.wire {
+                Wire::Client(c) => c.send_request(request),
+                Wire::Agent(c) => c.send_request(request),
+            }
         };
         Ok(reply.block_task().await?)
     }
 
     pub fn notify(&self, method: &str, params: Value) -> Result<()> {
+        let _open = self.open()?;
         let notification = acp::UntypedMessage::new(method, params)?;
         match &self.wire {
             Wire::Client(c) => c.send_notification(notification)?,
@@ -325,6 +442,7 @@ impl Sender {
             }
             return self.notify(method, message.get("params").cloned().unwrap_or(json!({})));
         }
+        let _open = self.open()?;
         let id = message.get("id").context("Response has no request ID")?;
         let responder = self
             .responders
