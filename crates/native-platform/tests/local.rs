@@ -211,6 +211,98 @@ fn startup_ownership_rejects_other_commands_user_home_or_elevation() {
     assert!(!task_matches(&OBSERVATORY, &duplicate, exe, home, sid).unwrap());
 }
 #[test]
+fn task_owner_is_matched_in_both_principal_and_logon_trigger() {
+    let exe = Path::new(r"C:\Program Files\Constellation\application.exe");
+    let home = Path::new(r"C:\Users\A Person\state & own");
+    let sid = "S-1-5-21-100-200-300-1001";
+    let legacy = scheduled_task(&OBSERVATORY, exe, home)
+        .unwrap()
+        .replace("<LogonType>", &format!("<UserId>{sid}</UserId><LogonType>"));
+    let owned = legacy.replace(
+        "</LogonTrigger>",
+        &format!("<UserId>{sid}</UserId></LogonTrigger>"),
+    );
+    assert_eq!(
+        scheduled_task_for_user(&OBSERVATORY, exe, home, sid).unwrap(),
+        owned
+    );
+    assert!(task_matches(&OBSERVATORY, &owned, exe, home, sid).unwrap());
+    // Exact known legacy entries keep their identity for reuse and removal.
+    assert!(task_matches(&OBSERVATORY, &legacy, exe, home, sid).unwrap());
+    for document in [&legacy, &owned] {
+        for enabled in ["<Enabled>false</Enabled>", ""] {
+            assert!(
+                task_matches(
+                    &OBSERVATORY,
+                    &document.replace("<Enabled>true</Enabled>", enabled),
+                    exe,
+                    home,
+                    sid
+                )
+                .unwrap()
+            );
+        }
+    }
+    for changed in [
+        owned.replace(
+            &format!("<UserId>{sid}</UserId></LogonTrigger>"),
+            "<UserId>S-1-5-18</UserId></LogonTrigger>",
+        ),
+        owned.replace(
+            &format!("<UserId>{sid}</UserId><LogonType>"),
+            "<UserId>S-1-5-18</UserId><LogonType>",
+        ),
+        owned.replace(
+            "</LogonTrigger>",
+            &format!("<UserId>{sid}</UserId></LogonTrigger>"),
+        ),
+        owned.replace(
+            "</Principal>",
+            &format!("<UserId>{sid}</UserId></Principal>"),
+        ),
+        owned.replace(
+            "</Principals>",
+            &format!("<Principal id=\"Other\"><UserId>{sid}</UserId></Principal></Principals>"),
+        ),
+        owned.replace("</Task>", &format!("<UserId>{sid}</UserId></Task>")),
+        owned.replace(
+            "<RunLevel>LeastPrivilege</RunLevel>",
+            "<RunLevel>LeastPrivilege</RunLevel><RunLevel>HighestAvailable</RunLevel>",
+        ),
+        legacy.replace(
+            "</Triggers>",
+            "<LogonTrigger><Enabled>true</Enabled></LogonTrigger></Triggers>",
+        ),
+        legacy.replace("</Triggers>", "<LogonTrigger /></Triggers>"),
+        legacy.replace("<Triggers>", "<Triggers><LogonTriggerExtra/>"),
+        legacy.replace("<Principals>", "<Principals><Principal/>"),
+        legacy.replace(
+            "</Triggers>",
+            "<BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>",
+        ),
+        legacy
+            .replace("<LogonTrigger>", "<BootTrigger>")
+            .replace("</LogonTrigger>", "</BootTrigger>"),
+        legacy.replace(
+            "<Enabled>true</Enabled>",
+            "<Enabled>true</Enabled><Enabled>false</Enabled>",
+        ),
+        owned.replace("<Enabled>true</Enabled>", "<Enabled>unknown</Enabled>"),
+    ] {
+        assert!(!task_matches(&OBSERVATORY, &changed, exe, home, sid).unwrap());
+    }
+    for invalid in [
+        "",
+        "S-1-",
+        "S-1-5--18",
+        "S-1-5-18</UserId>",
+        "DOMAIN\\owner",
+    ] {
+        assert!(scheduled_task_for_user(&OBSERVATORY, exe, home, invalid).is_err());
+    }
+}
+
+#[test]
 fn browser_target_is_local_without_embedded_credentials() {
     for value in [
         "http://127.0.0.1:1234/#local-capability",

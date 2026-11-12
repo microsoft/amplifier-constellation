@@ -68,13 +68,79 @@ fn exercise(app: &Application) {
     }
     #[cfg(windows)]
     {
-        let observed = Command::new("schtasks.exe")
-            .args(["/Query", "/TN", &label, "/XML"])
-            .output()
-            .unwrap();
-        assert!(observed.status.success());
-        // Its stdout may be lossy under the GUI subsystem. The idempotent
-        // registration below checks the exact Unicode path using the native API.
+        let observed = task_xml(&label);
+        let trigger = observed
+            .split_once("<LogonTrigger>")
+            .expect("one actual logon trigger")
+            .1
+            .split_once("</LogonTrigger>")
+            .unwrap()
+            .0;
+        let sid = platform::current_user_sid().unwrap();
+        assert_eq!(trigger.matches("<UserId>").count(), 1);
+        let account = trigger
+            .split_once("<UserId>")
+            .unwrap()
+            .1
+            .split_once("</UserId>")
+            .unwrap()
+            .0;
+        assert!(
+            !account.is_empty(),
+            "Actual logon trigger must have an owner"
+        );
+        println!("Task trigger identity: {account}; current SID: {sid}");
+        // COM may export the account name instead of the SID supplied during
+        // registration. The matcher must resolve that actual Windows identity.
+        assert!(
+            platform::task_matches(
+                app,
+                &observed,
+                &platform::installed_binary(app, &home),
+                &home,
+                &sid
+            )
+            .unwrap()
+        );
+        let account_form = observed.replace(
+            &format!("<UserId>{sid}</UserId>"),
+            &format!("<UserId>{account}</UserId>"),
+        );
+        assert!(
+            platform::task_matches(
+                app,
+                &account_form,
+                &platform::installed_binary(app, &home),
+                &home,
+                &sid
+            )
+            .unwrap(),
+            "Both principal and trigger account names resolve to the same SID"
+        );
+        for other in [
+            format!("constellation-missing-account-{}", uuid::Uuid::new_v4()),
+            "S-1-5-18".to_owned(),
+        ] {
+            assert_ne!(other, sid);
+            let other_trigger = trigger.replace(
+                &format!("<UserId>{account}</UserId>"),
+                &format!("<UserId>{other}</UserId>"),
+            );
+            assert!(
+                !platform::task_matches(
+                    app,
+                    &observed.replace(trigger, &other_trigger),
+                    &platform::installed_binary(app, &home),
+                    &home,
+                    &sid
+                )
+                .unwrap(),
+                "An unknown or different trigger owner must remain unowned"
+            );
+        }
+        // Even an administrative runner must prove the task is restricted to
+        // this user's logon. An all-user trigger can register there while it
+        // fails with AccessDenied for an ordinary Windows desktop account.
     }
     // A second registration is exact/idempotent and never replaces another task.
     platform::install_startup(app, &home, &id).unwrap();
@@ -103,6 +169,38 @@ fn exercise(app: &Application) {
             .unwrap()
             .success()
     );
+}
+
+#[cfg(windows)]
+fn task_xml(label: &str) -> String {
+    let label = label.to_owned();
+    std::thread::spawn(move || unsafe {
+        use windows::{
+            Win32::System::{
+                Com::{
+                    CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                    CoUninitialize,
+                },
+                TaskScheduler::{ITaskService, TaskScheduler},
+                Variant::VARIANT,
+            },
+            core::BSTR,
+        };
+        CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+        let result = {
+            let service: ITaskService =
+                CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER).unwrap();
+            let empty = VARIANT::default();
+            service.Connect(&empty, &empty, &empty, &empty).unwrap();
+            let folder = service.GetFolder(&BSTR::from("\\")).unwrap();
+            let task = folder.GetTask(&BSTR::from(label)).unwrap();
+            String::from_utf16(&task.Xml().unwrap()).unwrap()
+        };
+        CoUninitialize();
+        result
+    })
+    .join()
+    .unwrap()
 }
 
 // Only the exact fresh UUID registration created above belongs to this fixture.
