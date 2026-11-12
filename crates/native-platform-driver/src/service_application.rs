@@ -64,6 +64,7 @@ fn fingerprint(enrollment: &Enrollment, name: &str) -> Result<String> {
     let bytes = serde_json::to_vec(&(
         profile(enrollment, name)?,
         enrollment.config.services.get(name),
+        enrollment.config.registrations.get(name),
     ))?;
     Ok(format!("{:x}", Sha256::digest(bytes)))
 }
@@ -221,7 +222,6 @@ pub fn execute(enrollment: &Enrollment, name: &str) -> Result<i32> {
             unsafe { libc::fcntl(3, libc::F_SETFD, libc::FD_CLOEXEC) } == 0,
             "Missing native exec acknowledgment"
         );
-        ack.write_all(b"EXEC\n")?;
         let null = fs::File::open("/dev/null")?;
         ensure!(
             unsafe { libc::dup2(null.as_raw_fd(), 0) } == 0,
@@ -310,6 +310,67 @@ pub fn augment(enrollment: &Enrollment, name: &str, snapshot: &mut Value) -> Res
             snapshot["active"] == true && snapshot["transitioning"] == false,
             "Native service activity is unconfirmed"
         );
+        let registration = enrollment
+            .config
+            .registrations
+            .get(name)
+            .context("Service application needs its fixed registered wrapper profile")?;
+        ensure!(
+            fs::canonicalize(&registration.executable)?
+                == fs::canonicalize(std::env::current_exe()?)?,
+            "Service registration does not select this installed native wrapper"
+        );
+        let args = vec![
+            "--config".to_owned(),
+            enrollment
+                .path
+                .to_str()
+                .context("Configuration path is not text")?
+                .to_owned(),
+            "service-run".to_owned(),
+            "--service".to_owned(),
+            name.to_owned(),
+        ];
+        ensure!(
+            registration.args == args,
+            "Service registration does not select this application enrollment"
+        );
+        ensure!(
+            amplifier_native_platform::registration::profile_matches(
+                enrollment
+                    .config
+                    .services
+                    .get(name)
+                    .context("Unenrolled service")?,
+                registration,
+                snapshot
+            )?,
+            "Native registered action changed from the enrolled wrapper"
+        );
+        #[cfg(windows)]
+        {
+            let instances = snapshot["native"]["instances"]
+                .as_array()
+                .context("Missing task instances")?;
+            ensure!(
+                instances.len() == 1,
+                "Task application invocation is ambiguous"
+            );
+            let instance = &instances[0];
+            ensure!(
+                instance["instance_guid"]
+                    .as_str()
+                    .is_some_and(|s| !s.is_empty()),
+                "Missing task invocation identity"
+            );
+            let shared = instance["engine_instance_guids"]
+                .as_array()
+                .context("Missing task engine ownership evidence")?;
+            ensure!(
+                shared.len() == 1 && shared[0] == instance["instance_guid"],
+                "Task engine belongs to multiple or unconfirmed invocations"
+            );
+        }
         config::protected_file(&application.identity_path)?;
         let bytes = fs::read(&application.identity_path)?;
         ensure!(bytes.len() <= 16384, "Application receipt exceeds bound");
@@ -325,6 +386,12 @@ pub fn augment(enrollment: &Enrollment, name: &str, snapshot: &mut Value) -> Res
             .as_array()
             .context("Missing native process observations")?
         {
+            if !matches!(
+                manager["role"].as_str(),
+                Some("MainPID" | "launchd_pid" | "scheduled_task_engine")
+            ) {
+                continue;
+            }
             if let Ok(supervisor_chain) = chain_to(&record["supervisor"], &manager["identity"]) {
                 ensure!(
                     process::matches(&record["application"])?
@@ -393,7 +460,7 @@ mod tests {
         amplifier_native_platform::private_dir(&root).unwrap();
         let config_path = root.join("owner.json");
         let receipt_path = root.join("application.json");
-        let data = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"unused-fixture","definition_path":null}},
+        let mut data = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"unused-fixture","definition_path":null}},
             "service_applications":{"controller":{"executable":std::env::current_exe().unwrap(),"args":[],"cwd":root,"identity_path":receipt_path}}});
         amplifier_native_platform::private_write(&config_path, &serde_json::to_vec(&data).unwrap())
             .unwrap();

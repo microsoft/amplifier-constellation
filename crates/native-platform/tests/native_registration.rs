@@ -7,9 +7,10 @@ use amplifier_native_platform::{
 use serde_json::{Value, json};
 #[cfg(unix)]
 use std::fs;
+#[cfg(not(target_os = "macos"))]
+use std::process::Command;
 use std::{
     path::PathBuf,
-    process::Command,
     thread,
     time::{Duration, Instant},
 };
@@ -43,6 +44,13 @@ fn fresh_registration_never_starts_or_replaces_existing_profiles_and_pauses() {
             "Registration started a service"
         );
         assert_eq!(registered["processes"], json!([]));
+        println!(
+            "registration observation: definition_matches={} load={} need_reload={} drop_ins={}",
+            registered["definition_matches"],
+            registered["native"]["LoadState"],
+            registered["native"]["NeedDaemonReload"],
+            registered["native"]["DropInPaths"]
+        );
         assert_eq!(
             registration::register(&fixture.service, &fixture.profile).unwrap(),
             RegistrationOutcome::Registered { created: false }
@@ -93,6 +101,7 @@ fn settled_snapshot(service: &Service) -> Value {
         }
     }
 }
+#[cfg(not(target_os = "macos"))]
 fn run(command: &mut Command) {
     let result = command.output().unwrap();
     assert!(
@@ -109,7 +118,7 @@ struct Fixture {
 impl Fixture {
     fn new(autostart: bool) -> Self {
         let temp = tempfile::tempdir().unwrap();
-        let cwd = temp.path().canonicalize().unwrap();
+        let cwd = temp.path().canonicalize().unwrap().join("literal $cwd");
         amplifier_native_platform::private_dir(&cwd).unwrap();
         let label = format!("constellation-registration-test-{}", uuid::Uuid::new_v4());
         #[cfg(target_os = "linux")]

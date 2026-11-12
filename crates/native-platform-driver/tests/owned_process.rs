@@ -397,6 +397,7 @@ fn service_receipt_identifies_application_and_crash_reaps_its_tree() {
     let mut config: Value = serde_json::from_slice(&fs::read(&fixture.config).unwrap()).unwrap();
     config["services"] = json!({"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"disposable-controller","definition_path":null}});
     config["service_applications"] = json!({"controller":{"executable":std::env::current_exe().unwrap(),"args":["--exact","process_fixture","--nocapture"],"cwd":fixture.home,"identity_path":fixture.home.join("application.json")}});
+    config["registrations"] = json!({"controller":{"executable":DRIVER,"args":["--config",fixture.config,"service-run","--service","controller"],"cwd":fixture.home,"description":"Fixture service","autostart":false}});
     private_write(&fixture.config, &serde_json::to_vec(&config).unwrap()).unwrap();
     let mut command = fixture.command("endpoint", "service-run", None);
     command.args(["--service", "controller"]);
@@ -446,8 +447,9 @@ fn failed_application_exec_never_publishes_running_identity() {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(&bad, fs::Permissions::from_mode(0o700)).unwrap();
     }
-    let config = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"disposable-controller","definition_path":null}},
+    let mut config = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"disposable-controller","definition_path":null}},
         "service_applications":{"controller":{"executable":bad,"args":[],"cwd":fixture.home,"identity_path":fixture.home.join("application.json")}}});
+    config["registrations"] = json!({"controller":{"executable":DRIVER,"args":["--config",fixture.config,"service-run","--service","controller"],"cwd":fixture.home,"description":"Fixture service","autostart":false}});
     private_write(&fixture.config, &serde_json::to_vec(&config).unwrap()).unwrap();
     let mut command = fixture.command("endpoint", "service-run", None);
     command.args(["--service", "controller"]);

@@ -5,6 +5,7 @@ use crate::installation::{ActionOutcome, ServiceAction};
 use anyhow::{Context, Result, ensure};
 use serde_json::{Value, json};
 use std::{
+    collections::{BTreeMap, BTreeSet},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -20,12 +21,12 @@ use windows::{
             CoDisableCallCancellation, CoEnableCallCancellation, CoInitializeEx, CoUninitialize,
         },
         TaskScheduler::{
-            IRegisteredTask, IRunningTask, ITaskService, TASK_LOGON_TYPE, TASK_RUNLEVEL_TYPE,
-            TaskScheduler,
+            IExecAction, IRegisteredTask, IRunningTask, ITaskService, TASK_ACTION_EXEC,
+            TASK_ACTION_TYPE, TASK_ENUM_HIDDEN, TASK_LOGON_TYPE, TASK_RUNLEVEL_TYPE, TaskScheduler,
         },
         Variant::VARIANT,
     },
-    core::BSTR,
+    core::{BSTR, Interface},
 };
 
 const CALL_LIMIT: Duration = Duration::from_secs(8);
@@ -131,7 +132,7 @@ pub(crate) fn live(expired: &AtomicBool) -> Result<()> {
     Ok(())
 }
 
-fn task(name: &str, expired: &AtomicBool) -> Result<IRegisteredTask> {
+fn task(name: &str, expired: &AtomicBool) -> Result<(ITaskService, IRegisteredTask)> {
     live(expired)?;
     unsafe {
         let service: ITaskService = CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)?;
@@ -139,7 +140,7 @@ fn task(name: &str, expired: &AtomicBool) -> Result<IRegisteredTask> {
         service.Connect(&empty, &empty, &empty, &empty)?;
         live(expired)?;
         let root = service.GetFolder(&BSTR::from("\\"))?;
-        Ok(root.GetTask(&BSTR::from(name))?)
+        Ok((service, root.GetTask(&BSTR::from(name))?))
     }
 }
 
@@ -206,7 +207,11 @@ fn account_sid(account: &str) -> Result<String> {
     }
 }
 
-fn view(task: &IRegisteredTask, expired: &AtomicBool) -> Result<(Value, Vec<IRunningTask>)> {
+fn view(
+    service: &ITaskService,
+    task: &IRegisteredTask,
+    expired: &AtomicBool,
+) -> Result<(Value, Vec<IRunningTask>)> {
     live(expired)?;
     unsafe {
         let definition = task.Definition()?;
@@ -222,6 +227,36 @@ fn view(task: &IRegisteredTask, expired: &AtomicBool) -> Result<(Value, Vec<IRun
         );
         let mut logon = TASK_LOGON_TYPE::default();
         principal.LogonType(&mut logon)?;
+        let actions = definition.Actions()?;
+        let mut action_count = 0;
+        actions.Count(&mut action_count)?;
+        ensure!(
+            (0..=64).contains(&action_count),
+            "Unexpected task action count"
+        );
+        let mut action_views = Vec::with_capacity(action_count as usize);
+        for index in 1..=action_count {
+            live(expired)?;
+            let action = actions.get_Item(index)?;
+            let mut id = BSTR::new();
+            let mut kind = TASK_ACTION_TYPE::default();
+            action.Id(&mut id)?;
+            action.Type(&mut kind)?;
+            let mut observation = json!({"type":kind.0,"id":text(id)?});
+            if kind == TASK_ACTION_EXEC {
+                let action: IExecAction = action.cast()?;
+                let mut path = BSTR::new();
+                let mut args = BSTR::new();
+                let mut cwd = BSTR::new();
+                action.Path(&mut path)?;
+                action.Arguments(&mut args)?;
+                action.WorkingDirectory(&mut cwd)?;
+                observation["path"] = json!(text(path)?);
+                observation["args"] = json!(text(args)?);
+                observation["cwd"] = json!(text(cwd)?);
+            }
+            action_views.push(observation);
+        }
         let collection = task.GetInstances(0)?;
         let count = collection.Count()?;
         ensure!(
@@ -241,6 +276,42 @@ fn view(task: &IRegisteredTask, expired: &AtomicBool) -> Result<(Value, Vec<IRun
             });
             instances.push((observation, running));
         }
+        if !instances.is_empty() {
+            // EnginePID identifies a scheduler engine, which can be shared.
+            // Preserve the native GUID association instead of treating an
+            // ancestry match to that engine as unique proof of this invocation.
+            let wanted: BTreeSet<u64> = instances
+                .iter()
+                .map(|(value, _)| value["engine_pid"].as_u64().unwrap())
+                .collect();
+            // Excluding hidden tasks would make engine uniqueness unproven.
+            // Unsupported full enumeration remains an error, never a fallback
+            // to a smaller list that could silently omit another invocation.
+            let running = service.GetRunningTasks(TASK_ENUM_HIDDEN.0)?;
+            let count = running.Count()?;
+            ensure!(
+                (0..=4096).contains(&count),
+                "Unexpected global running-task count"
+            );
+            let mut shared: BTreeMap<u64, BTreeSet<String>> = BTreeMap::new();
+            for index in 1..=count {
+                live(expired)?;
+                let instance = running.get_Item(&VARIANT::from(index))?;
+                instance.Refresh()?;
+                let pid = u64::from(instance.EnginePID()?);
+                if wanted.contains(&pid) {
+                    shared
+                        .entry(pid)
+                        .or_default()
+                        .insert(text(instance.InstanceGuid()?)?);
+                }
+            }
+            for (value, _) in &mut instances {
+                let pid = value["engine_pid"].as_u64().unwrap();
+                value["engine_instance_guids"] =
+                    json!(shared.get(&pid).cloned().unwrap_or_default());
+            }
+        }
         instances.sort_by(|a, b| {
             a.0["instance_guid"]
                 .as_str()
@@ -253,7 +324,7 @@ fn view(task: &IRegisteredTask, expired: &AtomicBool) -> Result<(Value, Vec<IRun
             "enabled":task.Enabled()?.as_bool(), "state":task.State()?.0,
             "owner_sid":owner, "logon_type":logon.0,
             "security_descriptor":text(task.GetSecurityDescriptor(7)?)?,
-            "instances":observations
+            "instances":observations,"actions":action_views
         });
         live(expired)?;
         Ok((observation, handles))
@@ -263,8 +334,8 @@ fn view(task: &IRegisteredTask, expired: &AtomicBool) -> Result<(Value, Vec<IRun
 pub(crate) fn observe(name: &str) -> Result<Value> {
     let name = name.to_owned();
     bounded(move |expired| {
-        let task = task(&name, expired)?;
-        Ok(view(&task, expired)?.0)
+        let (service, task) = task(&name, expired)?;
+        Ok(view(&service, &task, expired)?.0)
     })
 }
 
@@ -276,8 +347,8 @@ pub(crate) fn dispatch(
     let name = name.to_owned();
     let expected = expected.clone();
     let result = bounded(move |expired| {
-        let task = task(&name, expired)?;
-        let (current, instances) = view(&task, expired)?;
+        let (service, task) = task(&name, expired)?;
+        let (current, instances) = view(&service, &task, expired)?;
         if current != expected {
             return Ok(ActionOutcome::Refused {
                 code: "stale_task".into(),

@@ -110,17 +110,14 @@ fn actual_pointer_and_real_baseline_exchange_then_explicit_rollback() {
     );
     #[cfg(windows)]
     {
-        use std::os::windows::fs::MetadataExt;
-        let metadata = fs::symlink_metadata(fixture.home.join("prepared/candidate")).unwrap();
-        assert_ne!(
-            metadata.file_attributes() & 0x400,
-            0,
-            "Actual Windows reparse point required"
+        use windows_sys::Win32::Storage::FileSystem::{
+            FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        };
+        let handle = open_junction(
+            &fixture.home.join("prepared/candidate"),
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         );
-        assert!(
-            !metadata.file_type().is_symlink(),
-            "Native representation is a junction, not a privileged symlink"
-        );
+        assert_junction(&handle);
     }
     let state = applied(
         exchange::exchange(
@@ -390,20 +387,100 @@ impl Drop for BlockRename {
 struct BlockRename {
     _handle: fs::File,
 }
+
+#[cfg(windows)]
+fn open_junction(path: &Path, share: u32) -> fs::File {
+    use std::os::windows::{ffi::OsStrExt, io::FromRawHandle};
+    use windows_sys::Win32::{
+        Foundation::{GENERIC_READ, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{
+            CreateFileW, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, OPEN_EXISTING,
+        },
+    };
+    let path: Vec<u16> = path.as_os_str().encode_wide().chain([0]).collect();
+    // Actual read access establishes the sharing reservation needed by the
+    // failure fixture. Access zero is only a metadata observation.
+    let handle = unsafe {
+        CreateFileW(
+            path.as_ptr(),
+            GENERIC_READ,
+            share,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            std::ptr::null_mut(),
+        )
+    };
+    assert_ne!(
+        handle,
+        INVALID_HANDLE_VALUE,
+        "Open actual junction: {}",
+        std::io::Error::last_os_error()
+    );
+    unsafe { fs::File::from_raw_handle(handle) }
+}
+
+#[cfg(windows)]
+fn assert_junction(file: &fs::File) {
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::System::{IO::DeviceIoControl, Ioctl::FSCTL_GET_REPARSE_POINT};
+    let mut data = vec![0u8; 16 * 1024];
+    let mut returned = 0;
+    assert_ne!(
+        unsafe {
+            DeviceIoControl(
+                file.as_raw_handle(),
+                FSCTL_GET_REPARSE_POINT,
+                std::ptr::null(),
+                0,
+                data.as_mut_ptr().cast(),
+                data.len() as u32,
+                &mut returned,
+                std::ptr::null_mut(),
+            )
+        },
+        0,
+        "Handle must refer to the reparse entry itself: {}",
+        std::io::Error::last_os_error()
+    );
+    assert!(returned >= 8, "Truncated native reparse record");
+    assert_eq!(
+        u32::from_le_bytes(data[..4].try_into().unwrap()),
+        0xa000_0003,
+        "Native pointer must be IO_REPARSE_TAG_MOUNT_POINT"
+    );
+}
+
 #[cfg(windows)]
 impl BlockRename {
     fn new(path: &Path) -> Self {
-        use std::os::windows::fs::OpenOptionsExt;
-        use windows_sys::Win32::Storage::FileSystem::{
-            FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_READ,
-            FILE_SHARE_WRITE,
+        use std::os::windows::ffi::OsStrExt;
+        use windows_sys::Win32::{
+            Foundation::{ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION},
+            Storage::FileSystem::{
+                FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_WRITE_THROUGH, MoveFileExW,
+            },
         };
-        let handle = fs::OpenOptions::new()
-            .access_mode(0)
-            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
-            .open(path)
-            .unwrap();
+        let handle = open_junction(path, FILE_SHARE_READ | FILE_SHARE_WRITE);
+        assert_junction(&handle);
+        let probe = path.with_file_name("blocked-rename-probe");
+        assert!(!probe.exists());
+        let from: Vec<u16> = path.as_os_str().encode_wide().chain([0]).collect();
+        let to: Vec<u16> = probe.as_os_str().encode_wide().chain([0]).collect();
+        let moved = unsafe { MoveFileExW(from.as_ptr(), to.as_ptr(), MOVEFILE_WRITE_THROUGH) };
+        let error = std::io::Error::last_os_error();
+        assert_eq!(
+            moved, 0,
+            "Failure fixture must actually block renaming the junction"
+        );
+        assert!(
+            matches!(error.raw_os_error(), Some(code) if code == ERROR_SHARING_VIOLATION as i32 || code == ERROR_ACCESS_DENIED as i32),
+            "Expected native sharing/access refusal, got {error}"
+        );
+        assert!(
+            path.exists() && !probe.exists(),
+            "Failed native rename must preserve the prepared pointer"
+        );
         Self { _handle: handle }
     }
 }

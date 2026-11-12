@@ -81,7 +81,7 @@ into invented systemd values. Raw Task Scheduler engine identity is not controll
 identity.
 
 For a separately configured `service_applications[name] = {executable,args,cwd,
-identity_path}`, the enrolled service runs this fixed driver as
+identity_path}` plus its matching `registrations[name]`, the enrolled service runs this fixed driver as
 `--config OWNER_CONFIG service-run --service NAME`. This long-running wrapper
 owns the application and records its actual process generation under the protected
 identity path. It has a service lifetime, independent of bounded probe commands.
@@ -89,7 +89,9 @@ POSIX launch proof requires successful executable replacement; invalid images
 never fall back to a shell. The snapshot adds `application.status` as `running`,
 `absent`, or `unconfirmed`. Running evidence includes the application `identity`,
 `supervisor`, `manager_process`, both generation-checked ancestry chains, and
-`profile_sha256`. An inactive native service with a retained live child remains
+`profile_sha256`. Native action metadata must match the fixed wrapper, and Windows
+requires one proved task instance with no ambiguous shared engine identity.
+An inactive native service with a retained live child remains
 unconfirmed. Old installations without this optional profile retain raw snapshots.
 
 Source exchange is an explicit operation, separate from JSON publication.

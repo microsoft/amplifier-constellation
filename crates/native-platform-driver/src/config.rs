@@ -123,6 +123,10 @@ impl Enrollment {
                 config.services.contains_key(name),
                 "Application needs an enrolled service"
             );
+            ensure!(
+                config.registrations.contains_key(name),
+                "Service application needs its enrolled registration profile"
+            );
             application.validate()?;
         }
         for name in config.registrations.keys() {

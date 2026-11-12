@@ -6,6 +6,7 @@
 use crate::installation::{self, Service, ServiceManager};
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -93,8 +94,10 @@ fn systemd_quote(value: &str) -> String {
             .replace('\\', "\\\\")
             .replace('"', "\\\"")
             .replace('%', "%%")
-            .replace('$', "$$")
     )
+}
+fn systemd_exec_quote(value: &str) -> String {
+    systemd_quote(value).replace('$', "$$")
 }
 #[cfg(any(windows, test))]
 fn windows_quote(value: &str) -> String {
@@ -123,7 +126,7 @@ fn unix_definition(service: &Service, profile: &Registration) -> Result<String> 
         ServiceManager::SystemdUser => {
             let command = std::iter::once(text(&profile.executable)?)
                 .chain(profile.args.iter().map(String::as_str))
-                .map(systemd_quote)
+                .map(systemd_exec_quote)
                 .collect::<Vec<_>>()
                 .join(" ");
             format!(
@@ -157,13 +160,18 @@ fn unix_definition(service: &Service, profile: &Registration) -> Result<String> 
     })
 }
 #[cfg(any(windows, test))]
-fn task_xml(service: &Service, profile: &Registration, sid: &str) -> Result<String> {
-    let args = profile
+pub(crate) fn windows_arguments(profile: &Registration) -> String {
+    profile
         .args
         .iter()
         .map(|arg| windows_quote(arg))
         .collect::<Vec<_>>()
-        .join(" ");
+        .join(" ")
+}
+
+#[cfg(any(windows, test))]
+fn task_xml(service: &Service, profile: &Registration, sid: &str) -> Result<String> {
+    let args = windows_arguments(profile);
     let trigger = if profile.autostart {
         format!(
             "<Triggers><LogonTrigger><Enabled>true</Enabled><UserId>{}</UserId></LogonTrigger></Triggers>",
@@ -254,6 +262,50 @@ fn prepare_parent(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Prove that an already observed service launches this protected fixed profile.
+/// This is read-only: it does not register, reload, enable, or repair anything.
+/// Independent enabled/masked state is deliberately not normalized away.
+pub fn profile_matches(
+    service: &Service,
+    profile: &Registration,
+    snapshot: &Value,
+) -> Result<bool> {
+    service.validate()?;
+    profile.validate()?;
+    if snapshot["service"] != serde_json::to_value(service)?
+        || snapshot["definition_matches"] != true
+    {
+        return Ok(false);
+    }
+    match service.manager {
+        ServiceManager::SystemdUser | ServiceManager::LaunchAgent => {
+            let expected = unix_definition(service, profile)?.into_bytes();
+            let matches = snapshot["definition"]["bytes"] == serde_json::to_value(expected)?;
+            Ok(matches
+                && (service.manager != ServiceManager::SystemdUser
+                    || snapshot["native"]["DropInPaths"] == ""))
+        }
+        #[cfg(windows)]
+        ServiceManager::ScheduledTask => task_profile_matches(profile, snapshot),
+        #[cfg(not(windows))]
+        ServiceManager::ScheduledTask => Ok(false),
+    }
+}
+#[cfg(any(windows, test))]
+fn task_profile_matches(profile: &Registration, snapshot: &Value) -> Result<bool> {
+    let Some(actions) = snapshot["native"]["actions"].as_array() else {
+        return Ok(false);
+    };
+    if actions.len() != 1 {
+        return Ok(false);
+    }
+    let action = &actions[0];
+    Ok(action["type"] == 0
+        && action["path"] == text(&profile.executable)?
+        && action["args"] == windows_arguments(profile)
+        && action["cwd"] == text(&profile.cwd)?)
+}
+
 /// Register only this fixed owner profile; never start it. Ambiguous failure
 /// after publication remains Unknown. An existing registration receives no writes.
 pub fn register(service: &Service, profile: &Registration) -> Result<RegistrationOutcome> {
@@ -268,10 +320,7 @@ pub fn register(service: &Service, profile: &Registration) -> Result<Registratio
     if let Some(outcome) = existing_file(&path, expected.as_bytes())? {
         if matches!(outcome, RegistrationOutcome::Registered { .. }) {
             let observed = installation::snapshot(service)?;
-            if observed["definition_matches"] != true
-                || (service.manager == ServiceManager::SystemdUser
-                    && observed["native"]["DropInPaths"] != "")
-            {
+            if !profile_matches(service, profile, &observed)? {
                 return Ok(refused(
                     "effective_definition_mismatch",
                     "Existing effective definition or overrides were preserved",
@@ -509,6 +558,54 @@ mod tests {
         assert_eq!(windows_quote(""), "\"\"");
         assert_eq!(windows_quote("a\\"), "\"a\\\\\"");
         assert_eq!(windows_quote("a\"b"), "\"a\\\"b\"");
+    }
+    #[test]
+    fn working_directory_keeps_literal_dollar_while_exec_arguments_escape_it() {
+        let (temp, mut profile) = fixture();
+        profile.cwd = temp.path().join("literal $cwd");
+        fs::create_dir(&profile.cwd).unwrap();
+        let service = Service {
+            manager: ServiceManager::SystemdUser,
+            name: "test.service".into(),
+            definition_path: None,
+        };
+        let unit = unix_definition(&service, &profile).unwrap();
+        let cwd = unit
+            .lines()
+            .find(|line| line.starts_with("WorkingDirectory="))
+            .unwrap();
+        assert!(cwd.contains("literal $cwd"));
+        assert!(!cwd.contains("$$cwd"));
+        assert!(unit.contains("$$HOME %%value%%"));
+    }
+    #[test]
+    fn windows_profile_match_requires_one_exact_exec_and_preserves_pause() {
+        let (_temp, profile) = fixture();
+        let mut view = serde_json::json!({"enabled":false,"native":{"actions":[{"type":0,"id":"action","path":profile.executable,"args":windows_arguments(&profile),"cwd":profile.cwd}]}});
+        assert!(task_profile_matches(&profile, &view).unwrap());
+        view["native"]["actions"][0]["args"] = serde_json::json!("changed");
+        assert!(!task_profile_matches(&profile, &view).unwrap());
+        view["native"]["actions"] = serde_json::json!([]);
+        assert!(!task_profile_matches(&profile, &view).unwrap());
+    }
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn unix_profile_match_requires_explicit_empty_overrides_and_exact_bytes() {
+        let (_temp, profile) = fixture();
+        let service = Service {
+            manager: ServiceManager::SystemdUser,
+            name: "test.service".into(),
+            definition_path: None,
+        };
+        let mut view = serde_json::json!({"service":service,"definition_matches":true,"enabled":false,"definition":{"bytes":unix_definition(&service,&profile).unwrap().into_bytes()},"native":{"DropInPaths":""}});
+        assert!(profile_matches(&service, &profile, &view).unwrap());
+        view["native"]["DropInPaths"] = Value::Null;
+        assert!(!profile_matches(&service, &profile, &view).unwrap());
+        view["native"]["DropInPaths"] = serde_json::json!("/owner/override.conf");
+        assert!(!profile_matches(&service, &profile, &view).unwrap());
+        view["native"]["DropInPaths"] = serde_json::json!("");
+        view["definition"]["bytes"] = serde_json::json!([1]);
+        assert!(!profile_matches(&service, &profile, &view).unwrap());
     }
     #[test]
     fn existing_files_are_observed_not_overwritten() {

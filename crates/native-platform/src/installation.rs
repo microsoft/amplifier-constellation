@@ -21,7 +21,7 @@ use std::{
 };
 
 // Six launchd reads or four systemd reads plus dispatch stay below 30 seconds.
-// Windows uses two PowerShell/COM reads plus dispatch, each bounded at eight.
+// Windows observations/actions use the separately bounded native COM helper.
 const COMMAND_LIMIT: Duration = Duration::from_secs(if cfg!(windows) { 8 } else { 3 });
 const OUTPUT_LIMIT: usize = 2 * 1024 * 1024;
 
@@ -367,6 +367,7 @@ fn properties(text: &str) -> Result<BTreeMap<String, String>> {
 fn systemd_snapshot(service: &Service) -> Result<Value> {
     let native = properties(&checked(systemctl(&[
         "show",
+        "--all",
         "--property",
         SYSTEMD_PROPERTIES,
         "--",
@@ -388,6 +389,7 @@ fn systemd_snapshot(service: &Service) -> Result<Value> {
             processes.push(p);
         }
     }
+    let _ = get("DropInPaths")?;
     let state = get("UnitFileState")?;
     let masked = matches!(state, "masked" | "masked-runtime");
     let enabled = match state {

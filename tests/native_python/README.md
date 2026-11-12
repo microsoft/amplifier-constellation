@@ -28,3 +28,17 @@ Run these checks separately on each supported OS and architecture. Service
 start/stop and owned endpoint-tree qualification additionally require the native
 crate/driver tests; these transport and storage checks alone are not a combined
 installation qualification.
+
+`test_exchange.py` uses actual directory pointers, native renames and retained
+baselines through the Python client, including explicit rollback and observation
+after a lost reply. Native Rust tests induce a real second-rename failure and
+require unknown settlement with the original and candidate preserved.
+
+`test_service.py` is separately enabled by `CONSTELLATION_INSTALLATION_SMOKE=1`
+on disposable runners. It creates only a unique test registration, proves no-start
+setup, starts the fixed application, verifies its actual PID/generation separately
+from the service manager, checks stale/forged receipt refusal, restarts into a new
+generation, and preserves an independent pause. It then removes its own test
+registration. The workflow also runs native registration/state fixtures for both
+architectures of Linux, macOS and Windows. Hosted Windows x64 uses Windows Server;
+that evidence does not claim Windows 11 desktop first-run UX qualification.
