@@ -198,6 +198,8 @@ class Session:
         return error_type(code, message)
 
     def _call(self, op: str, *, mutating: bool = False, **fields: Any) -> Any:
+        # A forked copy may inherit a mutex held by a vanished parent thread.
+        self._ensure_current()
         with self._mutex:
             self._ensure_current()
             self._serial += 1
@@ -299,7 +301,9 @@ class Session:
         """Hold the enrolled lock across the whole caller critical section."""
         # Keep other threads from dispatching under this owner's lock or closing
         # its driver before the critical section ends. Owner calls are reentrant.
+        self._ensure_current()
         with self._mutex:
+            self._ensure_current()
             if name in self._locks:
                 raise DriverError(
                     "lock_reentry", "This Session already holds the named lock"

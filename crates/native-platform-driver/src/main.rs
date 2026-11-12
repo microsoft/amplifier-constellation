@@ -274,29 +274,39 @@ impl Session {
             } => {
                 let service = cfg.services.get(&name).context("Unenrolled service")?;
                 let mut expected_native = expected.clone();
-                if cfg.service_applications.contains_key(&name) {
-                    let mut current = installation::snapshot(service)?;
-                    service_application::augment(&self.enrollment, &name, &mut current)?;
-                    if current != expected {
-                        return Ok(Outcome::failure(
-                            "refused",
-                            "stale_snapshot",
-                            "Service/application generation changed",
-                        ));
-                    }
-                    if current["application"]["status"] == "unconfirmed" {
-                        return Ok(Outcome::failure(
-                            "refused",
-                            "application_unconfirmed",
-                            "Cannot establish owned service application",
-                        ));
-                    }
+                let application_bound = cfg.service_applications.contains_key(&name);
+                if application_bound {
                     expected_native
                         .as_object_mut()
                         .context("Snapshot must be an object")?
                         .remove("application");
                 }
-                match installation::request_state(service, action, &expected_native)? {
+                let outcome = installation::request_state_checked(
+                    service,
+                    action,
+                    &expected_native,
+                    |native| {
+                        if !application_bound {
+                            return Ok(None);
+                        }
+                        let mut current = native.clone();
+                        service_application::augment(&self.enrollment, &name, &mut current)?;
+                        if current != expected {
+                            return Ok(Some(ActionOutcome::Refused {
+                                code: "stale_snapshot".into(),
+                                message: "Service/application generation changed".into(),
+                            }));
+                        }
+                        if current["application"]["status"] == "unconfirmed" {
+                            return Ok(Some(ActionOutcome::Refused {
+                                code: "application_unconfirmed".into(),
+                                message: "Cannot establish owned service application".into(),
+                            }));
+                        }
+                        Ok(None)
+                    },
+                )?;
+                match outcome {
                     ActionOutcome::Accepted => Ok(Outcome::ok(json!({"accepted":true}))),
                     ActionOutcome::Refused { code, message } => {
                         Ok(Outcome::failure("refused", &code, message))

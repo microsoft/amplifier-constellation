@@ -144,13 +144,24 @@ pub fn request_state(
     action: ServiceAction,
     expected: &Value,
 ) -> Result<ActionOutcome> {
-    let current = snapshot(service)?;
-    if current != *expected {
-        return Ok(refused(
-            "stale_snapshot",
-            "Service definition, availability, or process generation changed",
-        ));
-    }
+    request_state_checked(service, action, expected, |_| Ok(None))
+}
+
+/// Check additional installation-owned evidence between the two native reads.
+/// The caller cannot dispatch from an unchecked snapshot or omit the second
+/// observation. This keeps application proof inside the same compare-before-
+/// action window without paying for a second complete pair of manager reads.
+pub fn request_state_checked(
+    service: &Service,
+    action: ServiceAction,
+    expected: &Value,
+    validate: impl FnOnce(&Value) -> Result<Option<ActionOutcome>>,
+) -> Result<ActionOutcome> {
+    service.validate()?;
+    let current = match action_snapshot(expected, || observe(service), validate)? {
+        CheckedSnapshot::Confirmed(value) => value,
+        CheckedSnapshot::Refused(outcome) => return Ok(outcome),
+    };
     if let Some(refusal) = action_refusal(&current, action) {
         return Ok(refusal);
     }
@@ -167,6 +178,38 @@ pub fn request_state(
         }
     }
     dispatch(service, action, &current)
+}
+
+enum CheckedSnapshot {
+    Confirmed(Value),
+    Refused(ActionOutcome),
+}
+
+fn action_snapshot(
+    expected: &Value,
+    mut observe: impl FnMut() -> Result<Value>,
+    validate: impl FnOnce(&Value) -> Result<Option<ActionOutcome>>,
+) -> Result<CheckedSnapshot> {
+    let first = observe()?;
+    if first != *expected {
+        return Ok(CheckedSnapshot::Refused(refused(
+            "stale_snapshot",
+            "Service definition, availability, or process generation changed",
+        )));
+    }
+    if let Some(outcome) = validate(&first)? {
+        ensure!(
+            matches!(outcome, ActionOutcome::Refused { .. }),
+            "Service validation can only refuse before dispatch"
+        );
+        return Ok(CheckedSnapshot::Refused(outcome));
+    }
+    let second = observe()?;
+    ensure!(
+        first == second,
+        "Service changed during observation; obtain a fresh snapshot"
+    );
+    Ok(CheckedSnapshot::Confirmed(second))
 }
 
 fn action_refusal(current: &Value, action: ServiceAction) -> Option<ActionOutcome> {
@@ -701,6 +744,91 @@ fn dispatch(service: &Service, action: ServiceAction, current: &Value) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn application_validation_is_bracketed_by_one_native_observation_pair() {
+        use std::cell::RefCell;
+        let order = RefCell::new(Vec::new());
+        let expected = json!({"enabled":true,"process_generation":"original"});
+        let result = action_snapshot(
+            &expected,
+            || {
+                order.borrow_mut().push("observe");
+                Ok(expected.clone())
+            },
+            |observed| {
+                order.borrow_mut().push("application");
+                assert_eq!(observed, &expected);
+                Ok(None)
+            },
+        )
+        .unwrap();
+        assert!(matches!(result, CheckedSnapshot::Confirmed(value) if value == expected));
+        assert_eq!(*order.borrow(), ["observe", "application", "observe"]);
+    }
+
+    #[test]
+    fn native_drift_during_application_validation_cannot_be_confirmed() {
+        use std::cell::RefCell;
+        let expected = json!({"enabled":true,"process_generation":"original"});
+        for changed in [
+            json!({"enabled":false,"process_generation":"original"}),
+            json!({"enabled":true,"process_generation":"replacement"}),
+        ] {
+            let observed = RefCell::new(expected.clone());
+            let result = action_snapshot(
+                &expected,
+                || Ok(observed.borrow().clone()),
+                |_| {
+                    *observed.borrow_mut() = changed;
+                    Ok(None)
+                },
+            );
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn application_refusal_does_not_request_more_native_observations() {
+        use std::cell::Cell;
+        let reads = Cell::new(0);
+        let expected = json!({"enabled":true});
+        let result = action_snapshot(
+            &expected,
+            || {
+                reads.set(reads.get() + 1);
+                Ok(expected.clone())
+            },
+            |_| Ok(Some(refused("application_unconfirmed", "Unproved process"))),
+        )
+        .unwrap();
+        assert!(
+            matches!(result, CheckedSnapshot::Refused(ActionOutcome::Refused {code,..}) if code == "application_unconfirmed")
+        );
+        assert_eq!(reads.get(), 1);
+        let result = action_snapshot(
+            &expected,
+            || Ok(json!({"enabled":false})),
+            |_| panic!("Stale native state must refuse before application validation"),
+        )
+        .unwrap();
+        assert!(
+            matches!(result, CheckedSnapshot::Refused(ActionOutcome::Refused {code,..}) if code == "stale_snapshot")
+        );
+    }
+
+    #[test]
+    fn application_validator_cannot_claim_dispatch_or_settlement() {
+        let expected = json!({"enabled":true});
+        for outcome in [
+            ActionOutcome::Accepted,
+            unknown("not_a_dispatch", "Validation cannot dispatch"),
+        ] {
+            assert!(
+                action_snapshot(&expected, || Ok(expected.clone()), |_| Ok(Some(outcome))).is_err()
+            );
+        }
+    }
+
     #[test]
     fn availability_refusal_does_not_invent_enabled_or_settled() {
         let mut view = json!({"definition_matches":true,"transitioning":false,"enabled":true,"start_allowed":true,"masked":false});

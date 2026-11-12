@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import tempfile
@@ -189,6 +191,85 @@ class TransportTests(unittest.TestCase):
         finally:
             if closer.ident is not None:
                 closer.join(timeout=3)
+
+    def assert_forked_session_refused(self, operation):
+        # Fork while another parent thread owns the actual Session mutex and a
+        # kernel lock. The child's copy must refuse before touching that mutex.
+        import fcntl
+
+        session = self.session("locked_echo", timeout=2)
+        acquired = threading.Event()
+        release = threading.Event()
+        failures = []
+
+        def hold_lock():
+            try:
+                with session.lock("installation"):
+                    acquired.set()
+                    if not release.wait(10):
+                        raise RuntimeError("Parent critical section was not released")
+                    session.describe()
+            except BaseException as error:
+                failures.append(error)
+
+        holder = threading.Thread(target=hold_lock, daemon=True)
+        holder.start()
+        child = None
+        child_status = None
+        try:
+            self.assertTrue(acquired.wait(3))
+            child = os.fork()
+            if child == 0:
+                signal.signal(signal.SIGALRM, lambda *_: os._exit(17))
+                signal.alarm(2)
+                try:
+                    session.close()  # Must not close or signal the parent driver.
+                    if operation == "call":
+                        session.describe()
+                    else:
+                        with session.lock("child"):
+                            pass
+                except DriverError as error:
+                    os._exit(0 if error.code == "forked_session" else 18)
+                except BaseException:
+                    os._exit(19)
+                os._exit(20)
+
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                waited, status = os.waitpid(child, os.WNOHANG)
+                if waited == child:
+                    child_status = os.waitstatus_to_exitcode(status)
+                    child = None
+                    break
+                time.sleep(0.01)
+            self.assertIsNone(session._process.poll())
+            self.assertEqual([r["op"] for r in self.requests()], ["lock.acquire"])
+            with self.capture.with_suffix(".lock").open("r+b", buffering=0) as lock:
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        finally:
+            if child is not None:
+                os.kill(child, signal.SIGKILL)
+                os.waitpid(child, 0)
+            release.set()
+            holder.join(timeout=5)
+
+        self.assertFalse(holder.is_alive())
+        self.assertEqual(failures, [])
+        self.assertIsNone(session._process.poll())
+        self.assertEqual(session.describe()["op"], "describe")
+        self.assertEqual(
+            child_status, 0, "Child must promptly refuse the inherited Session"
+        )
+
+    @unittest.skipUnless(hasattr(os, "fork"), "Requires a POSIX process fork")
+    def test_forked_call_refuses_before_another_threads_mutex(self):
+        self.assert_forked_session_refused("call")
+
+    @unittest.skipUnless(hasattr(os, "fork"), "Requires a POSIX process fork")
+    def test_forked_lock_refuses_before_another_threads_mutex(self):
+        self.assert_forked_session_refused("lock")
 
     def test_lost_launch_ack_is_unknown_and_never_redispatched(self):
         session = self.session("lost")

@@ -4,6 +4,10 @@ Candidate interface for installation-owned clients. This is a local executable,
 not a service, ACP extension, browser API, scheduler or restoration engine.
 The installation owns its protected configuration and all commands in it.
 
+This document owns the local wire interface and its Python binding. The linked
+[service snapshot reference](SERVICE-SNAPSHOT.md) defines the result of
+`service.snapshot`; it is part of this protocol, not another service or API.
+
 `constellation-native-driver --config ABSOLUTE_CONFIG serve` exchanges one JSON
 object per line on stdin/stdout. Keep that process alive for the entire Python
 critical section. EOF releases its kernel locks. A lost reply never authorizes a
@@ -74,11 +78,12 @@ values. Creation does not start the service; repeats only observe exact existing
 definitions. Existing mismatches, masks and disable settings are preserved.
 `autostart` selects future login behavior on fresh registration only.
 
-Snapshots retain `schema`, `service`, `definition`, `effective_definition`,
-`definition_matches`, `enabled`, `start_allowed`, `masked`, `loaded`, `active`,
-`transitioning`, `processes`, and `native`. Native fields/roles are not translated
-into invented systemd values. Raw Task Scheduler engine identity is not controller
-identity.
+The [service snapshot reference](SERVICE-SNAPSHOT.md) specifies every common key,
+its type, native manager fields, process identities and optional application
+evidence. Preserve the entire returned snapshot as `service.action.expected`.
+Do not normalize unknown values, substitute Linux states, or reconstruct a
+snapshot from a subset of fields. Raw Task Scheduler engine identity is not
+controller identity.
 
 For a separately configured `service_applications[name] = {executable,args,cwd,
 identity_path}` plus its matching `registrations[name]`, the enrolled service runs this fixed driver as
@@ -109,6 +114,106 @@ and leaves all surviving entries inspectable. Explicit rollback uses retained as
 the next incoming and a fresh retention destination. No deletion, automatic retry,
 or whole-state rollback is provided. Domain owners still journal operations,
 verify source fingerprints, close admission and settle services.
+
+## Python binding
+
+Import `Session`, `DriverError`, `Busy`, `Refused`, and `Unknown` from
+`constellation_native`. The synchronous [implementation](../../support/python/constellation_native/client.py)
+starts one local driver process; it does not connect to a daemon. Its constructor is:
+
+```python
+Session(driver_path: os.PathLike[str] | str,
+        config_path: os.PathLike[str] | str, *, timeout: float = 30.0)
+```
+
+Both paths must be absolute and supplied by installation setup. `timeout` is a
+positive finite number of seconds; booleans are invalid. Relative paths or invalid timeout
+raise `ValueError` before launch. Failure to launch raises
+`DriverError("driver_start", message)`. Construction is not a successful protocol
+handshake; call `describe()` when capability discovery is needed. The request
+deadline covers its pipe write and response wait, after obtaining the session's
+thread mutex. It is not a work deadline or a promise that cleanup takes zero time.
+
+`with Session(...) as native:` returns the session and closes it on exit.
+`close() -> None` is idempotent, closes this invocation and releases its locks;
+it does not cancel independently launched commands or manager-owned applications.
+The session serializes requests. It never reconnects, retries a request, or
+replays a request ID after a lost response. A forked child must create a new
+session; it cannot use or retain the parent's driver connection.
+
+For an application-bound service action, one native observation precedes
+application validation and a second follows it. Both must match the expected
+native snapshot before availability and process-generation checks and dispatch.
+This avoids repeating a complete observation pair. Individual manager-call caps
+are not a strict end-to-end wall-clock guarantee: local filesystem/process proof
+and cleanup also take time. A client deadline remains conservative `Unknown`
+after a possibly mutating dispatch; it never authorizes a retry.
+
+The following methods return the wire `result` unchanged unless stated otherwise.
+JSON objects, arrays and null become Python dictionaries, lists and `None`.
+Names select protected enrollment entries, not native service names or arbitrary
+executables supplied by a request.
+
+| Python method | Result / meaning |
+| --- | --- |
+| `describe()` | Object containing `protocol:1`, `platform`, `architecture`, `operations`, `source_pointer_exchange:1`, and `service_application_identity:1`. These describe support, not enrollment. |
+| `lock(name: str)` | Context manager yielding `None`; retains the named kernel lock across the caller's critical section. |
+| `process_identity(pid: int)` | Native [process identity](SERVICE-SNAPSHOT.md#process-identities) or `None` for observed absence. |
+| `process_matches(identity: Mapping[str, Any]) -> bool` | Extracts and validates the boolean `matches` result. Malformed evidence or observation failures raise; they are not false. |
+| `process_status(identity: Mapping[str, Any])` | Returns the full `{"matches": bool}` object. It is the wire alias, not a second lifecycle/status model. |
+| `service_register(name: str)` | `{"created": bool}`; registers a fresh enrolled definition without starting it. |
+| `service_snapshot(name: str)` | Complete [snapshot](SERVICE-SNAPSHOT.md); an observation failure raises rather than manufacturing stopped state. |
+| `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
+| `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
+| `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
+| `durable_remove(root: str, path: str)` | `{"absent": True}` after removal or confirmed prior absence. |
+| `launch(name: str, *, result: str \| None = None)` | Detached supervisor generation identity, not command completion or the endpoint's identity. |
+| `exchange_inspect(name: str, entry: Mapping[str, str] \| None = None)` | Existing [source exchange](#source-exchange-binding) observation; `None` selects configured current. |
+| `exchange_prepare_pointer(name: str, prepared: Mapping[str, str], target: Mapping[str, str], expected_target: Any)` | Existing source exchange pointer observation. |
+| `exchange_apply(name: str, incoming: Mapping[str, str], retained: Mapping[str, str], expected_current: Any, expected_incoming: Any)` | Existing source exchange result containing observed `current`, `incoming`, and `retained`. |
+
+### Exceptions and lock ownership
+
+`DriverError(code: str, message: str)` subclasses `RuntimeError` and exposes
+`.code`; `str(error)` is the message. `Busy`, `Refused`, and `Unknown` subclass
+`DriverError` with the same constructor. Catch the specific subclasses before the
+base class when their outcomes need different handling.
+
+| Outcome | Python exception | Meaning |
+| --- | --- | --- |
+| `busy` | `Busy` | Kernel lock contention only; acquisition does not wait or retry. |
+| `refused` | `Refused` | A known rejection before dispatch. |
+| `unknown` | `Unknown` | An effect may have happened; reconcile the existing domain transaction before further related action. |
+| `error` | `DriverError` | A driver/observation failure; it proves neither absence nor settled service state. |
+
+Lost, malformed, mismatched or timed-out responses permanently close the session.
+For a mutating request they raise `Unknown`; for a read-only request they raise
+`DriverError`. Lock acquisition/release, registration, service action, storage
+changes, launch, pointer preparation and exchange count as mutations here.
+Read-only failures do not settle earlier effects. Calls after close raise
+`DriverError` with `closed_session`; use after fork raises `forked_session`.
+Oversized requests and non-finite JSON values fail before dispatch with
+`ValueError`; values that JSON cannot serialize may raise `TypeError`.
+
+`with native.lock(name):` holds both the native kernel lock and this session's
+thread mutex until exit, including while caller code runs. Calls by that same
+thread are permitted; other threads cannot dispatch or close this session during
+the critical section. Nested acquisition of the same name raises
+`DriverError("lock_reentry", message)`; distinct enrolled locks may be nested.
+On exit the binding requests release if the session still owns the lock. A failed
+release raises rather than claiming success; a broken session closes its driver.
+Driver exit releases its kernel locks. No lock file deletion is used to override
+another owner. The caller still owns transaction journaling and settlement.
+
+### Source exchange binding
+
+The three Python exchange methods above pass through the existing operations;
+entries remain `{root, path}`, and expected observations are retained unchanged.
+The serving functions are [`inspect`, `prepare_pointer`, and `exchange`](../native-platform/src/installation_exchange.rs).
+Pointer preparation and exchange require the configured exchange lock held in
+this same driver invocation. They neither add a new receipt format nor replace
+the domain journal. Keep the explicit two-rename and unknown-outcome behavior
+described above when using them from Python.
 
 Tests must distinguish actual OS lifecycle/descendant behavior from fixtures,
 and each of the six target OS/architecture runs from cross-compilation. No live
