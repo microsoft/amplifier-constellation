@@ -44,8 +44,10 @@ def windows_native_path(path: Path) -> str:
     return "\\\\?\\" + absolute
 
 
-def windows_policy(path: Path, *, world_read: bool = False) -> None:
-    """Replace the disposable fixture DACL, including any preexisting ACEs."""
+def windows_policy(
+    path: Path, *, world_read: bool = False, owner_sid: str | None = None
+) -> None:
+    """Set a disposable fixture DACL and, only when explicit, its owner."""
     import ctypes
     from ctypes import wintypes
 
@@ -67,26 +69,32 @@ def windows_policy(path: Path, *, world_read: bool = False) -> None:
     free.restype = ctypes.c_void_p
     inheritance = "OICI" if path.is_dir() else ""
     sddl = f"D:P(A;{inheritance};FA;;;SY)(A;{inheritance};FA;;;{windows_user_sid()})"
+    information = 0x4 | 0x80000000  # DACL plus PROTECTED_DACL_SECURITY_INFORMATION.
+    if owner_sid is not None:
+        if not owner_sid.startswith("S-1-") or not all(
+            character.isdigit() or character == "-" for character in owner_sid[2:]
+        ):
+            raise ValueError("Invalid disposable fixture owner SID")
+        sddl = f"O:{owner_sid}" + sddl
+        information |= 0x1  # OWNER_SECURITY_INFORMATION.
     if world_read:
         sddl += f"(A;{inheritance};FR;;;WD)"
     descriptor = ctypes.c_void_p()
     if not convert(sddl, 1, ctypes.byref(descriptor), None):
         raise ctypes.WinError(ctypes.get_last_error())
     try:
-        # DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION.
-        if not apply(windows_native_path(path), 0x4 | 0x80000000, descriptor):
+        if not apply(windows_native_path(path), information, descriptor):
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
         free(descriptor)
 
 
-def windows_policy_text(path: Path) -> str:
-    """Read the actual DACL for a before/after drift assertion."""
+def _windows_security_descriptor(path: Path, information: int):
+    """Read requested security information into an owned fixture buffer."""
     import ctypes
     from ctypes import wintypes
 
     advapi = ctypes.WinDLL("advapi32", use_last_error=True)
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     read = advapi.GetFileSecurityW
     read.argtypes = [
         wintypes.LPCWSTR,
@@ -96,6 +104,25 @@ def windows_policy_text(path: Path) -> str:
         ctypes.POINTER(wintypes.DWORD),
     ]
     read.restype = wintypes.BOOL
+    needed = wintypes.DWORD()
+    native_path = windows_native_path(path)
+    if read(native_path, information, None, 0, ctypes.byref(needed)):
+        raise AssertionError("Expected Windows security descriptor size query")
+    if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
+        raise ctypes.WinError(ctypes.get_last_error())
+    descriptor = ctypes.create_string_buffer(needed.value)
+    if not read(native_path, information, descriptor, len(descriptor), ctypes.byref(needed)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return descriptor
+
+
+def windows_policy_text(path: Path) -> str:
+    """Read the actual DACL for a before/after drift assertion."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     convert = advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
     convert.argtypes = [
         ctypes.c_void_p,
@@ -108,15 +135,7 @@ def windows_policy_text(path: Path) -> str:
     free = kernel.LocalFree
     free.argtypes = [ctypes.c_void_p]
     free.restype = ctypes.c_void_p
-    needed = wintypes.DWORD()
-    native_path = windows_native_path(path)
-    if read(native_path, 0x4, None, 0, ctypes.byref(needed)):
-        raise AssertionError("Expected Windows security descriptor size query")
-    if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
-        raise ctypes.WinError(ctypes.get_last_error())
-    descriptor = ctypes.create_string_buffer(needed.value)
-    if not read(native_path, 0x4, descriptor, len(descriptor), ctypes.byref(needed)):
-        raise ctypes.WinError(ctypes.get_last_error())
+    descriptor = _windows_security_descriptor(path, 0x4)
     rendered = wintypes.LPWSTR()
     if not convert(descriptor, 1, 0x4, ctypes.byref(rendered), None):
         raise ctypes.WinError(ctypes.get_last_error())
@@ -126,14 +145,51 @@ def windows_policy_text(path: Path) -> str:
         free(ctypes.cast(rendered, ctypes.c_void_p))
 
 
+def windows_owner_sid(path: Path) -> str:
+    """Observe the actual object owner, independently of its allowed DACL SIDs."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    read_owner = advapi.GetSecurityDescriptorOwner
+    read_owner.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.BOOL),
+    ]
+    read_owner.restype = wintypes.BOOL
+    convert = advapi.ConvertSidToStringSidW
+    convert.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR)]
+    convert.restype = wintypes.BOOL
+    free = kernel.LocalFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = ctypes.c_void_p
+    descriptor = _windows_security_descriptor(path, 0x1)
+    owner = ctypes.c_void_p()
+    defaulted = wintypes.BOOL()
+    if not read_owner(descriptor, ctypes.byref(owner), ctypes.byref(defaulted)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not owner.value:
+        raise AssertionError("Disposable fixture has no recorded owner")
+    rendered = wintypes.LPWSTR()
+    if not convert(owner, ctypes.byref(rendered)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        return rendered.value
+    finally:
+        free(ctypes.cast(rendered, ctypes.c_void_p))
+
+
 def protect(path: Path) -> None:
-    """Set private fixture permissions, using the actual platform mechanism."""
+    """Explicitly prepare a fresh disposable fixture, never an installed home."""
     if os.name != "nt":
         path.chmod(0o700 if path.is_dir() else 0o600)
         return
-    # /grant:r updates only named ACEs and can retain Python 3.13's explicit
-    # Administrators ACE. Match the native protected-storage policy exactly.
-    windows_policy(path)
+    # A private DACL does not replace a token's default Administrators owner.
+    # Fixture setup explicitly sets both; production initialize never repairs
+    # a preexisting owner or ACL and is tested separately without this helper.
+    windows_policy(path, owner_sid=windows_user_sid())
 
 
 @unittest.skipUnless(

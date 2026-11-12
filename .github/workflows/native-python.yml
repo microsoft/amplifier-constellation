@@ -70,6 +70,23 @@ jobs:
         env:
           CONSTELLATION_INSTALLATION_SMOKE: '1'
         run: python -m unittest discover -s tests/native_python -p test_service.py -v
+      - name: Qualify exact Minecraft packaged Python against the same driver
+        if: runner.os == 'Windows'
+        env:
+          CONSTELLATION_INSTALLATION_SMOKE: '1'
+        run: >-
+          python tests/native_python/run_packaged_python.py
+          --target ${{ runner.arch == 'ARM64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+          --output native-packaged-python-result.json
+          --log native-packaged-python.log
+      - uses: actions/upload-artifact@v4
+        if: always() && runner.os == 'Windows'
+        with:
+          name: native-packaged-python-${{ matrix.runner }}
+          path: |
+            native-packaged-python-result.json
+            native-packaged-python.log
+          if-no-files-found: warn
       - name: Record the executed native artifact and target
         run: |
           python - <<'PY'

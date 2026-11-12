@@ -49,3 +49,14 @@ generation, and preserves an independent pause. It then removes its own test
 registration. The workflow also runs native registration/state fixtures for both
 architectures of Linux, macOS and Windows. Hosted Windows x64 uses Windows Server;
 that evidence does not claim Windows 11 desktop first-run UX qualification.
+
+Both Windows jobs additionally run this suite, including the actual service
+fixture, through Minecraft's exact Python Build Standalone 3.12.16 interpreters.
+`run_packaged_python.py` uses the test-only `packaged-python-lock.json`, verifies
+archive and executable hashes, and reuses the shared bounded archive reader in a
+fresh disposable directory. It selects that interpreter for child processes and
+records every test result, skips, version, architecture, driver/executable hashes,
+and fixture ownership diagnostics in `native-packaged-python-result.json` and its
+log. The regular Python 3.13 pass remains; the production packaging lock and global
+PATH are unchanged. This qualifies the local driver/Python boundary, not the full
+Minecraft dependency graph, game lifecycle, or fresh consumer desktop experience.
