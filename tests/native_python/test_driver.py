@@ -32,6 +32,18 @@ def windows_user_sid() -> str:
     return sid
 
 
+def windows_native_path(path: Path) -> str:
+    """Encode fixture-only Win32 calls without changing driver path arguments."""
+    absolute = os.path.abspath(path)
+    if "\0" in absolute:
+        raise ValueError("Windows fixture path contains a null character")
+    if absolute.startswith(("\\\\?\\", "\\\\.\\")):
+        return absolute
+    if absolute.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + absolute[2:]
+    return "\\\\?\\" + absolute
+
+
 def windows_policy(path: Path, *, world_read: bool = False) -> None:
     """Replace the disposable fixture DACL, including any preexisting ACEs."""
     import ctypes
@@ -62,7 +74,7 @@ def windows_policy(path: Path, *, world_read: bool = False) -> None:
         raise ctypes.WinError(ctypes.get_last_error())
     try:
         # DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION.
-        if not apply(str(path), 0x4 | 0x80000000, descriptor):
+        if not apply(windows_native_path(path), 0x4 | 0x80000000, descriptor):
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
         free(descriptor)
@@ -97,12 +109,13 @@ def windows_policy_text(path: Path) -> str:
     free.argtypes = [ctypes.c_void_p]
     free.restype = ctypes.c_void_p
     needed = wintypes.DWORD()
-    if read(str(path), 0x4, None, 0, ctypes.byref(needed)):
+    native_path = windows_native_path(path)
+    if read(native_path, 0x4, None, 0, ctypes.byref(needed)):
         raise AssertionError("Expected Windows security descriptor size query")
     if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
         raise ctypes.WinError(ctypes.get_last_error())
     descriptor = ctypes.create_string_buffer(needed.value)
-    if not read(str(path), 0x4, descriptor, len(descriptor), ctypes.byref(needed)):
+    if not read(native_path, 0x4, descriptor, len(descriptor), ctypes.byref(needed)):
         raise ctypes.WinError(ctypes.get_last_error())
     rendered = wintypes.LPWSTR()
     if not convert(descriptor, 1, 0x4, ctypes.byref(rendered), None):
@@ -389,6 +402,76 @@ with Session(sys.argv[2], sys.argv[3]) as native:
         with self.assertRaises(Refused):
             native.private_dir("state", "existing")
         self.assertEqual(windows_policy_text(directory), before)
+
+    @unittest.skipUnless(os.name == "nt", "Actual Windows long-path owner ACL fixture")
+    def test_deep_unicode_owner_config_enrolls_and_refuses_acl_drift(self):
+        # The production driver receives an ordinary absolute path. Supplying a
+        # verbatim prefix here would hide a missing conversion in its Win32 ACL
+        # entrypoint. Only fixture Set/GetFileSecurityW calls use that prefix.
+        ordinary = str(self.root)
+        if ordinary.startswith("\\\\?\\UNC\\"):
+            ordinary = "\\\\" + ordinary[8:]
+        elif ordinary.startswith("\\\\?\\"):
+            ordinary = ordinary[4:]
+        home = Path(ordinary)
+        while len(str(home).encode("utf-16-le")) // 2 <= 340:
+            home /= "installation-café-雪-🧭-0123456789"
+            home.mkdir()
+            protect(home)
+        self.state = home / "state"
+        self.state.mkdir()
+        protect(self.state)
+        self.config = home / "owner-雪-🧭.json"
+        self.assertFalse(str(self.config).startswith("\\\\?\\"))
+        self.assertGreater(len(str(self.config).encode("utf-16-le")) // 2, 340)
+        self.data["roots"] = {"state": str(self.state)}
+        self.data["locks"] = {"installation": str(self.state / "installation.lock")}
+        self.save_config()
+        original_config = self.config.read_bytes()
+        original_policy = windows_policy_text(self.config)
+        self.preflight()
+        native = self.session()
+        self.assertEqual(native.describe()["protocol"], 1)
+        with native.lock("installation"):
+            native.private_write("state", "receipt.json", b"retained receipt")
+        receipt = self.state / "receipt.json"
+        self.assertEqual(receipt.read_bytes(), b"retained receipt")
+        self.assertNotIn(";;;WD)", windows_policy_text(receipt))
+        self.assertEqual(windows_policy_text(self.config), original_policy)
+        self.assertEqual(self.config.read_bytes(), original_config)
+        original_entries = sorted(path.name for path in self.state.iterdir())
+
+        # Access drift remains a refusal, not an invitation to repair ACLs or
+        # dispatch the requested write. Exercise both a retained invocation and
+        # a fresh enrollment, with the same long ordinary configuration path.
+        windows_policy(self.config, world_read=True)
+        changed_policy = windows_policy_text(self.config)
+        self.assertIn(";;;WD)", changed_policy)
+        with self.assertRaises(Refused) as caught:
+            native.private_write("state", "must-not-exist.json", b"no")
+        self.assertEqual(caught.exception.code, "configuration_changed")
+        rejected = subprocess.run(
+            [str(Path(DRIVER).resolve()), "--config", str(self.config), "serve"],
+            input=b'{"version":1,"id":"denied-enrollment","op":"describe"}\n',
+            capture_output=True,
+            timeout=10,
+        )
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertEqual(rejected.stdout, b"")
+        self.assertIn(b"permits principal", rejected.stderr)
+        self.assertIn(b"private=true", rejected.stderr)
+        self.assertEqual(
+            sorted(path.name for path in self.state.iterdir()), original_entries
+        )
+        self.assertEqual(receipt.read_bytes(), b"retained receipt")
+        self.assertEqual(self.config.read_bytes(), original_config)
+        self.assertEqual(windows_policy_text(self.config), changed_policy)
+        print(json.dumps({
+            "windows_owner_config_utf16_units": len(str(self.config).encode("utf-16-le")) // 2,
+            "ordinary_path_enrollment": True,
+            "acl_drift_refused_without_repair": True,
+            "fresh_enrollment_refused_after_drift": True,
+        }))
 
     @unittest.skipIf(os.name == "nt", "Windows reparse fixture needs symlink privilege")
     def test_storage_refuses_symlink_ancestor(self):

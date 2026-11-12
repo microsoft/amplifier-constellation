@@ -252,7 +252,7 @@ impl Drop for PrivateSecurity {
     }
 }
 #[cfg(windows)]
-fn wide_path(path: &Path) -> Result<Vec<u16>> {
+pub(crate) fn wide_path(path: &Path) -> Result<Vec<u16>> {
     use std::os::windows::ffi::OsStrExt;
     // std::fs accepts long paths, but direct Win32 calls still need their
     // extended-length form. Resolve relative/dot components without following

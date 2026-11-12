@@ -323,7 +323,7 @@ fn protected_owner(path: &Path) -> Result<()> {
 }
 #[cfg(windows)]
 fn windows_access(path: &Path, private: bool) -> Result<()> {
-    use std::{os::windows::ffi::OsStrExt, ptr};
+    use std::ptr;
     use windows_sys::Win32::{
         Foundation::LocalFree,
         Security::{
@@ -348,7 +348,7 @@ fn windows_access(path: &Path, private: bool) -> Result<()> {
             Ok(text)
         }
     }
-    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    let wide = amplifier_native_platform::windows_native_path(path)?;
     let user = amplifier_native_platform::current_user_sid()?;
     unsafe {
         let mut owner = ptr::null_mut();

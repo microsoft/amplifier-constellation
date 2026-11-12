@@ -24,6 +24,14 @@ pub use storage::{
     private_create, private_dir, private_write, protect_file, publish_directory_if_absent,
 };
 
+/// Encode an absolute, null-terminated extended path for direct Win32 file APIs.
+/// This performs no filesystem lookup or permission change; callers still own
+/// path and access validation. UNC and already-extended paths are preserved.
+#[cfg(windows)]
+pub fn windows_native_path(path: &std::path::Path) -> Result<Vec<u16>> {
+    storage::wide_path(path)
+}
+
 /// Fixed application-owned startup profile. No remote command surface is exposed.
 #[derive(Clone, Copy, Debug)]
 pub struct Application {
