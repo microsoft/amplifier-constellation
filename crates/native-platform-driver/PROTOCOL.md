@@ -28,6 +28,7 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
 | `storage.remove` | `root`, `path` | durable ordinary-file removal |
+| `storage.mkdir` | `root`, `path` | private child directory under an existing private parent; existing policies are not changed |
 | `process.launch` | `name`, optional `result` | detached supervisor generation identity |
 
 Unknown fields and unenrolled names reject. `path` and `result` are relative

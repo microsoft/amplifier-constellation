@@ -211,6 +211,48 @@ with Session(sys.argv[2], sys.argv[3]) as native:
         native.durable_remove("state", "receipt.json")
         self.assertFalse((self.state / "receipt.json").exists())
 
+    def test_private_directory_then_receipt_preserves_existing_private_directory(self):
+        native = self.session()
+        parent_mode = self.state.stat().st_mode
+        self.assertEqual(native.private_dir("state", "transaction"), {})
+        directory = self.state / "transaction"
+        self.assertTrue(directory.is_dir())
+        original = directory.stat()
+        if os.name != "nt":
+            self.assertEqual(original.st_mode & 0o077, 0)
+        native.private_write("state", "transaction/receipt.json", b"original")
+        self.assertEqual(native.private_dir("state", "transaction"), {})
+        current = directory.stat()
+        self.assertEqual(
+            (current.st_dev, current.st_ino, current.st_mode),
+            (original.st_dev, original.st_ino, original.st_mode),
+        )
+        self.assertEqual((directory / "receipt.json").read_bytes(), b"original")
+        self.assertEqual(self.state.stat().st_mode, parent_mode)
+
+    def test_private_directory_refuses_missing_parent_and_existing_file(self):
+        native = self.session()
+        native.private_write("state", "receipt", b"existing")
+        for path in ("missing/transaction", "../escape", "receipt"):
+            with self.subTest(path=path):
+                with self.assertRaises(Refused):
+                    native.private_dir("state", path)
+        self.assertFalse((self.state / "missing").exists())
+        self.assertFalse((self.root / "escape").exists())
+        self.assertEqual((self.state / "receipt").read_bytes(), b"existing")
+
+    @unittest.skipIf(
+        os.name == "nt", "POSIX permission drift; Windows ACL coverage is native"
+    )
+    def test_private_directory_refuses_to_change_existing_nonprivate_permissions(self):
+        directory = self.state / "existing"
+        directory.mkdir(mode=0o700)
+        directory.chmod(0o755)
+        native = self.session()
+        with self.assertRaises(Refused):
+            native.private_dir("state", "existing")
+        self.assertEqual(directory.stat().st_mode & 0o777, 0o755)
+
     @unittest.skipIf(os.name == "nt", "Windows reparse fixture needs symlink privilege")
     def test_storage_refuses_symlink_ancestor(self):
         outside = self.root / "outside"
@@ -239,6 +281,10 @@ with Session(sys.argv[2], sys.argv[3]) as native:
                 {"name": "installation", "path": str(self.state / "other.lock")},
             ),
             ("process.launch", {"name": "uninstalled", "shell": "never execute"}),
+            (
+                "storage.mkdir",
+                {"root": "state", "path": "transaction", "parents": True},
+            ),
         ):
             with self.subTest(op=op):
                 with self.assertRaises(Refused) as caught:

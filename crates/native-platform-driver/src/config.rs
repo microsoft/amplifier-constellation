@@ -116,6 +116,14 @@ impl Enrollment {
     }
 
     pub fn receipt(&self, root: &str, relative: &str) -> Result<PathBuf> {
+        self.storage_path(root, relative, false)
+    }
+
+    pub fn directory(&self, root: &str, relative: &str) -> Result<PathBuf> {
+        self.storage_path(root, relative, true)
+    }
+
+    fn storage_path(&self, root: &str, relative: &str, directory: bool) -> Result<PathBuf> {
         let root = self
             .config
             .roots
@@ -140,7 +148,11 @@ impl Enrollment {
         // Parents are prepared by the owner, never recursively invented by a request.
         protected_directory(path.parent().context("Receipt parent is missing")?)?;
         if path.exists() {
-            protected_file(&path)?;
+            if directory {
+                protected_directory(&path)?;
+            } else {
+                protected_file(&path)?;
+            }
         }
         Ok(path)
     }
@@ -221,7 +233,8 @@ pub fn path_chain(path: &Path) -> Result<()> {
                     // A private directory under the system sticky temporary root is safe.
                     ensure!(
                         mode & 0o022 == 0 || (m.is_dir() && mode & 0o1000 != 0 && m.uid() == 0),
-                        "Installation ancestor {} permits writes by another principal", ancestor.display()
+                        "Installation ancestor {} permits writes by another principal",
+                        ancestor.display()
                     );
                 }
             }

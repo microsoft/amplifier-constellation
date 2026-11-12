@@ -26,6 +26,9 @@ existing domain journal and result; do not repeat the request. A broken transpor
 closes permanently and never reconnects or retries automatically. Accepted service
 requests are not completed service transitions.
 
+`private_dir` creates one private directory beneath an already prepared, enrolled
+parent. An existing path must already be an ordinary private directory; it never
+repairs an unrelated path's permissions or recursively invents parents.
 `private_write` accepts the caller's already serialized bytes. The binding does
 not rewrite receipts, choose restoration plans, unmask services, renew authority
 or implement directory/pointer exchange. Background commands own their lifetime

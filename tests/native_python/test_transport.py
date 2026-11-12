@@ -230,6 +230,15 @@ class TransportTests(unittest.TestCase):
         session.describe()
         self.assertEqual(len(self.requests()), 1)
 
+    def test_private_directory_lost_response_is_unknown(self):
+        session = self.session("malformed")
+        with self.assertRaises(Unknown):
+            session.private_dir("state", "transaction")
+        self.assertEqual([r["op"] for r in self.requests()], ["storage.mkdir"])
+        with self.assertRaises(DriverError) as caught:
+            session.private_dir("state", "transaction")
+        self.assertEqual(caught.exception.code, "closed_session")
+
 
 if __name__ == "__main__":
     unittest.main()

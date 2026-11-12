@@ -343,6 +343,10 @@ class Session:
             create_only=create_only,
         )
 
+    def private_dir(self, root: str, path: str) -> Any:
+        """Create one private directory under an enrolled, existing parent."""
+        return self._call("storage.mkdir", mutating=True, root=root, path=path)
+
     def durable_remove(self, root: str, path: str) -> Any:
         return self._call("storage.remove", mutating=True, root=root, path=path)
 

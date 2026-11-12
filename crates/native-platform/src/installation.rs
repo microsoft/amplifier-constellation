@@ -289,7 +289,10 @@ fn execute(mut command: Command) -> Result<Captured> {
         }
         if Instant::now() >= deadline {
             let _ = child.kill();
-            let _ = child.wait();
+            let cleanup_deadline = Instant::now() + Duration::from_secs(1);
+            while child.try_wait()?.is_none() && Instant::now() < cleanup_deadline {
+                thread::sleep(Duration::from_millis(10));
+            }
             bail!("Fixed service-manager operation exceeded its bound; outcome may be unknown");
         }
         thread::sleep(Duration::from_millis(10));

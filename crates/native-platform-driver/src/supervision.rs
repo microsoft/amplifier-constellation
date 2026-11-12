@@ -5,12 +5,26 @@ use serde_json::Value;
 #[cfg(unix)]
 use serde_json::json;
 #[cfg(unix)]
-use std::{io::BufRead, process::Child};
+use std::io::BufRead;
 use std::{
     io::{self, Read, Write},
-    process::{Command, Stdio},
+    process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
+
+fn reap_bounded(child: &mut Child) -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        if child.try_wait()?.is_some() {
+            return Ok(());
+        }
+        ensure!(
+            Instant::now() < deadline,
+            "Owned process termination is unconfirmed"
+        );
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
 
 fn invocation(
     enrollment: &Enrollment,
@@ -105,7 +119,7 @@ pub fn run(
         Ok(w) => w,
         Err(e) => {
             let _ = child.kill();
-            let _ = child.wait();
+            let _ = reap_bounded(&mut child);
             return Err(e);
         }
     };
@@ -165,7 +179,7 @@ pub fn run(
         // closes its non-inherited handle then kills every remaining descendant.
         let _ = child.kill();
     }
-    let _ = child.wait();
+    reap_bounded(&mut child)?;
     outcome
 }
 
@@ -244,7 +258,7 @@ fn spawn_watch(enrollment: &Enrollment, child: &Value, seconds: u64) -> Result<C
         Ok(Ok(line)) if line == "READY\n" => Ok(watcher),
         _ => {
             let _ = watcher.kill();
-            let _ = watcher.wait();
+            let _ = reap_bounded(&mut watcher);
             anyhow::bail!("Owned process watcher did not acknowledge");
         }
     }
@@ -294,9 +308,18 @@ pub fn watch() -> Result<i32> {
         let _ = tx.send(());
     });
     let deadline = Instant::now() + Duration::from_secs(seconds);
+    let mut observation_error = None;
     loop {
-        if rx.try_recv().is_ok() || Instant::now() >= deadline || !process::matches(&parent)? {
+        if rx.try_recv().is_ok() || Instant::now() >= deadline {
             break;
+        }
+        match process::matches(&parent) {
+            Ok(true) => (),
+            Ok(false) => break,
+            Err(error) => {
+                observation_error = Some(error);
+                break;
+            }
         }
         std::thread::sleep(Duration::from_millis(25));
     }
@@ -314,6 +337,9 @@ pub fn watch() -> Result<i32> {
             e.raw_os_error() == Some(libc::ESRCH),
             "Owned group cleanup failed: {e}"
         );
+    }
+    if let Some(error) = observation_error {
+        return Err(error.context("Owned tree cleaned after supervisor observation failed"));
     }
     Ok(0)
 }

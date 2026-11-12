@@ -58,6 +58,8 @@ enum Operation {
     },
     #[serde(rename = "storage.remove")]
     StorageRemove { root: String, path: String },
+    #[serde(rename = "storage.mkdir")]
+    StorageMkdir { root: String, path: String },
     #[serde(rename = "process.launch")]
     ProcessLaunch {
         name: String,
@@ -122,7 +124,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","storage.write","storage.remove","process.launch"],"source_pointer_exchange":false}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":false}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -200,6 +202,21 @@ impl Session {
                 Ok(match written {
                     Ok(()) => Outcome::ok(json!({})),
                     Err(e) => Outcome::failure("unknown", "write_unconfirmed", e),
+                })
+            }
+            Operation::StorageMkdir { root, path } => {
+                let path = match self.enrollment.directory(&root, &path) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        return Ok(Outcome::failure("refused", "invalid_directory", error));
+                    }
+                };
+                if path.exists() {
+                    return Ok(Outcome::ok(json!({})));
+                }
+                Ok(match amplifier_native_platform::private_dir(&path) {
+                    Ok(()) => Outcome::ok(json!({})),
+                    Err(error) => Outcome::failure("unknown", "directory_unconfirmed", error),
                 })
             }
             Operation::StorageRemove { root, path } => {
@@ -280,7 +297,7 @@ fn serve(enrollment: Enrollment) -> Result<()> {
                 "bytes",
                 "create_only",
             ],
-            Some("storage.remove") => &["version", "id", "op", "root", "path"],
+            Some("storage.remove" | "storage.mkdir") => &["version", "id", "op", "root", "path"],
             Some("process.launch") => &["version", "id", "op", "name", "result"],
             _ => &[],
         };
