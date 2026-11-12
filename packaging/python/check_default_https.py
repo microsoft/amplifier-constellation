@@ -16,7 +16,7 @@ import python_support
 
 PROBE = r'''
 import hashlib, json, os, platform, shutil, ssl, sys, urllib.error, urllib.request
-url = "https://api.github.com"
+url = "https://github.com/robots.txt"
 result = {
     "url": url, "python": sys.version, "executable": sys.executable,
     "executable_sha256": hashlib.file_digest(open(sys.executable, "rb"), "sha256").hexdigest(),
@@ -36,13 +36,13 @@ try:
     assert context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname
     assert result["isolated"] and result["bytecode_disabled"] and result["utf8_mode"]
     assert result["ca_override_absent"] and not result["tools_on_path"]
-    request = urllib.request.Request(url, headers={"User-Agent": "Constellation-private-Python-qualification", "Accept": "application/vnd.github+json"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Constellation-private-Python-qualification", "Accept": "text/plain"})
     with urllib.request.urlopen(request, context=context, timeout=30) as response:
         result.update(http_status=response.status, final_url=response.geturl())
         assert response.status == 200 and response.geturl() in (url, url + "/")
         data = response.read(65537)
         assert len(data) <= 65536
-        assert json.loads(data)["current_user_url"] == "https://api.github.com/user"
+        assert b"User-agent:" in data
     result.update(cert_store_after=context.cert_store_stats(), outcome="passed")
 except Exception as error:
     # Keep useful verification diagnostics without logging proxy addresses,
