@@ -227,6 +227,7 @@ pub fn execute(enrollment: &Enrollment, name: &str) -> Result<i32> {
             unsafe { libc::dup2(null.as_raw_fd(), 0) } == 0,
             "Cannot close application input"
         );
+        ack.write_all(b"EXEC\n")?;
         let error =
             supervision::exec_exact(&application.executable, &application.args, &application.cwd);
         let _ = ack.write_all(b"FAILED\n");
@@ -462,6 +463,7 @@ mod tests {
         let receipt_path = root.join("application.json");
         let mut data = json!({"version":1,"services":{"controller":{"manager":if cfg!(windows){"scheduled_task"}else if cfg!(target_os="macos"){"launch_agent"}else{"systemd_user"},"name":"unused-fixture","definition_path":null}},
             "service_applications":{"controller":{"executable":std::env::current_exe().unwrap(),"args":[],"cwd":root,"identity_path":receipt_path}}});
+        data["registrations"] = json!({"controller":{"executable":std::env::current_exe().unwrap(),"args":["--config",config_path,"service-run","--service","controller"],"cwd":root,"description":"Fixture service","autostart":false}});
         amplifier_native_platform::private_write(&config_path, &serde_json::to_vec(&data).unwrap())
             .unwrap();
         let enrollment = Enrollment::load(&config_path).unwrap();
