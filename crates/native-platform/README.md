@@ -6,7 +6,19 @@ Optional Rust implementation support for self-contained Constellation applicatio
 
 Windows task inspection uses Task Scheduler's Unicode XML API, so desktop apps without a console preserve non-ASCII account and installation paths. The same exact task identity checks apply before reuse or removal; an inspection error is not treated as a missing task.
 
-`private_write` commits a fully written protected temporary file; `private_create` additionally refuses any existing destination. Windows storage grants only the current user and SYSTEM; Unix directories and files are 0700 and 0600. Applications still own locking, state schemas, migrations and credentials.
+`private_write` commits a fully written protected temporary file; `private_create` additionally refuses any existing destination. Windows storage grants only the current user and SYSTEM; Unix directories and files are 0700 and 0600. Applications retain their state schemas, migrations and credentials.
+
+Optional feature `installation` adds lifetime locks compatible with existing Unix
+`flock`, native process generations, and observation/compare-before-dispatch for
+enrolled systemd user services, LaunchAgents and Scheduled Tasks. Start/stop
+acceptance is distinct from settlement; applications retain admission, transaction
+and restoration decisions. No helper enables or unmasks a paused service. The
+[local driver](../native-platform-driver/PROTOCOL.md) exposes these primitives to
+the [thin Python binding](../../support/python/constellation_native/README.md).
+It owns no scheduler or network listener. Managed source-directory/pointer exchange
+uses [two explicit native renames](../native-platform-driver/PROTOCOL.md), with an
+observable gap. It is separate from protected JSON writes and is not an atomic
+app/venv swap; the domain owns the transaction journal, verification and rollback.
 
 Use `private_write_data` for data journals read while they are published. Existing
 readers keep their opened snapshot; new readers see the replacement. Windows

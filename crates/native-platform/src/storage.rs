@@ -207,6 +207,11 @@ enum Publication {
     ReplaceClosed,
     ReplaceData,
 }
+/// Exclusively create one private directory under an existing parent.
+/// Existing entries and their policies are never changed; parents are not created.
+pub fn private_create_dir(path: &Path) -> std::io::Result<()> {
+    create_private_directory(path)
+}
 fn write_atomic(path: &Path, bytes: &[u8], publication: Publication) -> Result<()> {
     let parent = path
         .parent()
@@ -272,7 +277,7 @@ fn prepare_parent(path: &Path) -> Result<()> {
 }
 
 #[cfg(unix)]
-fn create_private_directory(path: &Path) -> std::io::Result<()> {
+pub(crate) fn create_private_directory(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::DirBuilderExt;
     fs::DirBuilder::new().mode(0o700).create(path)
 }
@@ -287,17 +292,20 @@ fn create_private_file(path: &Path) -> Result<File> {
 }
 
 #[cfg(windows)]
-struct PrivateSecurity(windows_sys::Win32::Security::PSECURITY_DESCRIPTOR);
+pub(crate) struct PrivateSecurity(windows_sys::Win32::Security::PSECURITY_DESCRIPTOR);
 #[cfg(windows)]
 impl PrivateSecurity {
-    fn new(directory: bool) -> Result<Self> {
+    pub(crate) fn new(directory: bool) -> Result<Self> {
         use std::ptr;
         use windows_sys::Win32::Security::Authorization::{
             ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
         };
         let sid = current_user_sid()?;
         let inherit = if directory { "OICI" } else { "" };
-        let sddl: Vec<u16> = format!("D:P(A;{inherit};FA;;;SY)(A;{inherit};FA;;;{sid})")
+        // The token's default owner can be an administrator group even when
+        // TokenUser identifies this installation's user. Bind new artifacts to
+        // that exact user at creation; never repair ownership after publication.
+        let sddl: Vec<u16> = format!("O:{sid}D:P(A;{inherit};FA;;;SY)(A;{inherit};FA;;;{sid})")
             .encode_utf16()
             .chain(Some(0))
             .collect();
@@ -315,7 +323,7 @@ impl PrivateSecurity {
         );
         Ok(Self(descriptor))
     }
-    fn attributes(&self) -> windows_sys::Win32::Security::SECURITY_ATTRIBUTES {
+    pub(crate) fn attributes(&self) -> windows_sys::Win32::Security::SECURITY_ATTRIBUTES {
         windows_sys::Win32::Security::SECURITY_ATTRIBUTES {
             nLength: size_of::<windows_sys::Win32::Security::SECURITY_ATTRIBUTES>() as u32,
             lpSecurityDescriptor: self.0,
@@ -332,7 +340,7 @@ impl Drop for PrivateSecurity {
     }
 }
 #[cfg(windows)]
-fn wide_path(path: &Path) -> Result<Vec<u16>> {
+pub(crate) fn wide_path(path: &Path) -> Result<Vec<u16>> {
     use std::os::windows::ffi::OsStrExt;
     // std::fs accepts long paths, but direct Win32 calls still need their
     // extended-length form. Resolve relative/dot components without following
@@ -356,7 +364,7 @@ fn wide_path(path: &Path) -> Result<Vec<u16>> {
     Ok(native)
 }
 #[cfg(windows)]
-fn create_private_directory(path: &Path) -> std::io::Result<()> {
+pub(crate) fn create_private_directory(path: &Path) -> std::io::Result<()> {
     use windows_sys::Win32::Storage::FileSystem::CreateDirectoryW;
     let security = PrivateSecurity::new(true).map_err(std::io::Error::other)?;
     let path = wide_path(path).map_err(std::io::Error::other)?;
@@ -498,7 +506,7 @@ pub fn publish_directory_if_absent(from: &Path, to: &Path) -> Result<()> {
     Ok(())
 }
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     use std::{ffi::CString, os::unix::ffi::OsStrExt};
     let from = CString::new(from.as_os_str().as_bytes())?;
     let to = CString::new(to.as_os_str().as_bytes())?;
@@ -522,11 +530,11 @@ fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     Ok(())
 }
 #[cfg(windows)]
-fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
     commit(from, to, true)
 }
 #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
-fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
+pub(crate) fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
     anyhow::bail!("Atomic installation publication is not supported on this platform")
 }
 
@@ -542,7 +550,7 @@ mod creation_tests {
                 ACCESS_ALLOWED_ACE,
                 Authorization::{ConvertSidToStringSidW, GetSecurityInfo, SE_FILE_OBJECT},
                 DACL_SECURITY_INFORMATION, GetAce, GetSecurityDescriptorControl, INHERITED_ACE,
-                SE_DACL_PROTECTED,
+                OWNER_SECURITY_INFORMATION, SE_DACL_PROTECTED,
             },
             Storage::FileSystem::FILE_ALL_ACCESS,
         };
@@ -553,12 +561,13 @@ mod creation_tests {
         unsafe {
             let mut descriptor = ptr::null_mut();
             let mut acl = ptr::null_mut();
+            let mut owner = ptr::null_mut();
             assert_eq!(
                 GetSecurityInfo(
                     file.as_raw_handle(),
                     SE_FILE_OBJECT,
-                    DACL_SECURITY_INFORMATION,
-                    ptr::null_mut(),
+                    DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,
+                    &mut owner,
                     ptr::null_mut(),
                     &mut acl,
                     ptr::null_mut(),
@@ -566,6 +575,17 @@ mod creation_tests {
                 ),
                 0
             );
+            assert!(!owner.is_null());
+            let mut owner_text = ptr::null_mut();
+            assert_ne!(ConvertSidToStringSidW(owner, &mut owner_text), 0);
+            let mut owner_len = 0;
+            while *owner_text.add(owner_len) != 0 {
+                owner_len += 1;
+            }
+            let owner =
+                String::from_utf16(std::slice::from_raw_parts(owner_text, owner_len)).unwrap();
+            LocalFree(owner_text.cast());
+            assert_eq!(owner, current_user_sid().unwrap());
             let mut control = 0;
             let mut revision = 0;
             assert_ne!(
@@ -606,5 +626,143 @@ mod creation_tests {
                 BTreeSet::from([current_user_sid().unwrap(), "S-1-5-18".to_owned()])
             );
         }
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct PolicySnapshot {
+        owner: String,
+        descriptor: String,
+        identity: (u32, u32, u32),
+    }
+    fn policy_snapshot(path: &Path) -> PolicySnapshot {
+        use std::{os::windows::io::AsRawHandle, ptr};
+        use windows_sys::Win32::{
+            Foundation::LocalFree,
+            Security::{
+                Authorization::{
+                    ConvertSecurityDescriptorToStringSecurityDescriptorW, ConvertSidToStringSidW,
+                    GetNamedSecurityInfoW, SDDL_REVISION_1, SE_FILE_OBJECT,
+                },
+                DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION,
+            },
+            Storage::FileSystem::{BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle},
+        };
+        unsafe fn string(value: *const u16) -> String {
+            unsafe {
+                let mut len = 0;
+                while *value.add(len) != 0 {
+                    len += 1;
+                }
+                String::from_utf16(std::slice::from_raw_parts(value, len)).unwrap()
+            }
+        }
+        let name = wide_path(path).unwrap();
+        unsafe {
+            let mut owner = ptr::null_mut();
+            let mut descriptor = ptr::null_mut();
+            let flags = DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION;
+            assert_eq!(
+                GetNamedSecurityInfoW(
+                    name.as_ptr(),
+                    SE_FILE_OBJECT,
+                    flags,
+                    &mut owner,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    &mut descriptor,
+                ),
+                0
+            );
+            let mut owner_text = ptr::null_mut();
+            assert_ne!(ConvertSidToStringSidW(owner, &mut owner_text), 0);
+            let owner = string(owner_text);
+            LocalFree(owner_text.cast());
+            let mut rendered = ptr::null_mut();
+            assert_ne!(
+                ConvertSecurityDescriptorToStringSecurityDescriptorW(
+                    descriptor,
+                    SDDL_REVISION_1,
+                    flags,
+                    &mut rendered,
+                    ptr::null_mut(),
+                ),
+                0
+            );
+            let descriptor_text = string(rendered);
+            LocalFree(rendered.cast());
+            LocalFree(descriptor);
+            use std::os::windows::fs::OpenOptionsExt;
+            use windows_sys::Win32::Storage::FileSystem::{
+                FILE_FLAG_BACKUP_SEMANTICS, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+            };
+            let file = fs::OpenOptions::new()
+                .access_mode(0)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+                .open(path)
+                .unwrap();
+            let mut info: BY_HANDLE_FILE_INFORMATION = std::mem::zeroed();
+            assert_ne!(
+                GetFileInformationByHandle(file.as_raw_handle(), &mut info),
+                0
+            );
+            PolicySnapshot {
+                owner,
+                descriptor: descriptor_text,
+                identity: (
+                    info.dwVolumeSerialNumber,
+                    info.nFileIndexHigh,
+                    info.nFileIndexLow,
+                ),
+            }
+        }
+    }
+    #[test]
+    fn published_file_and_created_parent_have_explicit_current_user_owner() {
+        let temp = tempfile::tempdir().unwrap();
+        let baseline = policy_snapshot(temp.path());
+        let parent = temp.path().join("new private parent");
+        let file = parent.join("receipt.json");
+        // Supported file publication creates the absent private parent through
+        // create_private_directory, then atomically publishes the private file.
+        private_write(&file, b"first receipt").unwrap();
+        let sid = current_user_sid().unwrap();
+        let parent_before = policy_snapshot(&parent);
+        assert_eq!(parent_before.owner, sid);
+        assert_eq!(policy_snapshot(&file).owner, sid);
+        private_write(&file, b"replacement receipt").unwrap();
+        assert_eq!(policy_snapshot(&file).owner, sid);
+        assert_eq!(fs::read(&file).unwrap(), b"replacement receipt");
+        assert_eq!(policy_snapshot(&parent), parent_before);
+        assert_eq!(policy_snapshot(temp.path()), baseline);
+    }
+    #[cfg(feature = "installation")]
+    #[test]
+    fn new_lock_is_user_owned_and_reopening_preserves_existing_policy_and_identity() {
+        use crate::locking::InstallationLock;
+        let temp = tempfile::tempdir().unwrap();
+        let new_path = temp.path().join("new.lock");
+        let new_lock = InstallationLock::try_acquire(&new_path).unwrap().unwrap();
+        let new_policy = policy_snapshot(&new_path);
+        assert_eq!(new_policy.owner, current_user_sid().unwrap());
+        drop(new_lock);
+        fs::write(&new_path, b"retained lock contents").unwrap();
+        let reopened = InstallationLock::try_acquire(&new_path).unwrap().unwrap();
+        assert_eq!(policy_snapshot(&new_path), new_policy);
+        drop(reopened);
+        assert_eq!(fs::read(&new_path).unwrap(), b"retained lock contents");
+
+        // The legacy file keeps its preexisting native/default policy too.
+        // OPEN_ALWAYS must not replace it with the new-artifact descriptor.
+        let legacy = temp.path().join("legacy.lock");
+        fs::write(&legacy, b"legacy contents").unwrap();
+        let before = policy_snapshot(&legacy);
+        let held = InstallationLock::try_acquire(&legacy).unwrap().unwrap();
+        assert_eq!(policy_snapshot(&legacy), before);
+        assert!(InstallationLock::try_acquire(&legacy).unwrap().is_none());
+        drop(held);
+        assert_eq!(policy_snapshot(&legacy), before);
+        assert_eq!(fs::read(&legacy).unwrap(), b"legacy contents");
     }
 }

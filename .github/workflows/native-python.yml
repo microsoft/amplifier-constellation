@@ -1,0 +1,120 @@
+name: Native installation driver
+on:
+  pull_request:
+    paths: ['crates/native-platform/**', 'crates/native-platform-driver/**', 'support/python/constellation_native/**', 'tests/native_python/**', '.github/workflows/native-python.yml']
+  push:
+    branches: [main]
+    paths: ['crates/native-platform/**', 'crates/native-platform-driver/**', 'support/python/constellation_native/**', 'tests/native_python/**', '.github/workflows/native-python.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-installation:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: rustup toolchain install 1.93.0 --profile minimal --component rustfmt --component clippy
+      - name: Format and lint the serving source
+        run: |
+          cargo +1.93.0 fmt --manifest-path crates/native-platform/Cargo.toml --check
+          cargo +1.93.0 fmt --manifest-path crates/native-platform-driver/Cargo.toml --check
+          cargo +1.93.0 clippy --manifest-path crates/native-platform/Cargo.toml --locked --all-targets --features installation -- -D warnings
+          cargo +1.93.0 clippy --manifest-path crates/native-platform-driver/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Build and exercise native locks, process generations and owned endpoints
+        run: |
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation
+          cargo +1.93.0 test --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
+          cargo +1.93.0 build --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
+      - name: Test Python through the actual driver
+        run: |
+          python - <<'PY'
+          import os, pathlib, subprocess, sys
+          suffix = '.exe' if os.name == 'nt' else ''
+          path = pathlib.Path('crates/native-platform-driver/target/debug/constellation-native-driver' + suffix).resolve()
+          env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable)
+          subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('CONSTELLATION_NATIVE_DRIVER='+str(path)+'\n')
+              output.write('PYTHON='+sys.executable+'\n')
+              fixture = pathlib.Path('crates/native-platform/target/debug/examples/windows_service_fixture' + suffix).resolve()
+              output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
+          PY
+      - name: Prepare disposable Linux user service manager
+        if: runner.os == 'Linux'
+        run: |
+          sudo loginctl enable-linger "$USER"
+          sudo systemctl start "user@$(id -u).service"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+      - name: Actual native service capture, drift, start, stop and independent pause
+        env:
+          CONSTELLATION_INSTALLATION_SMOKE: '1'
+        run: |
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_installation -- --ignored --nocapture
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_registration -- --ignored --nocapture
+      - name: Actual fresh no-start registration and controller identity through Python
+        env:
+          CONSTELLATION_INSTALLATION_SMOKE: '1'
+        run: python -m unittest discover -s tests/native_python -p test_service.py -v
+      - name: Qualify exact Minecraft packaged Python against the same driver
+        if: runner.os == 'Windows'
+        env:
+          CONSTELLATION_INSTALLATION_SMOKE: '1'
+        run: >-
+          python tests/native_python/run_packaged_python.py
+          --target ${{ runner.arch == 'ARM64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+          --output native-packaged-python-result.json
+          --log native-packaged-python.log
+      - uses: actions/upload-artifact@v4
+        if: always() && runner.os == 'Windows'
+        with:
+          name: native-packaged-python-${{ matrix.runner }}
+          path: |
+            native-packaged-python-result.json
+            native-packaged-python.log
+          if-no-files-found: warn
+      - name: Qualify one actual 60000-entry regenerable tree
+        run: >-
+          python tests/native_python/run_tree_scale.py
+          --output native-tree-scale-result.json
+          --cleanup-timeout 120
+          2>&1 | tee native-tree-scale.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-tree-scale-${{ matrix.runner }}
+          path: |
+            native-tree-scale-result.json
+            native-tree-scale.log
+          if-no-files-found: warn
+      - name: Record the executed native artifact and target
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, platform, subprocess
+          suffix = '.exe' if os.name == 'nt' else ''
+          binary = pathlib.Path('crates/native-platform-driver/target/debug/constellation-native-driver' + suffix)
+          receipt = {'source':subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(), 'os':platform.system(), 'architecture':platform.machine(), 'driver_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(), 'production_operations':False}
+          pathlib.Path('native-installation-result.json').write_text(json.dumps(receipt, indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-installation-${{ matrix.runner }}
+          path: |
+            native-installation-result.json
+            crates/native-platform-driver/target/debug/constellation-native-driver
+            crates/native-platform-driver/target/debug/constellation-native-driver.exe
+          if-no-files-found: error
