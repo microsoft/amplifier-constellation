@@ -68,13 +68,30 @@ fn exercise(app: &Application) {
     }
     #[cfg(windows)]
     {
-        let observed = Command::new("schtasks.exe")
-            .args(["/Query", "/TN", &label, "/XML"])
-            .output()
-            .unwrap();
-        assert!(observed.status.success());
-        // Its stdout may be lossy under the GUI subsystem. The idempotent
-        // registration below checks the exact Unicode path using the native API.
+        let observed = task_xml(&label);
+        let trigger = observed
+            .split_once("<LogonTrigger>")
+            .expect("one actual logon trigger")
+            .1
+            .split_once("</LogonTrigger>")
+            .unwrap()
+            .0;
+        let sid = platform::current_user_sid().unwrap();
+        assert_eq!(trigger.matches("<UserId>").count(), 1);
+        assert!(trigger.contains(&format!("<UserId>{sid}</UserId>")));
+        assert!(
+            platform::task_matches(
+                app,
+                &observed,
+                &platform::installed_binary(app, &home),
+                &home,
+                &sid
+            )
+            .unwrap()
+        );
+        // Even an administrative runner must prove the task is restricted to
+        // this user's logon. An all-user trigger can register there while it
+        // fails with AccessDenied for an ordinary Windows desktop account.
     }
     // A second registration is exact/idempotent and never replaces another task.
     platform::install_startup(app, &home, &id).unwrap();
@@ -103,6 +120,38 @@ fn exercise(app: &Application) {
             .unwrap()
             .success()
     );
+}
+
+#[cfg(windows)]
+fn task_xml(label: &str) -> String {
+    let label = label.to_owned();
+    std::thread::spawn(move || unsafe {
+        use windows::{
+            Win32::System::{
+                Com::{
+                    CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                    CoUninitialize,
+                },
+                TaskScheduler::{ITaskService, TaskScheduler},
+                Variant::VARIANT,
+            },
+            core::BSTR,
+        };
+        CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+        let result = {
+            let service: ITaskService =
+                CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER).unwrap();
+            let empty = VARIANT::default();
+            service.Connect(&empty, &empty, &empty, &empty).unwrap();
+            let folder = service.GetFolder(&BSTR::from("\\")).unwrap();
+            let task = folder.GetTask(&BSTR::from(label)).unwrap();
+            String::from_utf16(&task.Xml().unwrap()).unwrap()
+        };
+        CoUninitialize();
+        result
+    })
+    .join()
+    .unwrap()
 }
 
 // Only the exact fresh UUID registration created above belongs to this fixture.

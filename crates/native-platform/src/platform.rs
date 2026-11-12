@@ -190,6 +190,8 @@ pub fn launch_agent(
         xml(app.background_command)
     ))
 }
+/// Unbound XML template retained for callers that inspect startup settings.
+/// Registration must use `scheduled_task_for_user` to bind both user scopes.
 pub fn scheduled_task(app: &Application, executable: &Path, home: &Path) -> Result<String> {
     app.validate()?;
     // Arguments follow the Windows CommandLineToArgvW quoting rule.
@@ -205,6 +207,27 @@ pub fn scheduled_task(app: &Application, executable: &Path, home: &Path) -> Resu
         xml(escaped),
         xml(app.background_command)
     ))
+}
+/// Bind both the execution principal and the logon trigger to the same user.
+/// A principal alone does not limit which user's sign-in triggers the task.
+pub fn scheduled_task_for_user(
+    app: &Application,
+    executable: &Path,
+    home: &Path,
+    sid: &str,
+) -> Result<String> {
+    ensure!(
+        sid.len() <= 256
+            && sid.starts_with("S-1-")
+            && sid[4..]
+                .split('-')
+                .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit())),
+        "Use the current Windows user SID for startup"
+    );
+    let user = format!("<UserId>{sid}</UserId>");
+    Ok(scheduled_task(app, executable, home)?
+        .replace("</LogonTrigger>", &format!("{user}</LogonTrigger>"))
+        .replace("<LogonType>", &format!("{user}<LogonType>")))
 }
 pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Result<()> {
     let executable = copy_self(app, home)?;
@@ -257,26 +280,15 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
     }
     #[cfg(windows)]
     {
+        let sid = crate::storage::current_user_sid()?;
         if let Some(existing) = query_windows_task(&label)? {
             ensure!(
-                task_matches(
-                    app,
-                    &existing,
-                    &executable,
-                    home,
-                    &crate::storage::current_user_sid()?
-                )?,
+                task_matches(app, &existing, &executable, home, &sid)?,
                 "Existing startup task belongs to another command; it was preserved"
             );
             return Ok(());
         }
-        let xml = scheduled_task(app, &executable, home)?.replace(
-            "<LogonType>",
-            &format!(
-                "<UserId>{}</UserId><LogonType>",
-                crate::storage::current_user_sid()?
-            ),
-        );
+        let xml = scheduled_task_for_user(app, &executable, home, &sid)?;
         let path = home.join("startup.xml");
         let bytes: Vec<u8> = std::iter::once(0xfeff)
             .chain(xml.encode_utf16())
@@ -369,6 +381,51 @@ pub fn task_matches(
     home: &Path,
     expected_sid: &str,
 ) -> Result<bool> {
+    // Inspect the Task Scheduler's validated XML without confusing identically
+    // named fields in its trigger and principal. Unknown/duplicate structures
+    // fail ownership checks; this is not a general-purpose XML parser.
+    fn section<'a>(text: &'a str, name: &str) -> Option<&'a str> {
+        let start = format!("<{name}");
+        let mut matches = text.match_indices(&start).filter(|(at, _)| {
+            text.as_bytes()
+                .get(at + start.len())
+                .is_some_and(|b| matches!(*b, b'>' | b'/') || b.is_ascii_whitespace())
+        });
+        let (at, _) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        let body = at + text[at..].find('>')? + 1;
+        let end = format!("</{name}>");
+        let end_prefix = format!("</{name}");
+        if text
+            .match_indices(&end_prefix)
+            .filter(|(at, _)| {
+                text.as_bytes()
+                    .get(at + end_prefix.len())
+                    .is_some_and(|b| *b == b'>' || b.is_ascii_whitespace())
+            })
+            .count()
+            != 1
+        {
+            return None;
+        }
+        text.get(body..text.find(&end)?)
+    }
+    fn only_section<'a>(text: &'a str, name: &str) -> Option<&'a str> {
+        let text = text.trim();
+        let opening = format!("<{name}");
+        if !text.starts_with(&opening)
+            || !text
+                .as_bytes()
+                .get(opening.len())
+                .is_some_and(|b| *b == b'>' || b.is_ascii_whitespace())
+            || !text.ends_with(&format!("</{name}>"))
+        {
+            return None;
+        }
+        section(text, name)
+    }
     fn element<'a>(text: &'a str, name: &str) -> Option<&'a str> {
         let start = format!("<{name}>");
         let end = format!("</{name}>");
@@ -389,6 +446,33 @@ pub fn task_matches(
             .replace("&apos;", "'")
             .replace("&amp;", "&")
     }
+    let Some(principal) =
+        section(document, "Principals").and_then(|body| only_section(body, "Principal"))
+    else {
+        return Ok(false);
+    };
+    let Some(trigger) =
+        section(document, "Triggers").and_then(|body| only_section(body, "LogonTrigger"))
+    else {
+        return Ok(false);
+    };
+    // Preserve an exact previously owned registration during update/rollback
+    // and removal, without rewriting it. Only the known old single-logon shape
+    // may omit trigger UserId; every newly created task binds it explicitly.
+    let trigger_users = trigger.matches("<UserId").count();
+    let owned_trigger = match trigger_users {
+        0 => !trigger.contains("</UserId"),
+        1 => element(trigger, "UserId").map(decode).as_deref() == Some(expected_sid),
+        _ => false,
+    };
+    // Disabling an owned trigger does not transfer its ownership. Preserve it
+    // for idempotent reuse/removal, including Scheduler's default omission.
+    let valid_enabled =
+        match trigger.matches("<Enabled").count() + trigger.matches("</Enabled").count() {
+            0 => true,
+            2 => matches!(element(trigger, "Enabled"), Some("true" | "false")),
+            _ => false,
+        };
     let command = element(document, "Command").map(decode);
     let args = element(document, "Arguments").map(decode);
     // Task Scheduler omits the optional RunLevel when it has the default
@@ -397,14 +481,23 @@ pub fn task_matches(
     let least_privilege =
         match document.matches("<RunLevel").count() + document.matches("</RunLevel").count() {
             0 => true,
-            2 => element(document, "RunLevel") == Some("LeastPrivilege"),
+            2 => element(principal, "RunLevel") == Some("LeastPrivilege"),
             _ => false,
         };
     Ok(document.matches("<Exec>").count() == 1
         && document.matches("<Principal ").count() == 1
         && !document.contains("<Principal>")
-        && element(document, "UserId").map(decode).as_deref() == Some(expected_sid)
-        && element(document, "LogonType") == Some("InteractiveToken")
+        && section(document, "Principal") == Some(principal)
+        && section(document, "LogonTrigger") == Some(trigger)
+        && document.matches("<UserId").count() == 1 + trigger_users
+        && document.matches("</UserId").count() == 1 + trigger_users
+        && !document.contains("<GroupId")
+        && element(principal, "UserId").map(decode).as_deref() == Some(expected_sid)
+        && element(principal, "LogonType") == Some("InteractiveToken")
+        && document.matches("<LogonType").count() == 1
+        && document.matches("</LogonType").count() == 1
+        && owned_trigger
+        && valid_enabled
         && least_privilege
         && !document.contains("<ComHandler>")
         && command.as_deref() == Some(safe_path(executable)?)
