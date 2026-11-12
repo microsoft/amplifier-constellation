@@ -127,8 +127,10 @@ fn validate_identity(value: &Value) -> Result<()> {
 fn platform_identity(pid: u32) -> Result<Option<Value>> {
     let mut info: libc::proc_bsdinfo = unsafe { std::mem::zeroed() };
     let size = std::mem::size_of::<libc::proc_bsdinfo>();
-    // SAFETY: a native-sized writable buffer is supplied for the requested type.
+    // SAFETY: errno is thread-local, and a native-sized writable buffer is
+    // supplied for the requested type. Clear stale errno before observing it.
     let read = unsafe {
+        *libc::__error() = 0;
         libc::proc_pidinfo(
             pid as i32,
             libc::PROC_PIDTBSDINFO,
@@ -139,11 +141,11 @@ fn platform_identity(pid: u32) -> Result<Option<Value>> {
     };
     if read != size as i32 {
         let error = std::io::Error::last_os_error();
-        // A failed observation alone does not prove absence. Signal zero has no
-        // side effect and confirms ESRCH even when proc_pidinfo left errno unset.
-        if unsafe { libc::kill(pid as i32, 0) } == -1
-            && std::io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH)
-        {
+        // proc_pidinfo can report an exited, unreaped process as zero bytes
+        // with ESRCH while kill(pid, 0) still sees its process-table entry.
+        // Only that explicit native absence result is absence; permission,
+        // interrupted, unset-errno and malformed/partial reads remain errors.
+        if read <= 0 && error.raw_os_error() == Some(libc::ESRCH) {
             return Ok(None);
         }
         anyhow::bail!("Read native process generation: {read}/{size} bytes: {error}");

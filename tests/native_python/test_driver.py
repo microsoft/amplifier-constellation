@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from functools import cache
 import io
 import json
 import os
@@ -20,28 +21,106 @@ from constellation_native import Busy, DriverError, Refused, Session  # noqa: E4
 DRIVER = os.environ.get("CONSTELLATION_NATIVE_DRIVER")
 
 
+@cache
+def windows_user_sid() -> str:
+    rows = subprocess.check_output(
+        ["whoami.exe", "/user", "/fo", "csv", "/nh"], text=True, timeout=10
+    )
+    sid = next(csv.reader(io.StringIO(rows.strip())))[1]
+    if not sid.startswith("S-1-") or not all(c.isdigit() or c == "-" for c in sid[2:]):
+        raise ValueError("Unexpected current-user SID in Windows test fixture")
+    return sid
+
+
+def windows_policy(path: Path, *, world_read: bool = False) -> None:
+    """Replace the disposable fixture DACL, including any preexisting ACEs."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    convert = advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW
+    convert.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    convert.restype = wintypes.BOOL
+    apply = advapi.SetFileSecurityW
+    apply.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p]
+    apply.restype = wintypes.BOOL
+    free = kernel.LocalFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = ctypes.c_void_p
+    inheritance = "OICI" if path.is_dir() else ""
+    sddl = f"D:P(A;{inheritance};FA;;;SY)(A;{inheritance};FA;;;{windows_user_sid()})"
+    if world_read:
+        sddl += f"(A;{inheritance};FR;;;WD)"
+    descriptor = ctypes.c_void_p()
+    if not convert(sddl, 1, ctypes.byref(descriptor), None):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        # DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION.
+        if not apply(str(path), 0x4 | 0x80000000, descriptor):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        free(descriptor)
+
+
+def windows_policy_text(path: Path) -> str:
+    """Read the actual DACL for a before/after drift assertion."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    read = advapi.GetFileSecurityW
+    read.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    read.restype = wintypes.BOOL
+    convert = advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    convert.argtypes = [
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.LPWSTR),
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    convert.restype = wintypes.BOOL
+    free = kernel.LocalFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = ctypes.c_void_p
+    needed = wintypes.DWORD()
+    if read(str(path), 0x4, None, 0, ctypes.byref(needed)):
+        raise AssertionError("Expected Windows security descriptor size query")
+    if ctypes.get_last_error() != 122:  # ERROR_INSUFFICIENT_BUFFER
+        raise ctypes.WinError(ctypes.get_last_error())
+    descriptor = ctypes.create_string_buffer(needed.value)
+    if not read(str(path), 0x4, descriptor, len(descriptor), ctypes.byref(needed)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    rendered = wintypes.LPWSTR()
+    if not convert(descriptor, 1, 0x4, ctypes.byref(rendered), None):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        return rendered.value
+    finally:
+        free(ctypes.cast(rendered, ctypes.c_void_p))
+
+
 def protect(path: Path) -> None:
     """Set private fixture permissions, using the actual platform mechanism."""
     if os.name != "nt":
         path.chmod(0o700 if path.is_dir() else 0o600)
         return
-    rows = subprocess.check_output(
-        ["whoami.exe", "/user", "/fo", "csv", "/nh"], text=True
-    )
-    sid = next(csv.reader(io.StringIO(rows.strip())))[1]
-    inheritance = "(OI)(CI)" if path.is_dir() else ""
-    subprocess.run(
-        [
-            "icacls.exe",
-            str(path),
-            "/inheritance:r",
-            "/grant:r",
-            f"*{sid}:{inheritance}F",
-            f"*S-1-5-18:{inheritance}F",
-        ],
-        check=True,
-        stdout=subprocess.DEVNULL,
-    )
+    # /grant:r updates only named ACEs and can retain Python 3.13's explicit
+    # Administrators ACE. Match the native protected-storage policy exactly.
+    windows_policy(path)
 
 
 @unittest.skipUnless(
@@ -69,6 +148,50 @@ class ActualDriverTests(unittest.TestCase):
             "commands": {},
         }
         self.save_config()
+        self.preflight()
+
+    def preflight(self):
+        request = b'{"version":1,"id":"fixture-preflight","op":"describe"}\n'
+        with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+            try:
+                result = subprocess.run(
+                    [
+                        str(Path(DRIVER).resolve()),
+                        "--config",
+                        str(self.config),
+                        "serve",
+                    ],
+                    input=request,
+                    stdout=out,
+                    stderr=err,
+                    timeout=10,
+                )
+            except subprocess.TimeoutExpired:
+                err.seek(0)
+                self.fail(
+                    "Native fixture preflight timed out: "
+                    + err.read(4096).decode("utf-8", "replace")
+                )
+            out.seek(0)
+            err.seek(0)
+            response = out.read(4096).decode("utf-8", "replace")
+            diagnostics = err.read(4096).decode("utf-8", "replace")
+        self.assertEqual(
+            result.returncode, 0, f"Native fixture preflight failed: {diagnostics}"
+        )
+        try:
+            reply = json.loads(response)
+        except ValueError:
+            self.fail(
+                f"Native fixture preflight returned invalid JSON: {response!r}; {diagnostics}"
+            )
+        self.assertEqual(reply.get("id"), "fixture-preflight")
+        self.assertEqual(
+            reply.get("outcome"),
+            "ok",
+            f"Native fixture preflight refused: {reply!r}; {diagnostics}",
+        )
+        self.assertEqual(reply.get("result", {}).get("protocol"), 1)
 
     def save_config(self):
         self.config.write_text(json.dumps(self.data), encoding="utf-8")
@@ -252,6 +375,20 @@ with Session(sys.argv[2], sys.argv[3]) as native:
         with self.assertRaises(Refused):
             native.private_dir("state", "existing")
         self.assertEqual(directory.stat().st_mode & 0o777, 0o755)
+
+    @unittest.skipUnless(os.name == "nt", "Windows DACL drift fixture")
+    def test_private_directory_refuses_existing_acl_drift_without_repair(self):
+        directory = self.state / "existing"
+        directory.mkdir()
+        protect(directory)
+        native = self.session()
+        self.assertEqual(native.private_dir("state", "existing"), {})
+        windows_policy(directory, world_read=True)
+        before = windows_policy_text(directory)
+        self.assertIn(";;;WD)", before)
+        with self.assertRaises(Refused):
+            native.private_dir("state", "existing")
+        self.assertEqual(windows_policy_text(directory), before)
 
     @unittest.skipIf(os.name == "nt", "Windows reparse fixture needs symlink privilege")
     def test_storage_refuses_symlink_ancestor(self):
