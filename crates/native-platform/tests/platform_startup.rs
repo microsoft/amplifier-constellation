@@ -1,5 +1,8 @@
 //! Opt-in registration/query/removal smoke for disposable platform CI runners.
 //! It never launches the registered test executable or pairs a real computer.
+// Match the downloaded desktop applications, including Windows child-process
+// output encoding when their parent has no console.
+#![cfg_attr(windows, windows_subsystem = "windows")]
 use amplifier_native_platform::{self as platform, Application, MACHINE_HELPER, OBSERVATORY};
 use std::{fs, process::Command};
 #[test]
@@ -15,11 +18,16 @@ fn exercise(app: &Application) {
         "Explicit disposable-runner opt-in required"
     );
     let temp = tempfile::tempdir().unwrap();
-    let home = temp.path().join("helper with spaces");
+    let home = temp.path().join("helper café 子 with spaces");
     fs::create_dir(&home).unwrap();
+    // Installed services canonicalize their home before calling this API.
+    // On Windows this is an extended-length path, unlike the input spelling.
+    let home = home.canonicalize().unwrap();
     let id = uuid::Uuid::new_v4();
     let label = format!("{}-{id}", app.startup_prefix);
     platform::install_startup(app, &home, &id).unwrap();
+    #[cfg(windows)]
+    let _cleanup = OwnedTask(label.clone());
     #[cfg(target_os = "linux")]
     {
         assert!(
@@ -60,13 +68,13 @@ fn exercise(app: &Application) {
     }
     #[cfg(windows)]
     {
-        assert!(
-            Command::new("schtasks.exe")
-                .args(["/Query", "/TN", &label, "/XML"])
-                .status()
-                .unwrap()
-                .success()
-        );
+        let observed = Command::new("schtasks.exe")
+            .args(["/Query", "/TN", &label, "/XML"])
+            .output()
+            .unwrap();
+        assert!(observed.status.success());
+        // Its stdout may be lossy under the GUI subsystem. The idempotent
+        // registration below checks the exact Unicode path using the native API.
     }
     // A second registration is exact/idempotent and never replaces another task.
     platform::install_startup(app, &home, &id).unwrap();
@@ -95,4 +103,17 @@ fn exercise(app: &Application) {
             .unwrap()
             .success()
     );
+}
+
+// Only the exact fresh UUID registration created above belongs to this fixture.
+// Keep cleanup independent of the identity decoder under test, including failure.
+#[cfg(windows)]
+struct OwnedTask(String);
+#[cfg(windows)]
+impl Drop for OwnedTask {
+    fn drop(&mut self) {
+        let _ = Command::new("schtasks.exe")
+            .args(["/Delete", "/TN", &self.0, "/F"])
+            .output();
+    }
 }

@@ -4,6 +4,8 @@ Optional Rust implementation support for self-contained Constellation applicatio
 
 `OBSERVATORY` and `MACHINE_HELPER` are separate fixed application profiles. Startup uses the current user's systemd service, LaunchAgent or least-privilege Task Scheduler entry. Existing mismatched entries and binaries are preserved. Registering startup does not start another process immediately.
 
+Windows task inspection uses Task Scheduler's Unicode XML API, so desktop apps without a console preserve non-ASCII account and installation paths. The same exact task identity checks apply before reuse or removal; an inspection error is not treated as a missing task.
+
 `private_write` commits a fully written protected temporary file; `private_create` additionally refuses any existing destination. Windows storage grants only the current user and SYSTEM; Unix directories and files are 0700 and 0600. Applications still own locking, state schemas, migrations and credentials.
 
 `open_browser` accepts only a loopback HTTP/HTTPS setup URL. `show_launch_error` uses a native desktop alert when available. A separate `open_https_browser` can open an application’s already configured HTTPS origin, without embedded credentials, paths, query strings or fragments. Neither function accepts shell source.
