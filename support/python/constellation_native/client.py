@@ -152,6 +152,7 @@ def _initialize(
     deadline = time.monotonic() + float(timeout)
 
     def send() -> None:
+        write_error: Exception | None = None
         try:
             assert process.stdin is not None
             remaining = memoryview(encoded)
@@ -160,10 +161,18 @@ def _initialize(
                 if not count:
                     raise BrokenPipeError("Native setup request pipe closed")
                 remaining = remaining[count:]
-            process.stdin.close()
-            written.put(None)
         except (OSError, ValueError) as error:
-            written.put(error)
+            write_error = error
+        finally:
+            # Only this writer closes its pipe. Closing it from the waiting
+            # thread can block behind an unfinished Windows pipe write.
+            if process.stdin is not None:
+                try:
+                    process.stdin.close()
+                except (OSError, ValueError) as error:
+                    if write_error is None:
+                        write_error = error
+            written.put(write_error)
 
     writer = threading.Thread(
         target=send, name="constellation-native-setup-request", daemon=True
@@ -236,9 +245,11 @@ def _initialize(
     finally:
         # These commands never launch services or probes. Close only this short
         # invocation; an uncertain operation is not repeated or rolled back.
-        if process.stdin is not None:
+        # Terminate a stalled reader before waiting for its blocked writer. The
+        # writer retains pipe ownership until it exits, even if cleanup times out.
+        if writer.is_alive() and process.poll() is None:
             with contextlib.suppress(OSError):
-                process.stdin.close()
+                process.kill()
         try:
             process.wait(timeout=1)
         except subprocess.TimeoutExpired:
@@ -246,6 +257,7 @@ def _initialize(
                 process.kill()
             with contextlib.suppress(subprocess.TimeoutExpired):
                 process.wait(timeout=4)
+        writer.join(timeout=1)
         reader.join(timeout=1)
 
 

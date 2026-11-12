@@ -14,6 +14,8 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -77,8 +79,9 @@ class SetupTransportTests(unittest.TestCase):
         self.script.write_text(PEER, encoding="utf-8")
         self.capture = self.root / "requests.jsonl"
         self.target = self.root / "owner"
+        self.children = []
 
-    def invoke(self, operation, mode="ok", *, config=None, timeout=2):
+    def invoke(self, operation, mode="ok", *, config=None, timeout=2, serialized_pipe=False):
         real_popen = subprocess.Popen
 
         def spawn(argv, **kwargs):
@@ -86,9 +89,14 @@ class SetupTransportTests(unittest.TestCase):
             self.assertTrue(kwargs["close_fds"])
             self.assertEqual(kwargs["stderr"], subprocess.DEVNULL)
             self.assertNotIn("shell", kwargs)
-            return real_popen(
+            child = real_popen(
                 [sys.executable, str(self.script), mode, str(self.capture)], **kwargs
             )
+            self.children.append(child)
+            self.addCleanup(self.reap_child, child)
+            if serialized_pipe:
+                child.stdin = SerializedWritePipe(child.stdin)
+            return child
 
         with patch("constellation_native.client.subprocess.Popen", side_effect=spawn):
             if operation == "setup.root":
@@ -96,6 +104,21 @@ class SetupTransportTests(unittest.TestCase):
             return initialize_config(
                 sys.executable, self.target, config or {"version": 1}, timeout=timeout
             )
+
+    @staticmethod
+    def reap_child(child):
+        if child.poll() is None:
+            child.kill()
+        child.wait(timeout=5)
+        if isinstance(child.stdin, SerializedWritePipe):
+            child.stdin.write_finished.wait(timeout=1)
+        if child.stdin is not None:
+            child.stdin.close()
+
+    def assert_children_reaped(self):
+        self.assertTrue(self.children)
+        for child in self.children:
+            self.assertIsNotNone(child.poll(), "Setup returned with its driver still running")
 
     def requests(self):
         if not self.capture.exists():
@@ -132,18 +155,42 @@ class SetupTransportTests(unittest.TestCase):
         self.assertEqual(len(self.requests()), 6)
 
     def test_setup_timeout_never_retries(self):
+        started = time.monotonic()
         with self.assertRaises(Unknown) as caught:
             self.invoke("setup.root", "timeout", timeout=0.2)
+        self.assertLess(time.monotonic() - started, 5.0)
         self.assertEqual(caught.exception.code, "transport_timeout")
         self.assertEqual(len(self.requests()), 1)
+        self.assert_children_reaped()
 
     def test_setup_write_is_also_bounded(self):
+        started = time.monotonic()
         with self.assertRaises(Unknown) as caught:
             self.invoke(
                 "setup.config", "no_read", config={"padding": "x" * (1536 * 1024)}, timeout=0.2
             )
+        self.assertLess(time.monotonic() - started, 5.0)
         self.assertEqual(caught.exception.code, "transport_timeout")
         self.assertEqual(self.requests(), [])
+        self.assert_children_reaped()
+
+    def test_stalled_writer_is_terminated_before_serialized_pipe_close(self):
+        # FileIO close can serialize behind an in-flight write on Windows. The
+        # wrapper rejects that ordering immediately on every platform rather
+        # than allowing an old implementation to hang until the child wakes.
+        # The child and full OS pipe are real; only close serialization is modeled.
+        started = time.monotonic()
+        with self.assertRaises(Unknown) as caught:
+            self.invoke(
+                "setup.config", "no_read", config={"padding": "x" * (1536 * 1024)},
+                timeout=0.2, serialized_pipe=True,
+            )
+        self.assertLess(time.monotonic() - started, 5.0)
+        self.assertEqual(caught.exception.code, "transport_timeout")
+        self.assertEqual(self.requests(), [])
+        self.assert_children_reaped()
+        self.assertTrue(self.children[0].stdin.write_started.is_set())
+        self.assertTrue(self.children[0].stdin.closed)
 
     def test_typed_outcomes_are_preserved(self):
         for outcome, expected in (("busy", Busy), ("refused", Refused), ("unknown", Unknown), ("error", DriverError)):
@@ -174,6 +221,41 @@ class SetupTransportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 initialize_config(sys.executable, self.target, {"padding": "x" * (2 * 1024 * 1024)})
             spawn.assert_not_called()
+
+
+class SerializedWritePipe:
+    """Test-only close/write serialization over an actual anonymous OS pipe."""
+
+    def __init__(self, stream):
+        self.stream = stream
+        self.mutex = threading.Lock()
+        self.write_started = threading.Event()
+        self.write_finished = threading.Event()
+        self.writer_thread = None
+
+    def write(self, data):
+        with self.mutex:
+            self.writer_thread = threading.get_ident()
+            self.write_finished.clear()
+            self.write_started.set()
+            try:
+                return self.stream.write(data)
+            finally:
+                self.write_finished.set()
+
+    def close(self):
+        if (
+            self.write_started.is_set()
+            and not self.write_finished.is_set()
+            and threading.get_ident() != self.writer_thread
+        ):
+            raise AssertionError("Setup closed stdin while another thread was blocked writing")
+        with self.mutex:
+            self.stream.close()
+
+    @property
+    def closed(self):
+        return self.stream.closed
 
 
 def policy_snapshot(path):
