@@ -18,6 +18,7 @@ to your work, and [Working together](docs/working-together.md) for applying
 | Installed identity, configuration, context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
 | Native reasoning, providers, tools and durable execution | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
 | Rooms, membership, messages and observable coordination | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
+| Live talk, seeing what you share and a shared visual surface | [Companion](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/companion-vision.md), currently developed in Conversations |
 | External conversations and domain actions | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
 | Portable communication and working-style profiles | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
 | Collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
@@ -35,13 +36,12 @@ Amplifier is one external experience, implemented by
 ecosystem stays there. [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
 is a distinct engine choice.
 
-## Contribute
+## Join the work
 
-Name an outcome, owner, authority and combined check in the existing assignment
-or PR. Local implementation choices stay with the owner; settle changed shared
-promises with affected owners before dependent work relies on them. Inspect actual
-behavior rather than a maintained gap list. Keep private evidence outside this
-repository and shared promises in one place.
+Invited collaborators work within their agreed repository access and scope. Find
+the owning component above, then use [Working together](docs/working-together.md)
+to frame the outcome with that owner. General public contribution intake is
+described below.
 
 Constellation is part of the broader [Amplifier ecosystem](https://github.com/microsoft/amplifier).
 

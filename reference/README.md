@@ -1,9 +1,9 @@
 # Focused specifications
 
-These details serve implementers who need an exact shared format or convention.
+Follow these references when you need an exact format or convention.
 Start with the [six agreements](../contracts/README.md) for cross-component promises.
 
-| Specification | Why it remains here |
+| Specification | Authoritative home |
 | --- | --- |
 | [Public speech](../crates/acp-connection/docs/public-speech.md) | Shared message assembly and optional completion metadata, beside the common collector. |
 | [Maintenance and source receipts](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/harness.md) | Instance owns the exact optional profiles and implementation checks. |
