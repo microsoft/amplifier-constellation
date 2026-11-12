@@ -396,11 +396,7 @@ const JUNCTION_TAG: u32 = 0xa000_0003; // IO_REPARSE_TAG_MOUNT_POINT
 
 #[cfg(windows)]
 fn wide(path: &Path) -> Result<Vec<u16>> {
-    use std::os::windows::ffi::OsStrExt;
-    let mut value: Vec<u16> = path.as_os_str().encode_wide().collect();
-    ensure!(!value.contains(&0), "Source path contains NUL");
-    value.push(0);
-    Ok(value)
+    crate::storage::wide_path(path)
 }
 
 #[cfg(windows)]

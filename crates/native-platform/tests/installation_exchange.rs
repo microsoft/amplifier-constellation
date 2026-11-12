@@ -19,11 +19,15 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> Self {
+        Self::with_home(|home| home)
+    }
+
+    fn with_home(make_home: impl FnOnce(PathBuf) -> PathBuf) -> Self {
         let temporary = match std::env::var_os("CONSTELLATION_NATIVE_TEST_ROOT") {
             Some(root) => tempfile::tempdir_in(root).unwrap(),
             None => tempfile::tempdir().unwrap(),
         };
-        let home = temporary.path().canonicalize().unwrap();
+        let home = make_home(temporary.path().canonicalize().unwrap());
         for name in [
             "",
             "game",
@@ -93,10 +97,43 @@ fn applied(outcome: MutationOutcome) -> Value {
 
 #[test]
 fn actual_pointer_and_real_baseline_exchange_then_explicit_rollback() {
-    let fixture = Fixture::new();
+    assert_pointer_and_baseline_roundtrip(Fixture::new());
+}
+
+#[cfg(windows)]
+#[test]
+fn deep_ordinary_unicode_source_paths_prepare_inspect_apply_and_rollback() {
+    use std::os::windows::ffi::OsStrExt;
+    let fixture = Fixture::with_home(|home| {
+        // Preserve an ordinary caller path, rather than supplying the Win32
+        // extended form from the fixture and hiding an entrypoint limitation.
+        let text = home.to_str().unwrap();
+        let mut home = match text.strip_prefix(r"\\?\UNC\") {
+            Some(rest) => PathBuf::from(format!(r"\\{rest}")),
+            None => PathBuf::from(text.strip_prefix(r"\\?\").unwrap_or(text)),
+        };
+        while home.as_os_str().encode_wide().count() <= 340 {
+            home.push("installation-café-雪-🧭-0123456789");
+        }
+        home
+    });
+    assert!(!fixture.home.to_str().unwrap().starts_with(r"\\?\"));
+    let units = fixture.home.as_os_str().encode_wide().count();
+    assert!(units > 340);
+    assert_pointer_and_baseline_roundtrip(fixture);
+    println!(
+        "native source exchange: ordinary Unicode home {units} UTF-16 units; prepare/inspect/apply/rollback passed"
+    );
+}
+
+fn assert_pointer_and_baseline_roundtrip(fixture: Fixture) {
     let original = fixture.current();
     let prepared = fixture.prepare();
     assert_eq!(prepared["kind"], "pointer");
+    assert_eq!(
+        exchange::inspect(&fixture.profile, Some(&fixture.prepared())).unwrap(),
+        prepared
+    );
     assert_eq!(
         fs::read_to_string(fixture.home.join("prepared/candidate/identity.txt")).unwrap(),
         "reviewed candidate"
@@ -152,6 +189,7 @@ fn actual_pointer_and_real_baseline_exchange_then_explicit_rollback() {
     );
     assert_eq!(restored["current"], original);
     assert_eq!(restored["retained"], prepared);
+    assert_eq!(fixture.current(), original);
     assert_eq!(
         fs::read_to_string(fixture.profile.current.join("identity.txt")).unwrap(),
         "original baseline"
@@ -390,14 +428,14 @@ struct BlockRename {
 
 #[cfg(windows)]
 fn open_junction(path: &Path, share: u32) -> fs::File {
-    use std::os::windows::{ffi::OsStrExt, io::FromRawHandle};
+    use std::os::windows::io::FromRawHandle;
     use windows_sys::Win32::{
         Foundation::{GENERIC_READ, INVALID_HANDLE_VALUE},
         Storage::FileSystem::{
             CreateFileW, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, OPEN_EXISTING,
         },
     };
-    let path: Vec<u16> = path.as_os_str().encode_wide().chain([0]).collect();
+    let path = amplifier_native_platform::windows_native_path(path).unwrap();
     // Actual read access establishes the sharing reservation needed by the
     // failure fixture. Access zero is only a metadata observation.
     let handle = unsafe {
@@ -454,7 +492,6 @@ fn assert_junction(file: &fs::File) {
 #[cfg(windows)]
 impl BlockRename {
     fn new(path: &Path) -> Self {
-        use std::os::windows::ffi::OsStrExt;
         use windows_sys::Win32::{
             Foundation::{ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION},
             Storage::FileSystem::{
@@ -465,8 +502,8 @@ impl BlockRename {
         assert_junction(&handle);
         let probe = path.with_file_name("blocked-rename-probe");
         assert!(!probe.exists());
-        let from: Vec<u16> = path.as_os_str().encode_wide().chain([0]).collect();
-        let to: Vec<u16> = probe.as_os_str().encode_wide().chain([0]).collect();
+        let from = amplifier_native_platform::windows_native_path(path).unwrap();
+        let to = amplifier_native_platform::windows_native_path(&probe).unwrap();
         let moved = unsafe { MoveFileExW(from.as_ptr(), to.as_ptr(), MOVEFILE_WRITE_THROUGH) };
         let error = std::io::Error::last_os_error();
         assert_eq!(

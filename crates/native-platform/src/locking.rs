@@ -74,14 +74,13 @@ fn open_lock_file(path: &Path) -> io::Result<File> {
             FILE_SHARE_WRITE, FILE_TYPE_DISK, GetFileInformationByHandle, GetFileType, OPEN_ALWAYS,
         },
     };
-    let mut name: Vec<u16> = path.as_os_str().encode_wide().collect();
-    if name.contains(&0) {
+    if path.as_os_str().encode_wide().any(|unit| unit == 0) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "NUL in lock path",
         ));
     }
-    name.push(0);
+    let name = crate::storage::wide_path(path).map_err(io::Error::other)?;
     let security = crate::storage::PrivateSecurity::new(false).map_err(io::Error::other)?;
     // SAFETY: the path and protected owner/DACL descriptor remain valid for
     // this call. OPEN_ALWAYS applies security only to a new file; existing

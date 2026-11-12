@@ -431,9 +431,20 @@ with Session(sys.argv[2], sys.argv[3]) as native:
         original_policy = windows_policy_text(self.config)
         self.preflight()
         native = self.session()
+        contender = self.session()
         self.assertEqual(native.describe()["protocol"], 1)
         with native.lock("installation"):
+            with self.assertRaises(Busy):
+                with contender.lock("installation"):
+                    self.fail("Long-path lock allowed a second owner")
             native.private_write("state", "receipt.json", b"retained receipt")
+            original_lock = (self.state / "installation.lock").stat()
+        with contender.lock("installation"):
+            current_lock = (self.state / "installation.lock").stat()
+            self.assertEqual(
+                (current_lock.st_dev, current_lock.st_ino),
+                (original_lock.st_dev, original_lock.st_ino),
+            )
         receipt = self.state / "receipt.json"
         self.assertEqual(receipt.read_bytes(), b"retained receipt")
         self.assertNotIn(";;;WD)", windows_policy_text(receipt))
