@@ -15,11 +15,13 @@ fn exercise(app: &Application) {
         "Explicit disposable-runner opt-in required"
     );
     let temp = tempfile::tempdir().unwrap();
-    let home = temp.path().join("helper with spaces");
+    let home = temp.path().join("helper café 子 with spaces");
     fs::create_dir(&home).unwrap();
     let id = uuid::Uuid::new_v4();
     let label = format!("{}-{id}", app.startup_prefix);
     platform::install_startup(app, &home, &id).unwrap();
+    #[cfg(windows)]
+    let _cleanup = OwnedTask(label.clone());
     #[cfg(target_os = "linux")]
     {
         assert!(
@@ -60,13 +62,13 @@ fn exercise(app: &Application) {
     }
     #[cfg(windows)]
     {
-        assert!(
-            Command::new("schtasks.exe")
-                .args(["/Query", "/TN", &label, "/XML"])
-                .status()
-                .unwrap()
-                .success()
-        );
+        let observed = Command::new("schtasks.exe")
+            .args(["/Query", "/TN", &label, "/XML"])
+            .output()
+            .unwrap();
+        assert!(observed.status.success());
+        println!("WINDOWS_TASK_EXPECTED_HOME:{home:?}");
+        println!("WINDOWS_TASK_XML_BYTES:{:?}", observed.stdout);
     }
     // A second registration is exact/idempotent and never replaces another task.
     platform::install_startup(app, &home, &id).unwrap();
@@ -95,4 +97,17 @@ fn exercise(app: &Application) {
             .unwrap()
             .success()
     );
+}
+
+// Only the exact fresh UUID registration created above belongs to this fixture.
+// Keep cleanup independent of the identity decoder under test, including failure.
+#[cfg(windows)]
+struct OwnedTask(String);
+#[cfg(windows)]
+impl Drop for OwnedTask {
+    fn drop(&mut self) {
+        let _ = Command::new("schtasks.exe")
+            .args(["/Delete", "/TN", &self.0, "/F"])
+            .output();
+    }
 }
