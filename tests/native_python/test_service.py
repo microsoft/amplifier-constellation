@@ -215,14 +215,12 @@ class NativeServiceApplicationTests(unittest.TestCase):
         raise AssertionError(f"Native application did not settle: {latest}")
 
     @staticmethod
-    def powershell(script, name, **environment):
-        exe = (
-            Path(os.environ["SystemRoot"])
-            / "System32/WindowsPowerShell/v1.0/powershell.exe"
-        )
+    def windows_fixture(action, name):
+        executable = Path(os.environ["NATIVE_SERVICE_FIXTURE"])
+        if not executable.is_absolute() or not executable.is_file():
+            raise AssertionError("NATIVE_SERVICE_FIXTURE must name the built native CI helper")
         subprocess.run(
-            [str(exe), "-NoProfile", "-NonInteractive", "-Command", script],
-            env=dict(os.environ, DISPOSABLE_SERVICE_NAME=name, **environment),
+            [str(executable), action, name],
             check=True,
             timeout=30,
         )
@@ -243,10 +241,7 @@ class NativeServiceApplicationTests(unittest.TestCase):
                 timeout=10,
             )
         else:
-            self.powershell(
-                "$s=New-Object -ComObject 'Schedule.Service';$s.Connect();$t=$s.GetFolder('\\').GetTask($env:DISPOSABLE_SERVICE_NAME);$t.Enabled=$false",
-                name,
-            )
+            self.windows_fixture("pause", name)
 
     def cleanup(self, name, definition, config, receipt):
         if sys.platform == "linux":
@@ -273,22 +268,6 @@ class NativeServiceApplicationTests(unittest.TestCase):
             )
             definition.unlink(missing_ok=True)
         else:
-            # The ownership failure is diagnostic evidence, not a reason to
-            # skip stopping this unique disposable task. Never repair its ACL.
-            try:
-                self.powershell(
-                    "$ErrorActionPreference='Stop';"
-                    "$rows=@();foreach($p in @($env:DISPOSABLE_ROOT,$env:DISPOSABLE_RECEIPT,$env:DISPOSABLE_LOCK)){"
-                    "if(Test-Path -LiteralPath $p){$a=Get-Acl -LiteralPath $p;"
-                    "$rows+=@{path=$p;owner_sid=$a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value}}};"
-                    "@{fixture_owners=$rows;current_sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value}|ConvertTo-Json -Compress -Depth 4",
-                    name,
-                    DISPOSABLE_ROOT=str(config.parent),
-                    DISPOSABLE_RECEIPT=str(receipt),
-                    DISPOSABLE_LOCK=str(receipt.with_suffix(".invocation.lock")),
-                )
-            except Exception as error:
-                print(f"Disposable owner diagnostics failed: {error!r}", flush=True)
             identities = []
             try:
                 identities = self.receipt_identities(receipt)
@@ -296,25 +275,12 @@ class NativeServiceApplicationTests(unittest.TestCase):
                 # An unreadable receipt must not prevent stopping our fixture.
                 # The post-stop observation will still fail if it stays unknown.
                 print(f"Disposable pre-stop receipt read failed: {error!r}", flush=True)
-            self.powershell(
-                "$ErrorActionPreference='Stop';$s=New-Object -ComObject 'Schedule.Service';$s.Connect();"
-                "$f=$s.GetFolder('\\');try{$t=$f.GetTask($env:DISPOSABLE_SERVICE_NAME)}"
-                "catch{if($_.Exception.HResult -eq -2147024894){exit 0}else{throw}};"
-                "$t.Stop(0);$w=[Diagnostics.Stopwatch]::StartNew();"
-                "while($t.GetInstances(0).Count -ne 0){"
-                "if($w.Elapsed.TotalSeconds -ge 25){throw 'Disposable task did not stop'};Start-Sleep -Milliseconds 100}",
-                name,
-            )
+            self.windows_fixture("stop-and-wait", name)
             # TaskScheduler Stop acknowledges the request before its wrapper's
             # job descendants and non-inherited invocation lock have settled.
             # Observe exact generations; never kill a PID from a stale receipt.
             self.wait_windows_release(config, receipt, identities)
-            self.powershell(
-                "$s=New-Object -ComObject 'Schedule.Service';$s.Connect();$f=$s.GetFolder('\\');"
-                "try{$f.DeleteTask($env:DISPOSABLE_SERVICE_NAME,0)}"
-                "catch{if($_.Exception.HResult -ne -2147024894){throw}}",
-                name,
-            )
+            self.windows_fixture("delete", name)
 
     @staticmethod
     def receipt_identities(receipt):

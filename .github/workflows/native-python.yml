@@ -36,7 +36,9 @@ jobs:
         run: |
           cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation
           cargo +1.93.0 test --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
           cargo +1.93.0 build --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
       - name: Test Python through the actual driver
         run: |
           python - <<'PY'
@@ -48,6 +50,8 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('CONSTELLATION_NATIVE_DRIVER='+str(path)+'\n')
               output.write('PYTHON='+sys.executable+'\n')
+              fixture = pathlib.Path('crates/native-platform/target/debug/examples/windows_service_fixture' + suffix).resolve()
+              output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
           PY
       - name: Prepare disposable Linux user service manager
         if: runner.os == 'Linux'
