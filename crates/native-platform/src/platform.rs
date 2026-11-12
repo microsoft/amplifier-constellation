@@ -1,5 +1,7 @@
 use crate::{Application, storage::private_dir};
 use anyhow::{Context, Result, bail, ensure};
+#[cfg(any(windows, all(unix, not(target_os = "macos"))))]
+use std::process::Stdio;
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -250,6 +252,7 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
         ensure!(
             Command::new("systemctl")
                 .args(["--user", "daemon-reload"])
+                .stdout(Stdio::null())
                 .status()?
                 .success(),
             "User service manager is unavailable"
@@ -257,6 +260,7 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
         ensure!(
             Command::new("systemctl")
                 .args(["--user", "enable", &format!("{label}.service")])
+                .stdout(Stdio::null())
                 .status()?
                 .success(),
             "Could not enable startup for this user"
@@ -301,6 +305,7 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
             .arg(&label)
             .arg("/XML")
             .arg(path)
+            .stdout(Stdio::null())
             .status()?;
         ensure!(
             status.success(),
@@ -325,6 +330,7 @@ pub fn remove_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Result
             );
             let status = Command::new("systemctl")
                 .args(["--user", "disable", &format!("{label}.service")])
+                .stdout(Stdio::null())
                 .status()?;
             ensure!(status.success(), "Could not disable startup");
             fs::remove_file(path)?;
@@ -361,6 +367,7 @@ pub fn remove_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Result
         );
         let status = Command::new("schtasks.exe")
             .args(["/Delete", "/TN", &label, "/F"])
+            .stdout(Stdio::null())
             .status()?;
         ensure!(status.success(), "Could not remove sign-in startup");
     }
@@ -381,6 +388,13 @@ pub fn task_matches(
     home: &Path,
     expected_sid: &str,
 ) -> Result<bool> {
+    // Scheduler can export the known legacy default logon trigger as an empty
+    // element. Expand only these exact spellings for inspection; all uniqueness
+    // and ownership checks below still apply, and the saved task is untouched.
+    let normalized = document
+        .replace("<LogonTrigger />", "<LogonTrigger></LogonTrigger>")
+        .replace("<LogonTrigger/>", "<LogonTrigger></LogonTrigger>");
+    let document = normalized.as_str();
     // Inspect the Task Scheduler's validated XML without confusing identically
     // named fields in its trigger and principal. Unknown/duplicate structures
     // fail ownership checks; this is not a general-purpose XML parser.

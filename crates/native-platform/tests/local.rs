@@ -382,3 +382,37 @@ fn concurrent_destination_creation_is_never_replaced() {
         }
     }
 }
+
+#[test]
+fn captured_legacy_windows_task_retains_empty_logon_trigger() {
+    // Captured Server 2025 Scheduler export, with identities/paths redacted,
+    // retained byte-for-byte from Observatory machine-helper's native fixture.
+    let text = include_str!("fixtures/windows-task-query.xml");
+    let home = Path::new(r"C:\Users\Example\AppData\Local\Temp\fixture\helper with spaces");
+    let exe = Path::new(
+        r"C:\Users\Example\AppData\Local\Temp\fixture\helper with spaces\bin\constellation-machine-helper.exe",
+    );
+    let sid = "S-1-5-21-100-200-300-1001";
+    for empty in ["<LogonTrigger />", "<LogonTrigger/>"] {
+        let observed = text.replace("<LogonTrigger />", empty);
+        assert!(task_matches(&MACHINE_HELPER, &observed, exe, home, sid).unwrap());
+        assert!(!task_matches(&MACHINE_HELPER, &observed, exe, home, "S-1-5-18").unwrap());
+        for altered in [
+            observed.replace(empty, &format!("{empty}{empty}")),
+            observed.replace(empty, &format!("{empty}<BootTrigger />")),
+            observed.replace(
+                empty,
+                "<LogonTrigger><UserId>S-1-5-18</UserId></LogonTrigger>",
+            ),
+            observed.replace(empty, "<LogonTrigger bogus=\"true\" />"),
+            observed.replace(empty, "<LogonTrigger /> </LogonTrigger>"),
+            observed.replace(
+                "</Principal>",
+                "<RunLevel>HighestAvailable</RunLevel></Principal>",
+            ),
+            observed.replace("InteractiveToken", "ServiceAccount"),
+        ] {
+            assert!(!task_matches(&MACHINE_HELPER, &altered, exe, home, sid).unwrap());
+        }
+    }
+}
