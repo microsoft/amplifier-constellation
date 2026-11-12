@@ -78,7 +78,20 @@ fn exercise(app: &Application) {
             .0;
         let sid = platform::current_user_sid().unwrap();
         assert_eq!(trigger.matches("<UserId>").count(), 1);
-        assert!(trigger.contains(&format!("<UserId>{sid}</UserId>")));
+        let account = trigger
+            .split_once("<UserId>")
+            .unwrap()
+            .1
+            .split_once("</UserId>")
+            .unwrap()
+            .0;
+        assert!(
+            !account.is_empty(),
+            "Actual logon trigger must have an owner"
+        );
+        println!("Task trigger identity: {account}; current SID: {sid}");
+        // COM may export the account name instead of the SID supplied during
+        // registration. The matcher must resolve that actual Windows identity.
         assert!(
             platform::task_matches(
                 app,
@@ -89,6 +102,42 @@ fn exercise(app: &Application) {
             )
             .unwrap()
         );
+        let account_form = observed.replace(
+            &format!("<UserId>{sid}</UserId>"),
+            &format!("<UserId>{account}</UserId>"),
+        );
+        assert!(
+            platform::task_matches(
+                app,
+                &account_form,
+                &platform::installed_binary(app, &home),
+                &home,
+                &sid
+            )
+            .unwrap(),
+            "Both principal and trigger account names resolve to the same SID"
+        );
+        for other in [
+            format!("constellation-missing-account-{}", uuid::Uuid::new_v4()),
+            "S-1-5-18".to_owned(),
+        ] {
+            assert_ne!(other, sid);
+            let other_trigger = trigger.replace(
+                &format!("<UserId>{account}</UserId>"),
+                &format!("<UserId>{other}</UserId>"),
+            );
+            assert!(
+                !platform::task_matches(
+                    app,
+                    &observed.replace(trigger, &other_trigger),
+                    &platform::installed_binary(app, &home),
+                    &home,
+                    &sid
+                )
+                .unwrap(),
+                "An unknown or different trigger owner must remain unowned"
+            );
+        }
         // Even an administrative runner must prove the task is restricted to
         // this user's logon. An all-user trigger can register there while it
         // fails with AccessDenied for an ordinary Windows desktop account.

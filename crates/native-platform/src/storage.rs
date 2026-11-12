@@ -78,6 +78,70 @@ pub fn current_user_sid() -> Result<String> {
     }
 }
 #[cfg(windows)]
+pub(crate) fn account_sid(account: &str) -> Result<String> {
+    ensure!(
+        !account.is_empty() && account.len() <= 1024 && !account.chars().any(char::is_control),
+        "Invalid Windows account identity"
+    );
+    if account.starts_with("S-1-") {
+        return Ok(account.to_owned());
+    }
+    use std::ptr;
+    use windows_sys::Win32::{
+        Foundation::{ERROR_INSUFFICIENT_BUFFER, LocalFree},
+        Security::{Authorization::ConvertSidToStringSidW, LookupAccountNameW},
+    };
+    let account: Vec<u16> = account.encode_utf16().chain(Some(0)).collect();
+    let mut sid_bytes = 0;
+    let mut domain_chars = 0;
+    let mut sid_type = 0;
+    unsafe {
+        LookupAccountNameW(
+            ptr::null(),
+            account.as_ptr(),
+            ptr::null_mut(),
+            &mut sid_bytes,
+            ptr::null_mut(),
+            &mut domain_chars,
+            &mut sid_type,
+        );
+        ensure!(
+            std::io::Error::last_os_error().raw_os_error()
+                == Some(ERROR_INSUFFICIENT_BUFFER as i32)
+                && (1..=256).contains(&sid_bytes)
+                && domain_chars <= 32768,
+            "Cannot resolve startup task account"
+        );
+        // Native SIDs contain DWORD fields and require an aligned buffer.
+        let mut sid = vec![0u32; (sid_bytes as usize).div_ceil(4)];
+        let mut domain = vec![0u16; domain_chars as usize];
+        ensure!(
+            LookupAccountNameW(
+                ptr::null(),
+                account.as_ptr(),
+                sid.as_mut_ptr().cast(),
+                &mut sid_bytes,
+                domain.as_mut_ptr(),
+                &mut domain_chars,
+                &mut sid_type,
+            ) != 0,
+            "Cannot resolve startup task account"
+        );
+        let mut rendered = ptr::null_mut();
+        ensure!(
+            ConvertSidToStringSidW(sid.as_mut_ptr().cast(), &mut rendered) != 0,
+            "Cannot read startup task account SID"
+        );
+        let mut length = 0;
+        while *rendered.add(length) != 0 {
+            length += 1;
+        }
+        let result = String::from_utf16(std::slice::from_raw_parts(rendered, length));
+        LocalFree(rendered.cast());
+        Ok(result?)
+    }
+}
+#[cfg(windows)]
 fn private_permissions(path: &Path, _directory: bool) -> Result<()> {
     use std::ptr;
     use windows_sys::Win32::{

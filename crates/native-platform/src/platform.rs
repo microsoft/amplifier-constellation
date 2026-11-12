@@ -446,6 +446,21 @@ pub fn task_matches(
             .replace("&apos;", "'")
             .replace("&amp;", "&")
     }
+    fn same_user(value: Option<&str>, expected_sid: &str) -> bool {
+        let Some(value) = value.map(decode) else {
+            return false;
+        };
+        if value == expected_sid {
+            return true;
+        }
+        // Scheduler can export UserId as DOMAIN\\name even when registered
+        // with a SID. Resolve through Windows; never trust a name alias or
+        // normalize away a different/unknown owner. No persisted task is edited.
+        #[cfg(windows)]
+        return crate::storage::account_sid(&value).is_ok_and(|sid| sid == expected_sid);
+        #[cfg(not(windows))]
+        false
+    }
     let Some(principal) =
         section(document, "Principals").and_then(|body| only_section(body, "Principal"))
     else {
@@ -462,7 +477,7 @@ pub fn task_matches(
     let trigger_users = trigger.matches("<UserId").count();
     let owned_trigger = match trigger_users {
         0 => !trigger.contains("</UserId"),
-        1 => element(trigger, "UserId").map(decode).as_deref() == Some(expected_sid),
+        1 => same_user(element(trigger, "UserId"), expected_sid),
         _ => false,
     };
     // Disabling an owned trigger does not transfer its ownership. Preserve it
@@ -492,7 +507,7 @@ pub fn task_matches(
         && document.matches("<UserId").count() == 1 + trigger_users
         && document.matches("</UserId").count() == 1 + trigger_users
         && !document.contains("<GroupId")
-        && element(principal, "UserId").map(decode).as_deref() == Some(expected_sid)
+        && same_user(element(principal, "UserId"), expected_sid)
         && element(principal, "LogonType") == Some("InteractiveToken")
         && document.matches("<LogonType").count() == 1
         && document.matches("</LogonType").count() == 1
