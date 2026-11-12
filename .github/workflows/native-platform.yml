@@ -37,4 +37,6 @@ jobs:
       - name: Register, inspect and remove both current-user startup profiles
         env:
           CONSTELLATION_STARTUP_SMOKE: '1'
-        run: cargo +1.93.0 test --locked --test platform_startup -- --ignored --nocapture
+        run: |
+          cargo +1.93.0 test --locked --test platform_startup -- --ignored --nocapture
+          cargo +1.93.0 test --locked --test startup_output
