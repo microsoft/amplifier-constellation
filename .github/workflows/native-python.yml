@@ -61,13 +61,14 @@ jobs:
           suffix = '.exe' if os.name == 'nt' else ''
           target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
           path = (pathlib.Path('crates/native-platform-driver') / target / ('constellation-native-driver' + suffix)).resolve()
+          fixture = (pathlib.Path('crates/native-platform') / target / 'examples' / ('windows_service_fixture' + suffix)).resolve()
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(path), '--output', 'native-installation-result.json'], check=True)
-          env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable)
+          subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(fixture), '--output', 'native-service-fixture-result.json'], check=True)
+          env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable, NATIVE_SERVICE_FIXTURE=str(fixture))
           subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('CONSTELLATION_NATIVE_DRIVER='+str(path)+'\n')
               output.write('PYTHON='+sys.executable+'\n')
-              fixture = (pathlib.Path('crates/native-platform') / target / 'examples' / ('windows_service_fixture' + suffix)).resolve()
               output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
           PY
       - name: Prepare disposable Linux user service manager
@@ -118,16 +119,16 @@ jobs:
             native-tree-scale-result.json
             native-tree-scale.log
           if-no-files-found: warn
-      - name: Record the executed native artifact and target
-        run: >-
-          python tests/native_python/inspect_driver.py
-          --driver "$CONSTELLATION_NATIVE_DRIVER"
-          --output native-installation-result.json
-          --verify
+      - name: Verify both executed native artifacts and targets
+        run: |
+          python tests/native_python/inspect_driver.py --driver "$CONSTELLATION_NATIVE_DRIVER" --output native-installation-result.json --verify
+          python tests/native_python/inspect_driver.py --driver "$NATIVE_SERVICE_FIXTURE" --output native-service-fixture-result.json --verify
       - uses: actions/upload-artifact@v4
         with:
           name: native-installation-${{ matrix.runner }}
           path: |
             native-installation-result.json
+            native-service-fixture-result.json
             ${{ env.CONSTELLATION_NATIVE_DRIVER }}
+            ${{ env.NATIVE_SERVICE_FIXTURE }}
           if-no-files-found: error

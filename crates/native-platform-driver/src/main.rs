@@ -410,11 +410,29 @@ impl Session {
                         return Ok(Outcome::failure("refused", "invalid_directory", error));
                     }
                 };
-                if path.exists() {
-                    return Ok(Outcome::ok(json!({})));
-                }
-                Ok(match amplifier_native_platform::private_dir(&path) {
+                // Create exactly one directory with its private owner policy in
+                // place from birth. Never repair an existing entry or create
+                // parents; a concurrent creator must pass the same validation.
+                let created = match amplifier_native_platform::private_create_dir(&path) {
+                    Ok(()) => true,
+                    Err(error) if error.kind() == io::ErrorKind::AlreadyExists => false,
+                    Err(error) => {
+                        return Ok(Outcome::failure("unknown", "directory_unconfirmed", error));
+                    }
+                };
+                let verified = (|| -> Result<()> {
+                    config::protected_directory(&path)?;
+                    #[cfg(unix)]
+                    if created {
+                        fs::File::open(path.parent().context("Missing parent")?)?.sync_all()?;
+                    }
+                    Ok(())
+                })();
+                Ok(match verified {
                     Ok(()) => Outcome::ok(json!({})),
+                    Err(error) if !created => {
+                        Outcome::failure("refused", "invalid_directory", error)
+                    }
                     Err(error) => Outcome::failure("unknown", "directory_unconfirmed", error),
                 })
             }

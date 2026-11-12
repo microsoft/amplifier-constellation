@@ -365,6 +365,158 @@ class ActualDriverSetupTests(unittest.TestCase):
         self.assertEqual(self.config.read_bytes(), before)
         self.assertEqual(policy_snapshot(self.config), policy)
 
+    def test_nested_storage_directory_then_write_uses_production_setup(self):
+        initialize_config(DRIVER, self.config, self.data)
+        preserved = {path: (path.read_bytes() if path.is_file() else None,
+                            policy_snapshot(path), path.stat().st_ino)
+                     for path in (self.root, self.state, self.config)}
+        with Session(DRIVER, self.config) as native:
+            with native.lock("installation"):
+                self.assertEqual(native.private_dir("state", "transactions"), {})
+                self.assertEqual(native.private_dir("state", "transactions/original"), {})
+                relative = "transactions/original/participant.json"
+                content = b'{"task":"original","phase":"prepared","unknowns":[]}'
+                native.private_write("state", relative, content, create_only=True)
+                paths = [self.state / "transactions", self.state / "transactions/original"]
+                identities = [(path.stat().st_dev, path.stat().st_ino,
+                               policy_snapshot(path)) for path in paths]
+                for name in ("transactions", "transactions/original"):
+                    self.assertEqual(native.private_dir("state", name), {})
+                self.assertEqual([(path.stat().st_dev, path.stat().st_ino,
+                                   policy_snapshot(path)) for path in paths], identities)
+                self.assertEqual((self.state / relative).read_bytes(), content)
+                if os.name == "nt":
+                    from test_driver import windows_owner_sid, windows_user_sid
+                    user = windows_user_sid()
+                    for path in (*paths, self.state / relative):
+                        self.assertEqual(windows_owner_sid(path), user)
+                    print(json.dumps({"nested_storage_owner": "passed",
+                                      "owner": user, "production_setup": True}))
+        for path, (content, policy, inode) in preserved.items():
+            self.assertEqual(path.stat().st_ino, inode)
+            self.assertEqual(policy_snapshot(path), policy)
+            if content is not None:
+                self.assertEqual(path.read_bytes(), content)
+        self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
+
+    @unittest.skipUnless(os.name == "nt", "Windows token-default-owner regression")
+    def test_nested_storage_with_administrators_default_owner_in_child_only(self):
+        from test_fixture_owner import require_elevated_owner_fixture
+        require_elevated_owner_fixture(self)
+        # Alter only this short-lived child token, never the test runner's token
+        # or an existing filesystem policy. New driver children inherit it.
+        code = r'''
+import ctypes as c, json, sys, unittest
+from ctypes import wintypes as w
+sys.path.insert(0, sys.argv[1])
+import test_setup
+kernel=c.WinDLL("kernel32",use_last_error=True)
+advapi=c.WinDLL("advapi32",use_last_error=True)
+kernel.GetCurrentProcess.restype=w.HANDLE
+kernel.CloseHandle.argtypes=[w.HANDLE]
+kernel.LocalFree.argtypes=[c.c_void_p]
+advapi.OpenProcessToken.argtypes=[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)]
+advapi.SetTokenInformation.argtypes=[w.HANDLE,c.c_int,c.c_void_p,w.DWORD]
+advapi.GetTokenInformation.argtypes=[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)]
+advapi.ConvertStringSidToSidW.argtypes=[w.LPCWSTR,c.POINTER(c.c_void_p)]
+advapi.ConvertSidToStringSidW.argtypes=[c.c_void_p,c.POINTER(w.LPWSTR)]
+token=w.HANDLE();sid=c.c_void_p()
+class Owner(c.Structure): _fields_=[("sid",c.c_void_p)]
+if not advapi.OpenProcessToken(kernel.GetCurrentProcess(),0x8|0x80,c.byref(token)):raise c.WinError(c.get_last_error())
+try:
+    if not advapi.ConvertStringSidToSidW("S-1-5-32-544",c.byref(sid)):raise c.WinError(c.get_last_error())
+    owner=Owner(sid)
+    if not advapi.SetTokenInformation(token,4,c.byref(owner),c.sizeof(owner)):raise c.WinError(c.get_last_error())
+    needed=w.DWORD();advapi.GetTokenInformation(token,4,None,0,c.byref(needed))
+    data=c.create_string_buffer(needed.value)
+    if not advapi.GetTokenInformation(token,4,data,len(data),c.byref(needed)):raise c.WinError(c.get_last_error())
+    value=w.LPWSTR()
+    if not advapi.ConvertSidToStringSidW(c.cast(data,c.POINTER(Owner)).contents.sid,c.byref(value)):raise c.WinError(c.get_last_error())
+    try:
+        assert value.value=="S-1-5-32-544",value.value
+        print(json.dumps({"child_token_default_owner":value.value}),flush=True)
+    finally:kernel.LocalFree(c.cast(value,c.c_void_p))
+finally:
+    if sid.value:kernel.LocalFree(sid)
+    kernel.CloseHandle(token)
+suite=unittest.defaultTestLoader.loadTestsFromNames([
+    "ActualDriverSetupTests.test_nested_storage_directory_then_write_uses_production_setup",
+    "ActualDriverSetupTests.test_nested_storage_refuses_foreign_owner_without_repair",
+],test_setup)
+sys.exit(0 if unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful() else 1)
+'''
+        result = subprocess.run([sys.executable, "-I", "-B", "-c", code,
+                                 str(Path(__file__).resolve().parent)],
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('"child_token_default_owner": "S-1-5-32-544"', result.stdout)
+        self.assertIn('"nested_storage_owner": "passed"', result.stdout)
+        print(result.stdout, end="")
+
+    @unittest.skipUnless(os.name == "nt", "Windows existing-owner preservation")
+    def test_nested_storage_refuses_foreign_owner_without_repair(self):
+        from test_fixture_owner import require_elevated_owner_fixture
+        require_elevated_owner_fixture(self)
+        from test_driver import windows_owner_sid, windows_policy
+        initialize_config(DRIVER, self.config, self.data)
+        with Session(DRIVER, self.config) as native:
+            native.private_dir("state", "foreign")
+            path = self.state / "foreign"
+            # Fault injection in an existing disposable directory; no repair.
+            windows_policy(path, owner_sid="S-1-5-32-544")
+            before = (windows_owner_sid(path), policy_snapshot(path), path.stat().st_ino)
+            self.assertEqual(before[0], "S-1-5-32-544")
+            for relative in ("foreign", "foreign/child"):
+                with self.assertRaises(Refused):
+                    native.private_dir("state", relative)
+            self.assertEqual((windows_owner_sid(path), policy_snapshot(path), path.stat().st_ino), before)
+            self.assertEqual(list(path.iterdir()), [])
+
+    def test_nested_storage_creation_race_preserves_one_directory(self):
+        from concurrent.futures import ThreadPoolExecutor
+        initialize_config(DRIVER, self.config, self.data)
+        with Session(DRIVER, self.config) as left, Session(DRIVER, self.config) as right:
+            for index in range(8):
+                name = f"transaction-{index}"
+                barrier = threading.Barrier(2)
+                def create(session):
+                    barrier.wait(timeout=5)
+                    return session.private_dir("state", name)
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    a, b = executor.submit(create, left), executor.submit(create, right)
+                    self.assertEqual(a.result(timeout=10), {})
+                    self.assertEqual(b.result(timeout=10), {})
+                path = self.state / name
+                before = (path.stat().st_dev, path.stat().st_ino, policy_snapshot(path))
+                left.private_write("state", name + "/receipt", b"retained", create_only=True)
+                right.private_dir("state", name)
+                self.assertEqual((path.stat().st_dev, path.stat().st_ino, policy_snapshot(path)), before)
+                self.assertEqual((path / "receipt").read_bytes(), b"retained")
+
+    def test_nested_storage_refuses_unsafe_existing_paths_without_repair(self):
+        initialize_config(DRIVER, self.config, self.data)
+        with Session(DRIVER, self.config) as native:
+            native.private_write("state", "file", b"retained", create_only=True)
+            for relative in ("absent/child", "../escape", "file"):
+                with self.subTest(relative=relative), self.assertRaises(Refused):
+                    native.private_dir("state", relative)
+            self.assertFalse((self.state / "absent").exists())
+            self.assertFalse((self.root / "escape").exists())
+            self.assertEqual((self.state / "file").read_bytes(), b"retained")
+            native.private_dir("state", "exposed")
+            exposed = self.state / "exposed"
+            if os.name == "nt":
+                subprocess.run(["icacls.exe", str(exposed), "/grant", "*S-1-1-0:(OI)(CI)(R)"],
+                               check=True, capture_output=True, timeout=10)
+            else:
+                exposed.chmod(0o755)
+            before = (policy_snapshot(exposed), exposed.stat().st_ino)
+            with self.assertRaises(Refused):
+                native.private_dir("state", "exposed")
+            self.assertEqual((policy_snapshot(exposed), exposed.stat().st_ino), before)
+            self.assertEqual(list(exposed.iterdir()), [])
+        self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
+
     def test_config_requires_valid_existing_prerequisites(self):
         for data in (
             {**self.data, "version": 2},

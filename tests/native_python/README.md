@@ -26,6 +26,13 @@ and locking. Refusal cases check that existing paths, contents and deliberately
 broadened permissions are preserved. Transport fixtures test lost or malformed
 acknowledgments separately from actual filesystem qualification.
 
+The Administrators-owner fixtures require an elevated disposable Windows token.
+Ordinary non-admin accounts explicitly skip those cases; GitHub Actions Windows
+runs fail if that required token is missing. The nested-storage regression changes
+only a short-lived child's default owner and then exercises production setup,
+directory creation and writes. It never changes the parent token or repairs an
+existing installation's ownership.
+
 If a local sandbox remaps the system temporary root to an untrusted owner, set
 `CONSTELLATION_NATIVE_TEST_ROOT` to an existing directory owned by the test user.
 The fixture still creates its own protected subdirectory; it does not relax the
@@ -49,6 +56,13 @@ generation, and preserves an independent pause. It then removes its own test
 registration. The workflow also runs native registration/state fixtures for both
 architectures of Linux, macOS and Windows. Hosted Windows x64 uses Windows Server;
 that evidence does not claim Windows 11 desktop first-run UX qualification.
+
+Each `native-installation-*` artifact includes both exact debug executables: the
+driver and the application selected by `NATIVE_SERVICE_FIXTURE`. Their separate
+`native-installation-result.json` and `native-service-fixture-result.json` records
+use the same source-pinned binary inspector before testing and verify unchanged
+bytes afterward, including architecture and ordinary/delayed Windows CRT imports.
+Consumer qualification can reuse these tested binaries without rebuilding.
 
 Both Windows jobs additionally run this suite, including the actual service
 fixture, through Minecraft's exact Python Build Standalone 3.12.16 interpreters.

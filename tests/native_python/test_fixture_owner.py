@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from test_driver import (
     DRIVER,
@@ -19,9 +20,38 @@ from test_driver import (
 )
 
 
+def require_elevated_owner_fixture(test, *, is_admin=None):
+    """CI must exercise elevated ownership; ordinary accounts report a skip."""
+    if is_admin is None:
+        import ctypes
+        is_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
+    if is_admin:
+        return
+    if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+        test.fail("Windows CI requires an elevated token for owner qualification")
+    test.skipTest("Requires an elevated disposable Windows test token")
+
+
+class OwnerFixtureApplicabilityTests(unittest.TestCase):
+    def test_ordinary_nonadmin_is_explicitly_skipped(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}):
+            with self.assertRaises(unittest.SkipTest):
+                require_elevated_owner_fixture(self, is_admin=False)
+
+    def test_nonadmin_ci_is_failed_not_skipped(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
+            with self.assertRaisesRegex(AssertionError, "CI requires an elevated token"):
+                require_elevated_owner_fixture(self, is_admin=False)
+
+    def test_elevated_ci_exercises_the_fixture(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
+            require_elevated_owner_fixture(self, is_admin=True)
+
+
 @unittest.skipUnless(os.name == "nt" and DRIVER, "Actual Windows driver required")
 class WindowsFixtureOwnerTests(unittest.TestCase):
     def test_explicit_fixture_protection_changes_owner_but_driver_never_does(self):
+        require_elevated_owner_fixture(self)
         with tempfile.TemporaryDirectory(
             prefix="native-fixture-owner-",
             dir=os.environ.get("CONSTELLATION_NATIVE_TEST_ROOT"),
@@ -46,7 +76,8 @@ class WindowsFixtureOwnerTests(unittest.TestCase):
             administrator = "S-1-5-32-544"
             # The test must establish the exact faulty fixture condition even
             # when this Python version already makes current-user-owned folders.
-            # An inability to create it is a failed qualification, never a skip.
+            # Once the elevated applicability check passes, an inability to
+            # create it is a failed qualification, never a skip.
             try:
                 windows_policy(root, owner_sid=administrator)
             except OSError as error:
