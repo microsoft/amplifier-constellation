@@ -79,7 +79,7 @@ pub fn current_user_sid() -> Result<String> {
 }
 #[cfg(windows)]
 fn private_permissions(path: &Path, _directory: bool) -> Result<()> {
-    use std::{os::windows::ffi::OsStrExt, ptr};
+    use std::ptr;
     use windows_sys::Win32::{
         Foundation::LocalFree,
         Security::{
@@ -90,6 +90,7 @@ fn private_permissions(path: &Path, _directory: bool) -> Result<()> {
         },
     };
     let sid = current_user_sid()?;
+    let wide = wide_path(path)?;
     unsafe {
         let sddl: Vec<u16> = format!("D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;{sid})")
             .encode_utf16()
@@ -105,17 +106,16 @@ fn private_permissions(path: &Path, _directory: bool) -> Result<()> {
             ) != 0,
             "Cannot create private storage policy"
         );
-        let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
         let result = SetFileSecurityW(
             wide.as_ptr(),
             DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
             descriptor,
         );
+        let error = (result == 0).then(std::io::Error::last_os_error);
         LocalFree(descriptor);
-        ensure!(
-            result != 0,
-            "Cannot restrict application storage to this Windows user"
-        );
+        if let Some(error) = error {
+            return Err(error).context("Cannot restrict application storage to this Windows user");
+        }
     }
     Ok(())
 }
@@ -251,10 +251,26 @@ impl Drop for PrivateSecurity {
 #[cfg(windows)]
 fn wide_path(path: &Path) -> Result<Vec<u16>> {
     use std::os::windows::ffi::OsStrExt;
-    let mut path: Vec<u16> = path.as_os_str().encode_wide().collect();
-    ensure!(!path.contains(&0), "Private path contains a null character");
-    path.push(0);
-    Ok(path)
+    // std::fs accepts long paths, but direct Win32 calls still need their
+    // extended-length form. Resolve relative/dot components without following
+    // links or requiring a not-yet-created destination to exist.
+    let absolute = std::path::absolute(path)?;
+    let raw: Vec<u16> = absolute.as_os_str().encode_wide().collect();
+    ensure!(!raw.contains(&0), "Private path contains a null character");
+    let verbatim: Vec<u16> = r"\\?\".encode_utf16().collect();
+    let device: Vec<u16> = r"\\.\".encode_utf16().collect();
+    let mut native = if raw.starts_with(&verbatim) || raw.starts_with(&device) {
+        raw
+    } else if raw.starts_with(&[b'\\' as u16, b'\\' as u16]) {
+        r"\\?\UNC\"
+            .encode_utf16()
+            .chain(raw.into_iter().skip(2))
+            .collect()
+    } else {
+        verbatim.into_iter().chain(raw).collect()
+    };
+    native.push(0);
+    Ok(native)
 }
 #[cfg(windows)]
 pub(crate) fn create_private_directory(path: &Path) -> std::io::Result<()> {
@@ -306,12 +322,11 @@ fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
 }
 #[cfg(windows)]
 fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
-    use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::Storage::FileSystem::{
         MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
     };
-    let from: Vec<u16> = from.as_os_str().encode_wide().chain(Some(0)).collect();
-    let to: Vec<u16> = to.as_os_str().encode_wide().chain(Some(0)).collect();
+    let from = wide_path(from)?;
+    let to = wide_path(to)?;
     let flags = MOVEFILE_WRITE_THROUGH
         | if create_only {
             0
