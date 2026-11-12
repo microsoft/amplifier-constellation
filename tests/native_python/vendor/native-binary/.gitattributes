@@ -1,0 +1,2 @@
+# Preserve the exact source-pinned inspector bytes on Windows and Unix.
+* -text

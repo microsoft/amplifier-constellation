@@ -26,6 +26,21 @@ jobs:
         with:
           python-version: '3.13'
       - run: rustup toolchain install 1.93.0 --profile minimal --component rustfmt --component clippy
+      - name: Keep the Windows driver independent of the Visual C++ redistributable
+        if: runner.os == 'Windows'
+        run: |
+          python - <<'PY'
+          import os, subprocess
+          host = next(line.removeprefix('host: ') for line in subprocess.check_output(['rustc', '+1.93.0', '-vV'], text=True).splitlines() if line.startswith('host: '))
+          expected = {'X64': 'x86_64-pc-windows-msvc', 'ARM64': 'aarch64-pc-windows-msvc'}[os.environ['RUNNER_ARCH']]
+          if host != expected:
+              raise SystemExit(f'Unexpected Windows Rust host: {host}; expected {expected}')
+          # Explicit host target keeps these flags off build scripts/proc macros.
+          # This remains the debug build executed by all qualification below.
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('CARGO_BUILD_TARGET='+host+'\n')
+              output.write('RUSTFLAGS=-C target-feature=+crt-static\n')
+          PY
       - name: Format and lint the serving source
         run: |
           cargo +1.93.0 fmt --manifest-path crates/native-platform/Cargo.toml --check
@@ -44,13 +59,15 @@ jobs:
           python - <<'PY'
           import os, pathlib, subprocess, sys
           suffix = '.exe' if os.name == 'nt' else ''
-          path = pathlib.Path('crates/native-platform-driver/target/debug/constellation-native-driver' + suffix).resolve()
+          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
+          path = (pathlib.Path('crates/native-platform-driver') / target / ('constellation-native-driver' + suffix)).resolve()
+          subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(path), '--output', 'native-installation-result.json'], check=True)
           env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable)
           subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('CONSTELLATION_NATIVE_DRIVER='+str(path)+'\n')
               output.write('PYTHON='+sys.executable+'\n')
-              fixture = pathlib.Path('crates/native-platform/target/debug/examples/windows_service_fixture' + suffix).resolve()
+              fixture = (pathlib.Path('crates/native-platform') / target / 'examples' / ('windows_service_fixture' + suffix)).resolve()
               output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
           PY
       - name: Prepare disposable Linux user service manager
@@ -102,19 +119,15 @@ jobs:
             native-tree-scale.log
           if-no-files-found: warn
       - name: Record the executed native artifact and target
-        run: |
-          python - <<'PY'
-          import hashlib, json, os, pathlib, platform, subprocess
-          suffix = '.exe' if os.name == 'nt' else ''
-          binary = pathlib.Path('crates/native-platform-driver/target/debug/constellation-native-driver' + suffix)
-          receipt = {'source':subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(), 'os':platform.system(), 'architecture':platform.machine(), 'driver_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(), 'production_operations':False}
-          pathlib.Path('native-installation-result.json').write_text(json.dumps(receipt, indent=2)+'\n')
-          PY
+        run: >-
+          python tests/native_python/inspect_driver.py
+          --driver "$CONSTELLATION_NATIVE_DRIVER"
+          --output native-installation-result.json
+          --verify
       - uses: actions/upload-artifact@v4
         with:
           name: native-installation-${{ matrix.runner }}
           path: |
             native-installation-result.json
-            crates/native-platform-driver/target/debug/constellation-native-driver
-            crates/native-platform-driver/target/debug/constellation-native-driver.exe
+            ${{ env.CONSTELLATION_NATIVE_DRIVER }}
           if-no-files-found: error
