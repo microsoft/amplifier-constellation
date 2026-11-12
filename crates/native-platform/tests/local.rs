@@ -81,29 +81,86 @@ fn unix_private_permissions_and_symlink_refusal() {
 #[cfg(windows)]
 #[test]
 fn windows_private_dacl_survives_atomic_replacement() {
-    use std::process::Command;
+    use std::{collections::BTreeSet, os::windows::ffi::OsStrExt, ptr};
+    use windows_sys::Win32::{
+        Foundation::LocalFree,
+        Security::{
+            ACCESS_ALLOWED_ACE, Authorization::ConvertSidToStringSidW, DACL_SECURITY_INFORMATION,
+            GetAce, GetFileSecurityW, GetSecurityDescriptorControl, GetSecurityDescriptorDacl,
+            INHERITED_ACE, SE_DACL_PROTECTED,
+        },
+        Storage::FileSystem::FILE_ALL_ACCESS,
+    };
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("private folder").join("secret");
     private_create(&path, b"first").unwrap();
     private_write(&path, b"second").unwrap();
-    let output = Command::new("powershell.exe")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            "(Get-Acl -LiteralPath $env:NATIVE_TEST_PATH).Sddl",
-        ])
-        .env("NATIVE_TEST_PATH", &path)
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    let text = String::from_utf8_lossy(&output.stdout);
-    let dacl = text.split("D:").nth(1).unwrap();
-    assert!(dacl.starts_with('P'), "{text}");
-    assert!(dacl.contains(&current_user_sid().unwrap()), "{text}");
-    assert!(dacl.contains(";;;SY)"), "{text}");
-    for principal in ["WD", "AU", "BU", "BA"] {
-        assert!(!dacl.contains(&format!(";;;{principal})")), "{text}");
+    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    unsafe {
+        // Inspect native SIDs, not SDDL display aliases (e.g. LA for the current
+        // runner's built-in Administrator account). Exactly user + SYSTEM.
+        let mut needed = 0;
+        GetFileSecurityW(
+            wide.as_ptr(),
+            DACL_SECURITY_INFORMATION,
+            ptr::null_mut(),
+            0,
+            &mut needed,
+        );
+        assert!(needed > 0);
+        let mut storage = vec![0_usize; (needed as usize).div_ceil(size_of::<usize>())];
+        let descriptor = storage.as_mut_ptr().cast();
+        assert_ne!(
+            GetFileSecurityW(
+                wide.as_ptr(),
+                DACL_SECURITY_INFORMATION,
+                descriptor,
+                needed,
+                &mut needed
+            ),
+            0
+        );
+        let mut control = 0;
+        let mut revision = 0;
+        assert_ne!(
+            GetSecurityDescriptorControl(descriptor, &mut control, &mut revision),
+            0
+        );
+        assert_ne!(control & SE_DACL_PROTECTED, 0);
+        let mut present = 0;
+        let mut defaulted = 0;
+        let mut acl = ptr::null_mut();
+        assert_ne!(
+            GetSecurityDescriptorDacl(descriptor, &mut present, &mut acl, &mut defaulted),
+            0
+        );
+        assert_ne!(present, 0);
+        assert!(!acl.is_null());
+        assert_eq!((*acl).AceCount, 2);
+        let mut principals = BTreeSet::new();
+        for index in 0..(*acl).AceCount {
+            let mut raw = ptr::null_mut();
+            assert_ne!(GetAce(acl, u32::from(index), &mut raw), 0);
+            let ace = &*raw.cast::<ACCESS_ALLOWED_ACE>();
+            assert_eq!(ace.Header.AceType, 0, "ACCESS_ALLOWED_ACE required");
+            assert_eq!(u32::from(ace.Header.AceFlags) & INHERITED_ACE, 0);
+            assert_eq!(ace.Mask, FILE_ALL_ACCESS);
+            let mut text = ptr::null_mut();
+            let sid = ptr::addr_of!(ace.SidStart).cast_mut().cast();
+            assert_ne!(ConvertSidToStringSidW(sid, &mut text), 0);
+            let mut len = 0;
+            while *text.add(len) != 0 {
+                len += 1;
+            }
+            principals.insert(String::from_utf16_lossy(std::slice::from_raw_parts(
+                text, len,
+            )));
+            LocalFree(text.cast());
+        }
+        assert_eq!(
+            principals,
+            BTreeSet::from([current_user_sid().unwrap(), "S-1-5-18".to_owned()])
+        );
     }
 }
 #[test]
