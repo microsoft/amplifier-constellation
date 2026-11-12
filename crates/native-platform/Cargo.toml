@@ -1,0 +1,20 @@
+[package]
+name = "amplifier-native-platform"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+publish = false
+description = "Local per-user storage, startup and desktop launch support for Constellation applications"
+repository = "https://github.com/microsoft/amplifier-constellation"
+
+[dependencies]
+anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
+url = "2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Memory", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }

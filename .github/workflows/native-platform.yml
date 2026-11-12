@@ -1,0 +1,38 @@
+name: Native application platform
+on:
+  pull_request:
+    paths: ['crates/native-platform/**', '.github/workflows/native-platform.yml']
+  push:
+    branches: [main]
+    paths: ['crates/native-platform/**', '.github/workflows/native-platform.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: crates/native-platform
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install 1.93.0 --profile minimal --component rustfmt --component clippy
+      - run: cargo +1.93.0 fmt --check
+      - run: cargo +1.93.0 test --locked
+      - run: cargo +1.93.0 clippy --locked --all-targets -- -D warnings
+      - name: Prepare disposable Linux user service manager
+        if: runner.os == 'Linux'
+        run: |
+          sudo loginctl enable-linger "$USER"
+          sudo systemctl start "user@$(id -u).service"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+      - name: Register, inspect and remove both current-user startup profiles
+        env:
+          CONSTELLATION_STARTUP_SMOKE: '1'
+        run: cargo +1.93.0 test --locked --test platform_startup -- --ignored --nocapture
