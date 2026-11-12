@@ -32,6 +32,22 @@ after enqueue is uncertain delivery, not permission to replay it. A terminal
 response still establishes only the outcome reported by that endpoint, not
 completion of external work.
 
+For terminal byte-stream cleanup, `Connection::close_and_drain()` seals all
+`Sender` clones, lets the SDK flush accepted output and shut down the writer,
+then discards remaining input until EOF. Consumers stop application handling
+when they begin closing. Queued or in-flight SDK callbacks can finish before
+foreground shutdown is observed, and accepted events can remain readable after
+cancelling the wait. Further application delivery, response correlation or
+session metadata handling is not promised. Already cancelled requests remain
+subject to SDK cancellation. No new
+protocol messages or retirement acknowledgment are introduced.
+
+Cancelling this wait leaves shutdown in progress; another call can await it.
+Dropping the connection still aborts immediately. The application owns the finite
+deadline, child-process disposal and actual child wait; input EOF is not process
+exit or proof that auxiliary work completed. Message-backed connections reject
+terminal close without changing their existing channel behavior.
+
 Revisit these wrappers when updating the upstream SDK. Replace stream adapters,
 queues, or flush tracking when upstream offers the equivalent integration.
 Keep protocol framing, ID allocation, correlation, cancellation, and dispatch

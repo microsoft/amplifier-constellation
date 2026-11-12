@@ -1,7 +1,8 @@
 use amplifier_acp_connection::Connection;
+use futures_util::FutureExt;
 use serde_json::{Value, json};
 use std::time::Duration;
-use tokio::io::{AsyncWriteExt, duplex, split};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, duplex, split};
 
 async fn pair() -> (Connection, Connection) {
     let (a, b) = duplex(65536);
@@ -145,4 +146,161 @@ async fn endpoint_rejects_supplied_request_ids_and_replies_once() {
     agent.sender.send(json!({"id":id,"result":{}})).unwrap();
     assert!(agent.sender.send(json!({"id":id,"result":{}})).is_err());
     assert_eq!(next(&mut client).await["id"], id);
+}
+
+#[tokio::test]
+async fn terminal_close_flushes_fifo_seals_clones_and_drains_reverse_output() {
+    let (a, b) = duplex(8);
+    let (ar, aw) = split(a);
+    let (br, mut bw) = split(b);
+    let mut client = Connection::client(ar, aw, 4096).await.unwrap();
+    let sender = client.sender.clone();
+    let peer = tokio::spawn(async move {
+        bw.write_all(
+            b"{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"_test/callback\",\"params\":{}}\n",
+        )
+        .await
+        .unwrap();
+        let mut lines = BufReader::new(br).lines();
+        for n in 0..32 {
+            let line = lines.next_line().await.unwrap().unwrap();
+            let message: Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(message["params"]["n"], n);
+        }
+        let response: Value =
+            serde_json::from_str(&lines.next_line().await.unwrap().unwrap()).unwrap();
+        assert_eq!(response["id"], 7);
+        assert_eq!(response["result"]["accepted"], true);
+        assert!(lines.next_line().await.unwrap().is_none());
+        // The peer keeps output alive after observing physical input EOF.
+        // Several pipe capacities must be drained without further dispatch.
+        for _ in 0..32 {
+            bw.write_all(b"{\"jsonrpc\":\"2.0\",\"method\":\"_test/late\",\"params\":{}}\n")
+                .await
+                .unwrap();
+        }
+        bw.shutdown().await.unwrap();
+    });
+    assert_eq!(next(&mut client).await["id"], 7);
+    for n in 0..32 {
+        sender.notify("_test/ordered", json!({"n":n})).unwrap();
+    }
+    sender
+        .send(json!({"id":7,"result":{"accepted":true}}))
+        .unwrap();
+    let mut closing = Box::pin(client.close_and_drain());
+    assert!(closing.as_mut().now_or_never().is_none());
+    assert!(sender.notify("_test/no", json!({})).is_err());
+    assert!(sender.request("_test/no", json!({})).is_err());
+    assert!(sender.call("_test/no", json!({})).await.is_err());
+    assert!(sender.send(json!({"id":7,"result":{}})).is_err());
+    tokio::time::timeout(Duration::from_secs(2), closing)
+        .await
+        .unwrap()
+        .unwrap();
+    peer.await.unwrap();
+    assert!(client.recv().await.unwrap().is_none());
+    client.close_and_drain().await.unwrap();
+}
+
+#[tokio::test]
+async fn cancelled_close_can_resume_and_input_eof_does_not_cut_off_flush() {
+    let (a, b) = duplex(8);
+    let (ar, aw) = split(a);
+    let (mut br, mut bw) = split(b);
+    let mut client = Connection::client(ar, aw, 4096).await.unwrap();
+    client.sender.request("_test/pending", json!({})).unwrap();
+    for n in 0..32 {
+        client
+            .sender
+            .notify("_test/ordered", json!({"n":n}))
+            .unwrap();
+    }
+    assert!(client.close_and_drain().now_or_never().is_none());
+    assert!(client.sender.clone().notify("_test/no", json!({})).is_err());
+    // Incoming EOF arrives while accepted writes are held by backpressure.
+    bw.shutdown().await.unwrap();
+    let peer = async move {
+        let mut bytes = Vec::new();
+        br.read_to_end(&mut bytes).await.unwrap();
+        let messages: Vec<Value> = String::from_utf8(bytes)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        assert_eq!(messages.len(), 33);
+        assert_eq!(messages[0]["method"], "_test/pending");
+        for (n, message) in messages[1..].iter().enumerate() {
+            assert_eq!(message["params"]["n"], n);
+        }
+    };
+    tokio::time::timeout(Duration::from_secs(2), async {
+        let (closed, ()) = tokio::join!(client.close_and_drain(), peer);
+        closed.unwrap();
+    })
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn drop_still_aborts_a_blocked_terminal_close() {
+    let (a, b) = duplex(8);
+    let (ar, aw) = split(a);
+    let (mut br, _bw) = split(b);
+    let mut client = Connection::client(ar, aw, 4096).await.unwrap();
+    client
+        .sender
+        .notify("_test/blocked", json!({"text":"x".repeat(3000)}))
+        .unwrap();
+    assert!(client.close_and_drain().now_or_never().is_none());
+    let mut prefix = [0; 8];
+    tokio::time::timeout(Duration::from_secs(2), br.read_exact(&mut prefix))
+        .await
+        .unwrap()
+        .unwrap();
+    let sender = client.sender.clone();
+    drop(client);
+    let mut bytes = Vec::new();
+    tokio::time::timeout(Duration::from_secs(2), br.read_to_end(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        bytes.len() < 3000,
+        "Drop must abort rather than finish the blocked output"
+    );
+    assert!(sender.notify("_test/no", json!({})).is_err());
+}
+
+#[tokio::test]
+async fn message_connections_reject_close_without_sealing_channels() {
+    for agent in [false, true] {
+        let (incoming, rx) = tokio::sync::mpsc::channel(8);
+        let (tx, mut outgoing) = tokio::sync::mpsc::channel(8);
+        let mut connection = if agent {
+            Connection::agent_messages(
+                json!({"jsonrpc":"2.0","method":"_test/first","params":{}}),
+                rx,
+                tx,
+            )
+            .await
+            .unwrap()
+        } else {
+            Connection::client_messages(rx, tx).await.unwrap()
+        };
+        if agent {
+            assert_eq!(next(&mut connection).await["method"], "_test/first");
+        }
+        assert!(connection.close_and_drain().await.is_err());
+        connection
+            .sender
+            .notify("_test/still_open", json!({}))
+            .unwrap();
+        assert_eq!(outgoing.recv().await.unwrap()["method"], "_test/still_open");
+        incoming
+            .send(json!({"jsonrpc":"2.0","method":"_test/incoming","params":{}}))
+            .await
+            .unwrap();
+        assert_eq!(next(&mut connection).await["method"], "_test/incoming");
+    }
 }
