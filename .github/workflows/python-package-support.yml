@@ -13,7 +13,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, macos-15, windows-2025]
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -23,3 +35,15 @@ jobs:
         with:
           python-version: '3.13'
       - run: python packaging/python/test_support.py
+      - name: Verify the exact private interpreter uses normal public HTTPS trust
+        run: >-
+          python packaging/python/check_default_https.py
+          --target "${{ matrix.target }}"
+          --cache "${{ runner.temp }}/private-python-archives"
+          --output "private-python-https.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-python-https-${{ matrix.target }}
+          path: private-python-https.json
+          if-no-files-found: error
