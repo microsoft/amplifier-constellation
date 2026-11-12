@@ -64,9 +64,14 @@ jobs:
           path = (pathlib.Path('crates/native-platform-driver') / target / ('constellation-native-driver' + suffix)).resolve()
           fixture = (pathlib.Path('crates/native-platform') / target / 'examples' / ('windows_service_fixture' + suffix)).resolve()
           operation = (pathlib.Path('crates/native-platform') / target / 'examples' / ('operation_lifetime_fixture' + suffix)).resolve()
+          registration_tests = [p.resolve() for p in (pathlib.Path('crates/native-platform') / target / 'deps').glob('native_registration-*' + suffix) if p.is_file() and os.access(p, os.X_OK) and not p.name.endswith('.d')]
+          if len(registration_tests) != 1:
+              raise SystemExit(f'Expected one actual native registration test executable: {registration_tests}')
+          registration = registration_tests[0]
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(path), '--output', 'native-installation-result.json'], check=True)
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(fixture), '--output', 'native-service-fixture-result.json'], check=True)
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(operation), '--output', 'native-operation-fixture-result.json'], check=True)
+          subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(registration), '--output', 'native-registration-test-result.json'], check=True)
           env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable, NATIVE_SERVICE_FIXTURE=str(fixture))
           subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
           with open(os.environ['GITHUB_ENV'], 'a') as output:
@@ -74,6 +79,7 @@ jobs:
               output.write('PYTHON='+sys.executable+'\n')
               output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
               output.write('NATIVE_OPERATION_LIFETIME_FIXTURE='+str(operation)+'\n')
+              output.write('NATIVE_REGISTRATION_TESTS='+str(registration)+'\n')
           PY
       - name: Prepare disposable Linux user service manager
         if: runner.os == 'Linux'
@@ -98,16 +104,19 @@ jobs:
           export NATIVE_OPERATION_TEST_ROOT="$GITHUB_WORKSPACE/native-operation-evidence"
           cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test operation_lifetime -- --ignored --nocapture 2>&1 | tee native-operation-lifetime.log
           python tests/native_python/inspect_driver.py --driver "$NATIVE_OPERATION_LIFETIME_FIXTURE" --output native-operation-fixture-result.json --verify
+          python tests/native_python/inspect_driver.py --driver "$NATIVE_REGISTRATION_TESTS" --output native-registration-test-result.json --verify
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-operation-lifetime-${{ matrix.runner }}
           path: |
             native-operation-fixture-result.json
+            native-registration-test-result.json
             native-operation-lifetime-result.json
             native-operation-lifetime.log
             native-operation-evidence/
             ${{ env.NATIVE_OPERATION_LIFETIME_FIXTURE }}
+            ${{ env.NATIVE_REGISTRATION_TESTS }}
           if-no-files-found: warn
       - name: Actual fresh no-start registration and controller identity through Python
         env:

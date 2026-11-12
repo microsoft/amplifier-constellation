@@ -131,7 +131,11 @@ fn checked_retirement_preserves_active_changed_and_partial_states() {
         assert!(installation::manager_registration_exists(&manager_only).unwrap());
     }
     let definition = std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap();
-    for change in ["args", "exe", "cwd", "description", "autostart"] {
+    let mut changes = vec!["args", "exe", "cwd", "autostart"];
+    if !cfg!(target_os = "macos") {
+        changes.push("description"); // LaunchAgent definitions do not encode this diagnostic field.
+    }
+    for change in changes {
         let mut changed = fixture.profile.clone();
         match change {
             "args" => changed.args.push("different".into()),

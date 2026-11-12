@@ -291,12 +291,22 @@ mod fixture {
                     &plan.root.join("u-entry.json"),
                     &json!({"identity":identity,"mode":if plan.detached {"detached"} else {"os-managed"}}),
                 )?;
+                let parent = ready(plan, "a")?;
                 action(plan, "a", ServiceAction::Stop, &snapshot(plan, "a", true)?)?;
                 let stopped = snapshot(plan, "a", false)?;
+                // A settled manager is not itself proof the application exited.
+                // Capture the gap, then observe this exact generation without a
+                // signal or cooperative cleanup that could manufacture success.
+                write(
+                    &plan.root.join("a-manager-inactive.json"),
+                    &json!({"parent":stopped,"identity":parent["identity"],
+                        "generation_still_matches":process::matches(&parent["identity"])?}),
+                )?;
+                let parent_exit = wait_exited(plan, "a", &parent["identity"])?;
                 ensure!(process::matches(&identity)?, "Worker identity changed");
                 write(
                     &plan.root.join("u-after-parent-stop.json"),
-                    &json!({"identity":identity,"parent":stopped}),
+                    &json!({"identity":identity,"parent":stopped,"parent_exit":parent_exit}),
                 )?;
                 register(plan, "b")?;
                 action(
@@ -318,6 +328,21 @@ mod fixture {
             }
             _ => bail!("Unknown fixed fixture role"),
         }
+    }
+    fn wait_exited(plan: &Plan, role: &str, identity: &Value) -> Result<Value> {
+        let started = Instant::now();
+        wait(
+            plan,
+            &format!("captured {role} process generation exit"),
+            25,
+            || {
+                if process::matches(identity)? {
+                    return Ok(None);
+                }
+                Ok(Some(json!({"identity":identity,"exited":true,
+                "elapsed_ms":started.elapsed().as_millis()})))
+            },
+        )
     }
     fn replacement_advances(plan: &Plan, expected: &Value) -> Result<Value> {
         let initial = read(&plan.root.join("b-heartbeat.json"))?;
@@ -374,9 +399,18 @@ mod fixture {
                 Ok((!process::matches(&worker["identity"])?)
                     .then(|| json!({"worker_completed":false,"worker_survived_parent_stop":false})))
             })?;
+            let parent_exited = !process::matches(&parent["identity"])?;
+            let mut result = result;
+            result["parent_generation_exited"] = json!(parent_exited);
+            result["worker_generation_exited"] = json!(!process::matches(&worker["identity"])?);
+            if !parent_exited {
+                // A manager stop acknowledgement cannot establish the outcome
+                // of a worker relative to an application that has not exited.
+                result["worker_survived_parent_stop"] = Value::Null;
+            }
             #[cfg(target_os = "linux")]
             ensure!(
-                result["worker_survived_parent_stop"] == false,
+                parent_exited && result["worker_survived_parent_stop"] == false,
                 "Detached Linux control did not expose the old cgroup boundary"
             );
             return Ok(
@@ -393,17 +427,14 @@ mod fixture {
             "Original parent generation remains"
         );
         snapshot(plan, "u", false)?;
-        ensure!(
-            !process::matches(&worker["identity"])?,
-            "Worker did not exit"
-        );
+        let worker_exit = wait_exited(plan, "u", &worker["identity"])?;
         let before = replacement_advances(plan, &completion["replacement"]["identity"])?;
         let retirement = retired(plan, "u")?;
         let after = replacement_advances(plan, &completion["replacement"]["identity"])?;
         snapshot(plan, "b", true)?;
         Ok(
             json!({"mode":"os-managed","parent":parent,"worker":worker,"completion":completion,
-            "worker_retirement":retirement,"replacement_before_retirement":before,"replacement_after_retirement":after,
+            "worker_exit":worker_exit,"worker_retirement":retirement,"replacement_before_retirement":before,"replacement_after_retirement":after,
             "worker_survived_parent_stop":true,"replacement_survived_worker_exit_and_retirement":true}),
         )
     }

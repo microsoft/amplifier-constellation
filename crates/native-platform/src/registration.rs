@@ -269,6 +269,9 @@ fn prepare_parent(path: &Path) -> Result<()> {
 /// Prove that an already observed service launches this protected fixed profile.
 /// This is read-only: it does not register, reload, enable, or repair anything.
 /// Independent enabled/masked state is deliberately not normalized away.
+/// Compare fields represented by the native profile. The LaunchAgent template
+/// has no diagnostic description field; changing that string leaves its native
+/// semantics unchanged. Command, arguments, cwd and start behavior still match.
 pub fn profile_matches(
     service: &Service,
     profile: &Registration,
@@ -595,6 +598,26 @@ mod tests {
                 .unwrap()
                 .contains("<LogonTrigger>")
         );
+    }
+    #[test]
+    fn launchagent_diagnostic_description_is_not_a_native_profile_field() {
+        let (_temp, mut profile) = fixture();
+        let mut service = Service {
+            manager: ServiceManager::LaunchAgent,
+            name: "diagnostic-template-test".into(),
+            definition_path: None,
+        };
+        let plist = unix_definition(&service, &profile).unwrap();
+        service.manager = ServiceManager::SystemdUser;
+        let systemd = unix_definition(&service, &profile).unwrap();
+        let task = task_xml(&service, &profile, "S-1-5-21-test").unwrap();
+        profile.description.push_str(" diagnostic change");
+        assert_ne!(unix_definition(&service, &profile).unwrap(), systemd);
+        assert_ne!(task_xml(&service, &profile, "S-1-5-21-test").unwrap(), task);
+        service.manager = ServiceManager::LaunchAgent;
+        assert_eq!(unix_definition(&service, &profile).unwrap(), plist);
+        profile.args.push("different execution argument".into());
+        assert_ne!(unix_definition(&service, &profile).unwrap(), plist);
     }
     #[test]
     fn windows_argument_escaping_keeps_empty_quotes_and_trailing_slashes() {
