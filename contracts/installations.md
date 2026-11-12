@@ -81,6 +81,24 @@ uncertain action.
    edits through supported conditional mutations, not stale whole-registry writes;
    an old setup grant cannot re-enable a subsequently disabled provider.
 
+## Native single-computer setup
+
+The locally hosted Constellation family must work together on one computer:
+Windows 11 on x64 or ARM64, macOS on Intel or Apple silicon, and Linux on x64 or
+ARM64. Ordinary setup must not require WSL, a separate Linux machine, developer
+tools or a user-installed language runtime. Owners package or privately install
+their runtime dependencies and provide native setup, startup, updates and recovery.
+Additional machines, containers and fleet clients remain optional.
+
+External services and independently supplied engines keep their account,
+licensing, network and platform requirements. Show these accurately before setup;
+do not silently substitute an engine, account or compatibility layer. A native
+support claim requires the actual package and combined journey on the named OS
+and architecture, including ordinary user launch, connection, restart and saved
+state recovery. A successful cross-build alone is not that evidence. Components
+publish their verified OS floors and exceptions; this agreement states the target,
+not that every component has already reached it.
+
 Concrete capabilities, commands, APIs and lifecycle ordering belong to Instance's
 [updates](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/updates.md)
 and [saved connections](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/service-connections.md),
@@ -93,6 +111,6 @@ concurrent edits and failures after restoration starts; count effects and inspec
 new observations. Unsupported Add has no dead control. Failed checks remain visible.
 Measure administrator effort alongside user effort.
 
-**Left open:** Panel layout, hosting technology and platform-specific setup. No
+**Left open:** Panel layout, packaging and platform-specific setup mechanics. No
 central provisioning service, arbitrary host-command API or new ACP behavior is
 required.

@@ -71,6 +71,11 @@ Companion, within the access allowed there.
 - **Keep the parts independently useful.** Installations own their setup, state
   and recovery. Engine choice, machine and release can vary; a central fleet
   service is optional.
+- **Start on the computer people have.** One personal computer can host a useful
+  constellation through ordinary app setup. Add other machines when useful,
+  without requiring a developer environment or a separate Linux host. The
+  [installation agreement](../contracts/installations.md#native-single-computer-setup)
+  defines the native platform commitment.
 - **Share capabilities, preserve boundaries.** Familiar identity does not merge
   private conversations or grant permission to act. Services expose dependable
   interfaces that different experiences can reuse.
