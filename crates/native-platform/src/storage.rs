@@ -186,13 +186,28 @@ fn private_permissions(path: &Path, _directory: bool) -> Result<()> {
 
 /// Atomically replace an application-owned file after durably writing a protected temp file.
 pub fn private_write(path: &Path, bytes: &[u8]) -> Result<()> {
-    write_atomic(path, bytes, false)
+    write_atomic(path, bytes, Publication::ReplaceClosed)
+}
+/// Publish a protected data snapshot while existing readers retain the old file.
+///
+/// On Windows, readers must allow delete sharing. A reader denying that access,
+/// a read-only destination, or a failed flush remains an error. A flush error
+/// after publication is uncertain: callers must inspect their durable operation,
+/// not assume the old file remains. This is for data journals, not executable or
+/// directory replacement; use the existing installation lifecycle for those.
+pub fn private_write_data(path: &Path, bytes: &[u8]) -> Result<()> {
+    write_atomic(path, bytes, Publication::ReplaceData)
 }
 /// Atomically create a protected file; an existing destination is never overwritten.
 pub fn private_create(path: &Path, bytes: &[u8]) -> Result<()> {
-    write_atomic(path, bytes, true)
+    write_atomic(path, bytes, Publication::CreateOnly)
 }
-fn write_atomic(path: &Path, bytes: &[u8], create_only: bool) -> Result<()> {
+enum Publication {
+    CreateOnly,
+    ReplaceClosed,
+    ReplaceData,
+}
+fn write_atomic(path: &Path, bytes: &[u8], publication: Publication) -> Result<()> {
     let parent = path
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
@@ -209,7 +224,11 @@ fn write_atomic(path: &Path, bytes: &[u8], create_only: bool) -> Result<()> {
         file.write_all(bytes)?;
         file.sync_all()?;
         drop(file);
-        commit(&temporary, path, create_only)?;
+        match publication {
+            Publication::CreateOnly => commit(&temporary, path, true)?,
+            Publication::ReplaceClosed => commit(&temporary, path, false)?,
+            Publication::ReplaceData => commit_data(&temporary, path)?,
+        }
         #[cfg(unix)]
         File::open(parent)?.sync_all()?;
         Ok(())
@@ -383,6 +402,59 @@ fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
         fs::rename(from, to)?;
     }
     Ok(())
+}
+
+#[cfg(not(windows))]
+fn commit_data(from: &Path, to: &Path) -> Result<()> {
+    commit(from, to, false)
+}
+
+#[cfg(windows)]
+fn commit_data(from: &Path, to: &Path) -> Result<()> {
+    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+    use windows_sys::Win32::{
+        Foundation::{GENERIC_READ, GENERIC_WRITE},
+        Storage::FileSystem::{
+            DELETE, FILE_RENAME_INFO, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+            FileRenameInfoEx, SetFileInformationByHandle,
+        },
+    };
+    let destination = wide_path(to)?;
+    let size =
+        std::mem::offset_of!(FILE_RENAME_INFO, FileName) + destination.len() * size_of::<u16>();
+    // The flexible filename must be pointer-aligned and include its UTF-16 NUL;
+    // FileNameLength excludes that NUL. No structure-padding bytes are a filename.
+    let mut buffer = vec![0_usize; size.div_ceil(size_of::<usize>())];
+    let information = buffer.as_mut_ptr().cast::<FILE_RENAME_INFO>();
+    unsafe {
+        // FILE_RENAME_FLAG_REPLACE_IF_EXISTS | FILE_RENAME_FLAG_POSIX_SEMANTICS.
+        // Do not add IGNORE_READONLY_ATTRIBUTE or any permission override.
+        (*information).Anonymous.Flags = 0x1 | 0x2;
+        (*information).FileNameLength = u32::try_from((destination.len() - 1) * 2)?;
+        std::ptr::copy_nonoverlapping(
+            destination.as_ptr(),
+            std::ptr::addr_of_mut!((*information).FileName).cast::<u16>(),
+            destination.len(),
+        );
+    }
+    let source = std::fs::OpenOptions::new()
+        .access_mode(GENERIC_READ | GENERIC_WRITE | DELETE)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+        .open(from)?;
+    if unsafe {
+        SetFileInformationByHandle(
+            source.as_raw_handle(),
+            FileRenameInfoEx,
+            information.cast(),
+            u32::try_from(size)?,
+        )
+    } == 0
+    {
+        return Err(std::io::Error::last_os_error()).context("Cannot publish private data");
+    }
+    source
+        .sync_all()
+        .context("Cannot flush published private data")
 }
 #[cfg(windows)]
 fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
