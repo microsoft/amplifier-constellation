@@ -388,6 +388,13 @@ pub fn task_matches(
     home: &Path,
     expected_sid: &str,
 ) -> Result<bool> {
+    // Scheduler can export the known legacy default logon trigger as an empty
+    // element. Expand only these exact spellings for inspection; all uniqueness
+    // and ownership checks below still apply, and the saved task is untouched.
+    let normalized = document
+        .replace("<LogonTrigger />", "<LogonTrigger></LogonTrigger>")
+        .replace("<LogonTrigger/>", "<LogonTrigger></LogonTrigger>");
+    let document = normalized.as_str();
     // Inspect the Task Scheduler's validated XML without confusing identically
     // named fields in its trigger and principal. Unknown/duplicate structures
     // fail ownership checks; this is not a general-purpose XML parser.
