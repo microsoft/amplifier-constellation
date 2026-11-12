@@ -1,0 +1,25 @@
+name: Private Python package support
+on:
+  pull_request:
+    paths: ['packaging/python/**', '.github/workflows/python-package-support.yml']
+  push:
+    branches: [main]
+    paths: ['packaging/python/**', '.github/workflows/python-package-support.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  support:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python packaging/python/test_support.py
