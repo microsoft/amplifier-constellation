@@ -14,9 +14,9 @@ preparation, execution, coordination and follow-through within their responsibil
 ![Experiences contain conversations connected to independent agent homes, each with an engine inside. Observatory offers a fleet view alongside them; conversation services support shared rooms and quiet huddles.](system-map.svg)
 
 One agent can participate in several conversations; several agents can share a
-conversation. Each keeps its own audience and access rules. The picture explains
-the intended relationships, rather than prescribing a screen or certifying every
-integration.
+conversation. Each conversation keeps its own audience and access rules. The
+picture explains the intended relationships, rather than prescribing a screen
+or certifying every integration.
 
 ## What each part means
 
@@ -45,10 +45,11 @@ it is not a required control center for every interaction.
 
 People give direction through an experience. A connection carries the attributed
 input, relevant permitted context and return destination to the agent's home.
-The home talks to its engine through **ACP**; tools and context are exposed
-through **MCP** or a supported service interface. Results return to the intended
-conversation. Observatory uses installations' management interfaces to observe
-and manage them without taking ownership of their state or permissions.
+The home talks to its engine through the Agent Client Protocol (**ACP**); tools
+and context are exposed through the Model Context Protocol (**MCP**) or a supported
+service interface. Results return to the intended conversation. Observatory uses
+installations' management interfaces to observe and manage them without taking
+ownership of their state or permissions.
 
 The [family agreement](../contracts/composition.md#what-crosses-each-connection)
 defines these boundaries; each serving component owns its exact API.

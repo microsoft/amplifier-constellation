@@ -71,7 +71,8 @@ specific operations.
 
 ## Experience and supporting capability ownership
 
-Companion owns live-call behavior, camera input, shared presentation and result
+[Companion](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/companion-vision.md)
+owns live-call behavior, camera input, shared presentation and result
 return; its intended home is `amplifier-companion`. Conversations retains rooms,
 membership, messages and huddles. Amplifier is one external experience;
 [Amplifier Unified](https://github.com/microsoft/amplifier-unified) owns its
