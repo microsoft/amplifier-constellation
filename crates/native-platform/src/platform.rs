@@ -68,6 +68,29 @@ pub fn hostname() -> String {
 }
 pub fn open_browser(url: &str) -> Result<()> {
     validate_local_url(url)?;
+    launch_browser(url)
+}
+/// Open the application's already configured, validated HTTPS origin.
+/// This is separate from the loopback-only setup browser used by helpers.
+pub fn open_https_browser(url: &str) -> Result<()> {
+    validate_https_origin(url)?;
+    launch_browser(url)
+}
+pub fn validate_https_origin(value: &str) -> Result<()> {
+    let parsed = url::Url::parse(value)?;
+    ensure!(
+        parsed.scheme() == "https"
+            && parsed.host_str().is_some()
+            && parsed.username().is_empty()
+            && parsed.password().is_none()
+            && parsed.path() == "/"
+            && parsed.query().is_none()
+            && parsed.fragment().is_none(),
+        "Use the saved HTTPS Observatory origin without credentials or extra parameters"
+    );
+    Ok(())
+}
+fn launch_browser(url: &str) -> Result<()> {
     #[cfg(windows)]
     let status = Command::new("rundll32.exe")
         .args(["url.dll,FileProtocolHandler", url])

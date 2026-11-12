@@ -171,3 +171,20 @@ fn browser_target_is_local_without_embedded_credentials() {
         assert!(validate_local_url(value).is_err(), "{value}");
     }
 }
+
+#[test]
+fn configured_https_origin_is_separate_from_local_setup() {
+    assert!(validate_https_origin("https://observatory.example:8443/").is_ok());
+    assert!(validate_local_url("https://observatory.example:8443/").is_err());
+    for value in [
+        "http://remote.example/",
+        "file:///tmp/setup",
+        "mailto:user@example.com",
+        "https://user:pass@example.com/",
+        "https://example.com/path",
+        "https://example.com/?token=secret",
+        "https://example.com/#token",
+    ] {
+        assert!(validate_https_origin(value).is_err(), "{value}");
+    }
+}
