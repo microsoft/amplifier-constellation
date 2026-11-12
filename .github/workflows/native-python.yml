@@ -91,6 +91,7 @@ jobs:
         run: >-
           python tests/native_python/run_tree_scale.py
           --output native-tree-scale-result.json
+          --cleanup-timeout 120
           2>&1 | tee native-tree-scale.log
       - uses: actions/upload-artifact@v4
         if: always()

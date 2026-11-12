@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 import uuid
 
 from test_driver import DRIVER, Refused, Session
@@ -63,9 +64,12 @@ class NativeServiceApplicationTests(unittest.TestCase):
             program = root / "application.py"
             program.write_text(
                 "import os,json,pathlib,time\n"
-                "pathlib.Path("
+                "actual=pathlib.Path("
                 + repr(str(actual))
-                + ').write_text(json.dumps({"pid":os.getpid()}))\n'
+                + ")\n"
+                "pending=actual.with_suffix('.pending')\n"
+                'pending.write_text(json.dumps({"pid":os.getpid()}),encoding="utf-8")\n'
+                "os.replace(pending,actual)\n"
                 "time.sleep(120)\n"
             )
             data = {
@@ -121,7 +125,7 @@ class NativeServiceApplicationTests(unittest.TestCase):
                         "Repeat setup may not reload or enable",
                     )
                     session.service_action("controller", "start", stopped)
-                    running = self.wait(session, True)
+                    running = self.wait(session, True, actual=actual)
                     application = running["application"]["identity"]
                     self.assertEqual(
                         application["pid"], json.loads(actual.read_text())["pid"]
@@ -147,12 +151,12 @@ class NativeServiceApplicationTests(unittest.TestCase):
                         session.service_action("controller", "stop", unconfirmed)
                     self.assertTrue(session.process_matches(application))
                     session.private_write("state", "identity.json", original)
-                    running = self.wait(session, True)
+                    running = self.wait(session, True, actual=actual)
                     session.service_action("controller", "stop", running)
                     stopped = self.wait(session, False)
                     self.assertFalse(session.process_matches(application))
                     session.service_action("controller", "start", stopped)
-                    restarted = self.wait(session, True)
+                    restarted = self.wait(session, True, actual=actual)
                     self.assertNotEqual(
                         restarted["application"]["identity"], application
                     )
@@ -196,9 +200,10 @@ class NativeServiceApplicationTests(unittest.TestCase):
                     failure.add_note(f"Disposable service cleanup also failed: {error!r}")
 
     @staticmethod
-    def wait(session, active):
+    def wait(session, active, *, actual=None):
         until = time.monotonic() + 25
         latest = None
+        witness = None
         while time.monotonic() < until:
             try:
                 latest = session.service_snapshot("controller")
@@ -208,11 +213,27 @@ class NativeServiceApplicationTests(unittest.TestCase):
                     and latest["application"]["status"]
                     == ("running" if active else "absent")
                 ):
-                    return latest
+                    if not active or actual is None:
+                        return latest
+                    try:
+                        witness = json.loads(actual.read_text(encoding="utf-8"))
+                    except FileNotFoundError:
+                        witness = "not yet published"
+                    # The supervisor can identify its child before that child
+                    # executes Python and publishes this independent witness.
+                    # An old witness also cannot settle a restarted generation.
+                    if (
+                        isinstance(witness, dict)
+                        and type(witness.get("pid")) is int
+                        and witness["pid"] == latest["application"]["identity"]["pid"]
+                    ):
+                        return latest
             except Exception as error:
                 latest = repr(error)
             time.sleep(0.1)
-        raise AssertionError(f"Native application did not settle: {latest}")
+        raise AssertionError(
+            f"Native application did not settle: {latest}; independent witness: {witness}"
+        )
 
     @staticmethod
     def windows_fixture(action, name):
@@ -346,3 +367,57 @@ class NativeServiceApplicationTests(unittest.TestCase):
                     return
                 time.sleep(0.1)
         raise AssertionError(f"Disposable service descendants did not settle: {latest}")
+
+
+class FixtureWitnessReadinessTests(unittest.TestCase):
+    """Deterministic fixture ordering, not additional native service coverage."""
+
+    class RunningSession:
+        def __init__(self):
+            self.observations = 0
+
+        def service_snapshot(self, name):
+            assert name == "controller"
+            self.observations += 1
+            return {"active": True, "transitioning": False,
+                    "application": {"status": "running", "identity": {"pid": 12345}}}
+
+    def test_child_generation_before_witness_waits_for_independent_pid(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            actual = Path(temporary) / "actual.json"
+            session = self.RunningSession()
+
+            def publish(_):
+                self.assertFalse(actual.exists())
+                actual.write_text(json.dumps({"pid": 12345}), encoding="utf-8")
+
+            with patch(__name__ + ".time.sleep", side_effect=publish) as delay:
+                result = NativeServiceApplicationTests.wait(session, True, actual=actual)
+            self.assertEqual(result["application"]["identity"]["pid"], json.loads(actual.read_text())["pid"])
+            self.assertEqual(session.observations, 2)
+            delay.assert_called_once_with(0.1)
+
+    def test_old_witness_cannot_settle_a_restarted_generation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            actual = Path(temporary) / "actual.json"
+            actual.write_text(json.dumps({"pid": 12344}), encoding="utf-8")
+            session = self.RunningSession()
+            with patch(__name__ + ".time.sleep", side_effect=lambda _: actual.write_text(
+                json.dumps({"pid": 12345}), encoding="utf-8"
+            )) as delay:
+                result = NativeServiceApplicationTests.wait(session, True, actual=actual)
+            self.assertEqual(result["application"]["identity"]["pid"], json.loads(actual.read_text())["pid"])
+            self.assertEqual(session.observations, 2)
+            delay.assert_called_once_with(0.1)
+
+    def test_missing_witness_uses_the_existing_25_second_readiness_deadline(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            actual = Path(temporary) / "actual.json"
+            session = self.RunningSession()
+            with patch(__name__ + ".time.monotonic", side_effect=[0.0, 0.0, 25.0]), \
+                    patch(__name__ + ".time.sleep") as delay:
+                with self.assertRaisesRegex(AssertionError, "independent witness: not yet published"):
+                    NativeServiceApplicationTests.wait(session, True, actual=actual)
+            self.assertEqual(session.observations, 1)
+            delay.assert_called_once_with(0.1)
+            self.assertFalse(actual.exists())

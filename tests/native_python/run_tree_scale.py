@@ -54,13 +54,14 @@ def inventory(root):
     return counts
 
 
-def run(output):
+def run(output, cleanup_timeout):
     record = {
         "schema": 1, "outcome": "error", "production_operations": False,
         "system": platform.system(), "machine": platform.machine(),
         "python_version": platform.python_version(), "python_executable": sys.executable,
         "python_sha256": sha256(sys.executable), "attempted_removals": 0,
-        "qualification": "actual driver, default Session deadline; one representative disposable tree",
+        "qualification": "actual driver, explicit cleanup-only deadline; one representative disposable tree",
+        "cleanup_deadline_seconds": cleanup_timeout,
         "limits": ["Not a universal duration bound or Minecraft full-lifecycle proof",
                    "Cooperating protected-root writers and stable mount topology",
                    "Fixture cleanup after failure is separate from driver settlement"],
@@ -123,7 +124,9 @@ def run(output):
                     record["attempted_removals"] += 1
                     started = time.monotonic()
                     try:
-                        record["result"] = session.tree_remove("stages", "candidate", expected)
+                        record["result"] = session.tree_remove(
+                            "stages", "candidate", expected, timeout=cleanup_timeout
+                        )
                     finally:
                         record["remove_seconds"] = time.monotonic() - started
                     assert record["result"] == {"absent": True}
@@ -133,6 +136,8 @@ def run(output):
                 record["observed_absent"] = not os.path.lexists(root)
                 assert record["observed_absent"]
                 record["within_default_deadline"] = record["remove_seconds"] < record["session_deadline_seconds"]
+                record["within_cleanup_deadline"] = record["remove_seconds"] < cleanup_timeout
+                assert session.timeout == record["session_deadline_seconds"] == 30
                 record["outcome"] = "passed"
             except DriverError as error:
                 record["driver_error"] = {"type": type(error).__name__, "code": error.code, "message": str(error)}
@@ -166,4 +171,6 @@ def run(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    raise SystemExit(run(parser.parse_args().output.resolve()))
+    parser.add_argument("--cleanup-timeout", type=float, default=30)
+    arguments = parser.parse_args()
+    raise SystemExit(run(arguments.output.resolve(), arguments.cleanup_timeout))

@@ -218,7 +218,7 @@ executables supplied by a request.
 | `service_register(name: str)` | `{"created": bool}`; registers a fresh enrolled definition without starting it. |
 | `service_snapshot(name: str)` | Complete [snapshot](SERVICE-SNAPSHOT.md); an observation failure raises rather than manufacturing stopped state. |
 | `tree_inspect(name: str, entry: str)` | Opaque ordinary-directory identity or null; no recursive scan or mutation. |
-| `tree_remove(name: str, entry: str, expected: Mapping)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. |
+| `tree_remove(name: str, entry: str, expected: Mapping, *, timeout: float \| None = None)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. Optional timeout applies only to this call. |
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
 | `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
@@ -312,8 +312,17 @@ settle after transport loss; invocation termination is not proof of no effects.
 Leave the pruning intent unresolved, unwind lost lock ownership, then open a fresh
 Session/lock for read-only reconciliation. Observed absence may settle that same
 intent; a remaining or replaced tree does not authorize automatic redispatch.
-The normal client deadline is unchanged; neither entry count nor successful prior
-timings guarantee completion within it.
+The normal client deadline is unchanged. Python callers may explicitly pass
+`tree_remove(..., timeout=120)` for a cleanup-only response deadline when that
+duration, invocation termination and reconciliation fit within their remaining
+enclosing provider budget. `None` uses the Session's configured timeout (30 seconds
+by default); every other operation and the Session setting remain unchanged.
+The override must be a positive finite number no greater than Python's
+`threading.TIMEOUT_MAX`, is checked before dispatch, and is not a wire request
+field. It covers request writing and response waiting under
+the same Session lock. Expiry terminates that invocation and raises `Unknown`
+without retry; it does not cancel already-dispatched effects. Neither entry count
+nor successful prior timings guarantee completion within the selected deadline.
 
 Tests must distinguish actual OS lifecycle/descendant behavior from fixtures,
 and each of the six target OS/architecture runs from cross-compilation. No live

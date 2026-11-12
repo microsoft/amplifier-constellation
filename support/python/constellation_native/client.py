@@ -403,9 +403,30 @@ class Session:
         error_type = Unknown if mutating else DriverError
         return error_type(code, message)
 
-    def _call(self, op: str, *, mutating: bool = False, **fields: Any) -> Any:
+    def _call(
+        self,
+        op: str,
+        *,
+        mutating: bool = False,
+        _timeout: float | None = None,
+        **fields: Any,
+    ) -> Any:
         # A forked copy may inherit a mutex held by a vanished parent thread.
         self._ensure_current()
+        duration = self.timeout
+        if _timeout is not None:
+            if not isinstance(_timeout, (int, float)) or isinstance(_timeout, bool):
+                raise ValueError("Native driver timeout must be a positive finite number")
+            try:
+                duration = float(_timeout)
+            except OverflowError as error:
+                raise ValueError(
+                    "Native driver timeout must be a positive finite number"
+                ) from error
+            if not math.isfinite(duration) or duration <= 0:
+                raise ValueError("Native driver timeout must be a positive finite number")
+            if duration > threading.TIMEOUT_MAX:
+                raise ValueError("Native driver timeout exceeds the supported wait limit")
         with self._mutex:
             self._ensure_current()
             self._serial += 1
@@ -420,7 +441,7 @@ class Session:
             )
             if len(encoded) > _MAX_FRAME:
                 raise ValueError("Native driver request exceeds its framing limit")
-            deadline = time.monotonic() + self.timeout
+            deadline = time.monotonic() + duration
             written: queue.Queue[Any] = queue.Queue()
 
             def send() -> None:
@@ -541,15 +562,30 @@ class Session:
         """Observe one child of an explicitly enrolled regenerable directory."""
         return self._call("tree.inspect", name=name, entry=entry)
 
-    def tree_remove(self, name: str, entry: str, expected: Mapping[str, Any]) -> Any:
+    def tree_remove(
+        self,
+        name: str,
+        entry: str,
+        expected: Mapping[str, Any],
+        *,
+        timeout: float | None = None,
+    ) -> Any:
         """Remove a selected child under the caller's held installation lock.
 
         Reference selection and durable intent belong to the installation owner.
         Unknown does not permit retry and invalidates Session-held locks on
         transport loss; unwind before opening a fresh reconciliation Session.
+        An explicit positive finite timeout changes only this call's response
+        deadline. Fit it and termination/reconciliation within the caller's
+        remaining enclosing budget; None uses the unchanged Session timeout.
         """
         return self._call(
-            "tree.remove", mutating=True, name=name, entry=entry, expected=expected
+            "tree.remove",
+            mutating=True,
+            _timeout=timeout,
+            name=name,
+            entry=entry,
+            expected=expected,
         )
 
     def exchange_inspect(

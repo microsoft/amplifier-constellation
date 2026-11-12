@@ -71,9 +71,12 @@ reported as skipped, never mount-protection proof.
 
 `run_tree_scale.py` runs once per native target, separately from both unittest
 passes: 58,924 files, 1,064 real links/junctions and 12 nested directories total
-60,000 descendants. It records actual removal time with the unchanged 30-second
-Session deadline, source/driver hashes, independent counts and outside-sentinel
-preservation. Failure retains an error/unknown receipt and performs no second
-removal request. This is one measured package-shaped fixture, not a universal
-30-second guarantee, hostile-writer filesystem isolation, or completed Minecraft
-retention/lifecycle qualification.
+60,000 descendants. It records actual removal time with an explicit 120-second
+cleanup-only deadline while the Session default remains 30 seconds. It also records
+source/driver hashes, independent counts and outside-sentinel preservation. The original Windows
+ARM run exceeded the default 30 seconds and retained an unknown outcome; the
+cleanup caller must choose a bound within its remaining enclosing operation.
+Failure retains an error/unknown receipt and performs no second removal request.
+This is one measured package-shaped fixture, not a universal duration guarantee,
+hostile-writer filesystem isolation, or completed Minecraft retention/lifecycle
+qualification.

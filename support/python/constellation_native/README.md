@@ -50,6 +50,13 @@ directories. The owner retains reference selection and pruning intent; the same
 Session must hold the required lock through inspection and removal. The
 [driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#regenerable-trees)
 owns the link, mount, identity and unknown-outcome rules.
+`tree_remove(..., timeout=120)` explicitly sets only that cleanup call's response
+deadline. Its default `None` retains the Session timeout, normally 30 seconds;
+other calls are unchanged. Choose a positive finite duration within Python's
+`threading.TIMEOUT_MAX` that leaves room
+for invocation termination and reconciliation within the caller's remaining
+provider budget. Timeout still raises `Unknown`, closes the invocation and
+invalidates its locks; it never authorizes a retry.
 Background commands own their lifetime
 separately from the short invocation; `Session.close()` does not cancel them.
 
