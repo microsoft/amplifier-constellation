@@ -421,7 +421,7 @@ fn serve(enrollment: Enrollment) -> Result<()> {
             .to_owned();
         let fields = match parsed.get("op").and_then(Value::as_str) {
             Some("describe") => &["version", "id", "op"][..],
-            Some("lock.acquire" | "lock.release" | "service.snapshot") => {
+            Some("lock.acquire" | "lock.release" | "service.snapshot" | "service.register") => {
                 &["version", "id", "op", "name"]
             }
             Some("process.identity") => &["version", "id", "op", "pid"],

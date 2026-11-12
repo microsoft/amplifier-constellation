@@ -133,7 +133,7 @@ fn unix_definition(service: &Service, profile: &Registration) -> Result<String> 
                 "[Unit]\nDescription={}\n[Service]\nType=simple\nExecStart={}\nWorkingDirectory={}\nRestart=no\nUMask=0077\n{}",
                 profile.description.replace('%', "%%"),
                 command,
-                systemd_quote(text(&profile.cwd)?),
+                text(&profile.cwd)?.replace('%', "%%"),
                 if profile.autostart {
                     "[Install]\nWantedBy=default.target\n"
                 } else {
@@ -404,6 +404,46 @@ pub fn register(service: &Service, profile: &Registration) -> Result<Registratio
 }
 
 #[cfg(windows)]
+fn normalized_task_definition(
+    definition: &windows::Win32::System::TaskScheduler::ITaskDefinition,
+    current_sid: &str,
+) -> Result<Option<windows::core::BSTR>> {
+    use windows::{
+        Win32::System::TaskScheduler::{ILogonTrigger, TASK_TRIGGER_LOGON, TASK_TRIGGER_TYPE2},
+        core::{BSTR, Interface},
+    };
+    // ITaskDefinition is a detached description. Changes become persistent only
+    // through RegisterTaskDefinition, which the existing-task branch never calls.
+    unsafe {
+        let triggers = definition.Triggers()?;
+        let mut count = 0;
+        triggers.Count(&mut count)?;
+        ensure!((0..=256).contains(&count), "Unexpected task trigger count");
+        for index in 1..=count {
+            let trigger = triggers.get_Item(index)?;
+            let mut kind = TASK_TRIGGER_TYPE2::default();
+            trigger.Type(&mut kind)?;
+            if kind == TASK_TRIGGER_LOGON {
+                let logon: ILogonTrigger = trigger.cast()?;
+                let mut account = BSTR::new();
+                logon.UserId(&mut account)?;
+                let account = String::from_utf16(&account)?;
+                if !account.is_empty() {
+                    let sid = crate::installation_windows::account_sid(&account)?;
+                    if sid != current_sid {
+                        return Ok(None);
+                    }
+                    logon.SetUserId(&BSTR::from(sid))?;
+                }
+            }
+        }
+        let mut xml = BSTR::new();
+        definition.XmlText(&mut xml)?;
+        Ok(Some(xml))
+    }
+}
+
+#[cfg(windows)]
 fn register_task(
     service: &Service,
     profile: &Registration,
@@ -449,13 +489,12 @@ fn register_task(
             let root = scheduler.GetFolder(&BSTR::from("\\"))?;
             let desired = scheduler.NewTask(0)?;
             desired.SetXmlText(&BSTR::from(&xml))?;
-            let mut normalized = BSTR::new();
-            desired.XmlText(&mut normalized)?;
+            let normalized = normalized_task_definition(&desired, &sid)?
+                .context("Configured logon trigger is not for this user")?;
             match root.GetTask(&BSTR::from(&service.name)) {
                 Ok(existing) => {
-                    let mut actual = BSTR::new();
-                    existing.Definition()?.XmlText(&mut actual)?;
-                    if actual == normalized && (path.is_none() || file.is_some()) {
+                    let actual = normalized_task_definition(&existing.Definition()?, &sid)?;
+                    if actual.as_ref() == Some(&normalized) && (path.is_none() || file.is_some()) {
                         return Ok(RegistrationOutcome::Registered { created: false });
                     }
                     return Ok(refused(
@@ -577,6 +616,62 @@ mod tests {
         assert!(cwd.contains("literal $cwd"));
         assert!(!cwd.contains("$$cwd"));
         assert!(unit.contains("$$HOME %%value%%"));
+    }
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn actual_systemd_parser_rejects_quoted_cwd_and_accepts_literal_whole_path() {
+        use std::process::Command;
+        let analyzer = Path::new("/usr/bin/systemd-analyze");
+        if !analyzer.is_file() {
+            eprintln!("systemd-analyze unavailable; actual parser case not exercised");
+            return;
+        }
+        let (temp, mut profile) = fixture();
+        profile.cwd = temp.path().join("literal $cwd %mark");
+        fs::create_dir(&profile.cwd).unwrap();
+        let runtime = temp.path().join("runtime");
+        crate::private_dir(&runtime).unwrap();
+        let service = Service {
+            manager: ServiceManager::SystemdUser,
+            name: "after.service".into(),
+            definition_path: None,
+        };
+        let valid = unix_definition(&service, &profile).unwrap();
+        let valid_value = text(&profile.cwd).unwrap().replace('%', "%%");
+        let invalid = valid.replace(
+            &format!("WorkingDirectory={valid_value}\n"),
+            &format!(
+                "WorkingDirectory={}\n",
+                systemd_quote(text(&profile.cwd).unwrap())
+            ),
+        );
+        assert_ne!(valid, invalid);
+        for (name, contents, expected_success) in [
+            ("before.service", invalid, false),
+            ("after.service", valid, true),
+        ] {
+            let path = temp.path().join(name);
+            fs::write(&path, contents).unwrap();
+            let result = Command::new(analyzer)
+                .args(["--user", "--man=no", "verify"])
+                .arg(&path)
+                .env("XDG_RUNTIME_DIR", &runtime)
+                .env("LC_ALL", "C")
+                .output()
+                .unwrap();
+            let diagnostic = String::from_utf8_lossy(&result.stderr);
+            assert_eq!(
+                result.status.success(),
+                expected_success,
+                "{name}: {diagnostic}"
+            );
+            if !expected_success {
+                assert!(
+                    diagnostic.contains("WorkingDirectory= path is not absolute"),
+                    "{diagnostic}"
+                );
+            }
+        }
     }
     #[test]
     fn windows_profile_match_requires_one_exact_exec_and_preserves_pause() {

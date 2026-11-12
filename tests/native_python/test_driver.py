@@ -409,6 +409,14 @@ with Session(sys.argv[2], sys.argv[3]) as native:
             native.private_write("state", "receipt.json", b"no")
         self.assertFalse((self.state / "receipt.json").exists())
 
+    def test_registration_is_a_served_operation_without_unenrolled_effects(self):
+        with Session(DRIVER, self.config) as session:
+            self.assertIn("service.register", session.describe()["operations"])
+            with self.assertRaises(DriverError) as raised:
+                session.service_register("not-enrolled")
+            self.assertEqual(raised.exception.code, "observation_failed")
+            self.assertIn("Unenrolled service", str(raised.exception))
+
     def test_unknown_request_fields_refuse_before_any_dispatch(self):
         native = self.session()
         for op, fields in (

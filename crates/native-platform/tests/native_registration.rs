@@ -51,6 +51,10 @@ fn fresh_registration_never_starts_or_replaces_existing_profiles_and_pauses() {
             registered["native"]["NeedDaemonReload"],
             registered["native"]["DropInPaths"]
         );
+        #[cfg(windows)]
+        if autostart {
+            print_task_identity_difference(&fixture);
+        }
         assert_eq!(
             registration::register(&fixture.service, &fixture.profile).unwrap(),
             RegistrationOutcome::Registered { created: false }
@@ -247,4 +251,79 @@ fn system_tool(name: &str) -> PathBuf {
     PathBuf::from(std::env::var_os("SystemRoot").unwrap())
         .join("System32")
         .join(name)
+}
+
+#[cfg(windows)]
+fn print_task_identity_difference(fixture: &Fixture) {
+    use windows::{
+        Win32::System::{
+            Com::{
+                CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                CoUninitialize,
+            },
+            TaskScheduler::{ITaskService, TaskScheduler},
+            Variant::VARIANT,
+        },
+        core::BSTR,
+    };
+    struct Apartment;
+    impl Drop for Apartment {
+        fn drop(&mut self) {
+            unsafe {
+                CoUninitialize();
+            }
+        }
+    }
+    unsafe {
+        CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+        let _apartment = Apartment;
+        let service: ITaskService =
+            CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER).unwrap();
+        let empty = VARIANT::default();
+        service.Connect(&empty, &empty, &empty, &empty).unwrap();
+        let bytes = std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap();
+        let units: Vec<u16> = bytes
+            .chunks_exact(2)
+            .map(|value| u16::from_le_bytes([value[0], value[1]]))
+            .collect();
+        let expected = String::from_utf16(&units).unwrap();
+        let desired = service.NewTask(0).unwrap();
+        desired
+            .SetXmlText(&BSTR::from(expected.trim_start_matches('\u{feff}')))
+            .unwrap();
+        let existing = service
+            .GetFolder(&BSTR::from("\\"))
+            .unwrap()
+            .GetTask(&BSTR::from(&fixture.service.name))
+            .unwrap();
+        let mut desired_xml = BSTR::new();
+        let mut actual_xml = BSTR::new();
+        desired.XmlText(&mut desired_xml).unwrap();
+        existing
+            .Definition()
+            .unwrap()
+            .XmlText(&mut actual_xml)
+            .unwrap();
+        let desired = String::from_utf16(&desired_xml).unwrap();
+        let actual = String::from_utf16(&actual_xml).unwrap();
+        let first = desired
+            .chars()
+            .zip(actual.chars())
+            .position(|(a, b)| a != b);
+        if let Some(index) = first {
+            let start = index.saturating_sub(100);
+            println!(
+                "disposable task raw XML first difference at char {index}: expected={:?}, actual={:?}",
+                desired.chars().skip(start).take(700).collect::<String>(),
+                actual.chars().skip(start).take(700).collect::<String>()
+            );
+        } else {
+            println!(
+                "disposable task raw XML equal={} lengths={}/{}",
+                desired == actual,
+                desired.len(),
+                actual.len()
+            );
+        }
+    }
 }

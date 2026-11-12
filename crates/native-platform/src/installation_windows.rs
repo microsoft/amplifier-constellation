@@ -148,7 +148,7 @@ fn text(value: BSTR) -> Result<String> {
     Ok(String::from_utf16(&value)?)
 }
 
-fn account_sid(account: &str) -> Result<String> {
+pub(crate) fn account_sid(account: &str) -> Result<String> {
     if account.starts_with("S-1-") {
         return Ok(account.to_owned());
     }
