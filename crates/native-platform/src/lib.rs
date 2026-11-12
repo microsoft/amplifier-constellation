@@ -1,8 +1,14 @@
 //! Optional local implementation support, not a provisioning or identity service.
 //! Applications retain their own installation, credentials and startup ownership.
+#[cfg(feature = "installation")]
+pub mod installation;
 #[cfg(feature = "local-auth")]
 pub mod local_auth;
+#[cfg(feature = "installation")]
+pub mod locking;
 pub mod platform;
+#[cfg(feature = "installation")]
+pub mod process;
 mod storage;
 use anyhow::{Result, ensure};
 pub use platform::*;
