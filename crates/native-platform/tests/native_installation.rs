@@ -99,6 +99,8 @@ fn native_service_snapshot_compare_start_stop_and_independent_disable() {
         fixture.mask();
         let masked = installation::snapshot(&fixture.service).unwrap();
         assert_eq!(masked["masked"], true);
+        assert_eq!(masked["native"]["LoadState"], "masked");
+        assert_eq!(masked["native"]["UnitFileState"], "masked");
         assert!(
             matches!(installation::request_state(&fixture.service,ServiceAction::Start,&masked).unwrap(),ActionOutcome::Refused{code,..} if code=="disabled_or_unknown")
         );
@@ -302,14 +304,22 @@ impl Fixture {
     }
     #[cfg(target_os = "linux")]
     fn mask(&self) {
-        run(Command::new("/usr/bin/systemctl").args([
-            "--user",
-            "mask",
-            "--runtime",
-            "--",
-            &self.service.name,
-        ]));
+        // A runtime mask loses to this fixture's higher-priority ~/.config unit.
+        // Preserve the exact unique test definition before replacing that same
+        // enrolled path with a real local mask. No production unit is selected.
+        let path = self.service.definition_path.as_ref().unwrap();
+        let original = fs::read(path).unwrap();
+        let backup = self._temporary.path().join("original-before-mask.service");
+        amplifier_native_platform::private_create(&backup, &original).unwrap();
+        assert_eq!(fs::read(&backup).unwrap(), original);
+        fs::remove_file(path).unwrap();
+        std::os::unix::fs::symlink("/dev/null", path).unwrap();
         run(Command::new("/usr/bin/systemctl").args(["--user", "daemon-reload"]));
+        assert_eq!(
+            fs::read_link(path).unwrap(),
+            std::path::Path::new("/dev/null")
+        );
+        assert_eq!(fs::read(&backup).unwrap(), original);
     }
     fn disable(&self) {
         #[cfg(target_os = "linux")]
@@ -341,9 +351,6 @@ impl Drop for Fixture {
         {
             let _ = Command::new("/usr/bin/systemctl")
                 .args(["--user", "--no-block", "stop", "--", &self.service.name])
-                .output();
-            let _ = Command::new("/usr/bin/systemctl")
-                .args(["--user", "unmask", "--runtime", "--", &self.service.name])
                 .output();
             let _ = Command::new("/usr/bin/systemctl")
                 .args(["--user", "disable", "--", &self.service.name])

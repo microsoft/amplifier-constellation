@@ -565,10 +565,10 @@ fn launch_snapshot(service: &Service) -> Result<Value> {
         BTreeMap::new()
     };
     let mut processes = Vec::new();
-    if let Some(pid) = native.get("pid") {
-        if let Some(p) = process_observation("launchd_pid", pid.parse()?)? {
-            processes.push(p);
-        }
+    if let Some(pid) = native.get("pid")
+        && let Some(p) = process_observation("launchd_pid", pid.parse()?)?
+    {
+        processes.push(p);
     }
     let state = native.get("state").map(String::as_str);
     let active = if !loaded {

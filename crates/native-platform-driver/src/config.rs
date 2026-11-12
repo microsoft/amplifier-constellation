@@ -338,15 +338,29 @@ fn windows_access(path: &Path, private: bool) -> Result<()> {
                     let allowed = &*(ace as *const ACCESS_ALLOWED_ACE);
                     let principal =
                         sid_string((&allowed.SidStart as *const u32).cast_mut().cast())?;
+                    // Windows may allow creating new sibling directories at a
+                    // system ancestor. Unlike Unix directory write, ADD_FILE /
+                    // ADD_SUBDIRECTORY alone cannot replace an existing protected
+                    // child. Delete-child, delete, owner/DACL changes and generic
+                    // write/all still reject. Enrolled roots remain fully private.
+                    let mutation_mask = if path.is_dir() {
+                        0x500d0150
+                    } else {
+                        0x500d0156
+                    };
                     ensure!(
                         principal == user
                             || principal == "S-1-5-18"
                             || (!private
-                                && (allowed.Mask & 0x500d0156 == 0
+                                && (allowed.Mask & mutation_mask == 0
                                     || principal == "S-1-5-32-544"
                                     || principal
                                         == "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464")),
-                        "Installation permits another principal"
+                        "Installation {} permits principal {} access {:#x} (private={})",
+                        path.display(),
+                        principal,
+                        allowed.Mask,
+                        private
                     );
                 } else {
                     // Refuse unfamiliar object/callback allow forms rather than guess their scope.
