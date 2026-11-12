@@ -17,6 +17,9 @@ fn exercise(app: &Application) {
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path().join("helper café 子 with spaces");
     fs::create_dir(&home).unwrap();
+    // Installed services canonicalize their home before calling this API.
+    // On Windows this is an extended-length path, unlike the input spelling.
+    let home = home.canonicalize().unwrap();
     let id = uuid::Uuid::new_v4();
     let label = format!("{}-{id}", app.startup_prefix);
     platform::install_startup(app, &home, &id).unwrap();
