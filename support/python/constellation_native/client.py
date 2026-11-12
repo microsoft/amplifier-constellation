@@ -557,6 +557,16 @@ class Session:
         """Observe one child of an explicitly enrolled regenerable directory."""
         return self._call("tree.inspect", name=name, entry=entry)
 
+    def tree_observe(self, name: str, entry: str) -> Any:
+        """Observe root/profile scope even when the child is absent.
+
+        Requires this Session's configured tree lock. Save the complete scope
+        with the original intent before removal; a fresh locked observation of
+        that same name/entry can establish absence only with matching scope.
+        This read does not grant a retry or settle the caller's journal itself.
+        """
+        return self._call("tree.observe", name=name, entry=entry)
+
     def tree_remove(
         self,
         name: str,

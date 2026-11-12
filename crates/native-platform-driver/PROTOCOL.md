@@ -83,6 +83,7 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `service.register` | `name` | `{created: boolean}`; configured fresh registration without start |
 | `service.snapshot` | `name` | exact native definition/state and process generation |
 | `tree.inspect` | `name`, `entry` | opaque fixed-root/child filesystem identity, or null if absent |
+| `tree.observe` | `name`, `entry` | `{scope, entry}`; fixed profile/root identity even for absent child; requires the enrolled lock |
 | `tree.remove` | `name`, `entry`, `expected` | remove one owner-selected regenerable child under its required lock; observed absence only |
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
@@ -218,6 +219,7 @@ executables supplied by a request.
 | `service_register(name: str)` | `{"created": bool}`; registers a fresh enrolled definition without starting it. |
 | `service_snapshot(name: str)` | Complete [snapshot](SERVICE-SNAPSHOT.md); an observation failure raises rather than manufacturing stopped state. |
 | `tree_inspect(name: str, entry: str)` | Opaque ordinary-directory identity or null; no recursive scan or mutation. |
+| `tree_observe(name: str, entry: str)` | `{scope, entry}` with stable profile/root evidence and the existing inspection result or null. Requires this Session's configured tree lock; advertised by `regenerable_tree_observation:1`. |
 | `tree_remove(name: str, entry: str, expected: Mapping, *, timeout: float \| None = None)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. Optional timeout applies only to this call. |
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
@@ -310,8 +312,29 @@ mount-topology changes. Mount preflight observes the current process namespace,
 including Linux same-device bind mounts. Already-dispatched kernel operations may
 settle after transport loss; invocation termination is not proof of no effects.
 Leave the pruning intent unresolved, unwind lost lock ownership, then open a fresh
-Session/lock for read-only reconciliation. Observed absence may settle that same
-intent; a remaining or replaced tree does not authorize automatic redispatch.
+Session/lock for read-only reconciliation. Bare null from `tree.inspect` cannot
+settle a prior unknown removal: a replaced root can also have no such child.
+Use the optional `tree.observe` operation when advertised. It returns
+`{scope:{schema:1,profile_sha256,root,root_identity},entry:SNAPSHOT_OR_NULL}`.
+The scope binds the protected profile name, storage root name/path, relative tree
+path, lock name/path and the canonical tree root's filesystem identity. The root
+is compared before and after observation. This operation requires the same
+enrolled lock and performs no recursive traversal or mutation.
+The digest covers that selected profile, not the whole configuration document;
+unrelated configuration changes across fresh Sessions may preserve the scope.
+The existing configuration-change guard still refuses changes within a Session.
+
+Persist the complete scope with the original pruning intent before dispatch;
+pass its non-null `entry` snapshot unchanged to the existing `tree.remove`.
+After acknowledgment loss, observe the exact profile name and child entry saved
+in that intent under a fresh lock, then compare the complete scope. The scope is
+shared by a profile's children: an absent different child cannot settle this
+intent. Only an equal scope and null entry for the original child support marking
+that same intent absent. A changed root/profile, an existing or replaced child, a
+legacy intent without saved scope, or an uncertain observation stays unresolved.
+No automatic redispatch follows.
+Existing `tree.inspect` and `tree.remove` results remain unchanged; capability
+`regenerable_tree_removal:1` alone does not advertise this new observation.
 The normal client deadline is unchanged. Python callers may explicitly pass
 `tree_remove(..., timeout=120)` for a cleanup-only response deadline when that
 duration, invocation termination and reconciliation fit within their remaining
