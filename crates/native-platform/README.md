@@ -8,6 +8,14 @@ Windows task inspection uses Task Scheduler's Unicode XML API, so desktop apps w
 
 `private_write` commits a fully written protected temporary file; `private_create` additionally refuses any existing destination. Windows storage grants only the current user and SYSTEM; Unix directories and files are 0700 and 0600. Applications still own locking, state schemas, migrations and credentials.
 
+Use `private_write_data` for data journals read while they are published. Existing
+readers keep their opened snapshot; new readers see the replacement. Windows
+readers must grant delete sharing, as Rust's ordinary file reads do. A reader that
+denies sharing or a read-only target still causes an error. A flush failure after
+replacement is uncertain and requires reconciliation, never a blind retry. This
+uses Windows 11 `FileRenameInfoEx` for data only; executable and directory lifecycle
+operations retain their existing replacement and process-ownership rules.
+
 `open_browser` accepts only a loopback HTTP/HTTPS setup URL. `show_launch_error` uses a native desktop alert when available. A separate `open_https_browser` can open an application’s already configured HTTPS origin, without embedded credentials, paths, query strings or fragments. Neither function accepts shell source.
 
 Optional feature `local-auth` supplies the existing Argon2id password profile and

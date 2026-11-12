@@ -9,7 +9,8 @@ pub use platform::*;
 #[cfg(windows)]
 pub use storage::current_user_sid;
 pub use storage::{
-    private_create, private_dir, private_write, protect_file, publish_directory_if_absent,
+    private_create, private_dir, private_write, private_write_data, protect_file,
+    publish_directory_if_absent,
 };
 
 /// Fixed application-owned startup profile. No remote command surface is exposed.

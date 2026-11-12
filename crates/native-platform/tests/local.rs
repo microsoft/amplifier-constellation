@@ -81,6 +81,15 @@ fn unix_private_permissions_and_symlink_refusal() {
 #[cfg(windows)]
 #[test]
 fn windows_private_dacl_survives_atomic_replacement() {
+    inspect_replaced_dacl(private_write);
+}
+#[cfg(windows)]
+#[test]
+fn windows_data_publication_retains_private_dacl() {
+    inspect_replaced_dacl(private_write_data);
+}
+#[cfg(windows)]
+fn inspect_replaced_dacl(write: fn(&Path, &[u8]) -> anyhow::Result<()>) {
     use std::{collections::BTreeSet, os::windows::ffi::OsStrExt, ptr};
     use windows_sys::Win32::{
         Foundation::LocalFree,
@@ -94,7 +103,7 @@ fn windows_private_dacl_survives_atomic_replacement() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("private folder").join("secret");
     private_create(&path, b"first").unwrap();
-    private_write(&path, b"second").unwrap();
+    write(&path, b"second").unwrap();
     let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
     unsafe {
         // Inspect native SIDs, not SDDL display aliases (e.g. LA for the current
