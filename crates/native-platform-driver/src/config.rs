@@ -327,6 +327,40 @@ fn protected_owner(path: &Path) -> Result<()> {
 fn protected_owner(path: &Path) -> Result<()> {
     windows_access(path, true)
 }
+
+#[cfg(any(windows, test))]
+fn windows_allow_is_safe(
+    principal: &str,
+    owner: &str,
+    user: &str,
+    private: bool,
+    access: u32,
+    directory: bool,
+) -> bool {
+    // OWNER RIGHTS represents the actual descriptor owner, not every owner or
+    // implicitly the calling user. Resolve it before applying the same policy.
+    // https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-identifiers
+    let principal = if principal == "S-1-3-4" {
+        owner
+    } else {
+        principal
+    };
+    // A private installation must still belong to this user; administrators
+    // remain accepted only for ancestors, exactly as for an explicit SID ACE.
+    if private && owner != user {
+        return false;
+    }
+    // ADD_FILE / ADD_SUBDIRECTORY alone cannot replace an existing protected
+    // child. Delete-child, delete, owner/DACL changes and generic write/all can.
+    let mutation_mask = if directory { 0x500d0150 } else { 0x500d0156 };
+    principal == user
+        || principal == "S-1-5-18"
+        || (!private
+            && (access & mutation_mask == 0
+                || principal == "S-1-5-32-544"
+                || principal == "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464"))
+}
+
 #[cfg(windows)]
 fn windows_access(path: &Path, private: bool) -> Result<()> {
     use std::ptr;
@@ -375,9 +409,11 @@ fn windows_access(path: &Path, private: bool) -> Result<()> {
             "Cannot inspect protected storage policy ({code})"
         );
         let outcome = (|| -> Result<()> {
+            ensure!(!owner.is_null(), "Installation has no recorded owner");
+            let owner = sid_string(owner)?;
             ensure!(
-                !owner.is_null() && (!private || sid_string(owner)? == user),
-                "Installation must belong to this user"
+                !private || owner == user,
+                "Installation must belong to this user (owner={owner}, user={user})"
             );
             ensure!(!dacl.is_null(), "Installation has unrestricted access");
             for i in 0..(*dacl).AceCount {
@@ -396,29 +432,21 @@ fn windows_access(path: &Path, private: bool) -> Result<()> {
                     let allowed = &*(ace as *const ACCESS_ALLOWED_ACE);
                     let principal =
                         sid_string((&allowed.SidStart as *const u32).cast_mut().cast())?;
-                    // Windows may allow creating new sibling directories at a
-                    // system ancestor. Unlike Unix directory write, ADD_FILE /
-                    // ADD_SUBDIRECTORY alone cannot replace an existing protected
-                    // child. Delete-child, delete, owner/DACL changes and generic
-                    // write/all still reject. Enrolled roots remain fully private.
-                    let mutation_mask = if path.is_dir() {
-                        0x500d0150
-                    } else {
-                        0x500d0156
-                    };
                     ensure!(
-                        principal == user
-                            || principal == "S-1-5-18"
-                            || (!private
-                                && (allowed.Mask & mutation_mask == 0
-                                    || principal == "S-1-5-32-544"
-                                    || principal
-                                        == "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464")),
-                        "Installation {} permits principal {} access {:#x} (private={})",
+                        windows_allow_is_safe(
+                            &principal,
+                            &owner,
+                            &user,
+                            private,
+                            allowed.Mask,
+                            path.is_dir()
+                        ),
+                        "Installation {} permits principal {} access {:#x} (private={}, owner={})",
                         path.display(),
                         principal,
                         allowed.Mask,
-                        private
+                        private,
+                        owner
                     );
                 } else {
                     // Refuse unfamiliar object/callback allow forms rather than guess their scope.
@@ -432,5 +460,75 @@ fn windows_access(path: &Path, private: bool) -> Result<()> {
         })();
         LocalFree(descriptor.cast());
         outcome
+    }
+}
+
+#[cfg(test)]
+mod windows_policy_tests {
+    use super::windows_allow_is_safe;
+
+    const USER: &str = "S-1-5-21-100-200-300-1001";
+    const OTHER: &str = "S-1-5-21-100-200-300-1002";
+    const FULL: u32 = 0x1f01ff;
+
+    #[test]
+    fn owner_rights_resolves_to_the_recorded_owner_before_policy() {
+        for directory in [false, true] {
+            for private in [false, true] {
+                assert!(windows_allow_is_safe(
+                    "S-1-3-4", USER, USER, private, FULL, directory
+                ));
+                assert!(!windows_allow_is_safe(
+                    "S-1-3-4", OTHER, USER, private, FULL, directory
+                ));
+                assert!(!windows_allow_is_safe(
+                    "S-1-3-4", "", USER, private, FULL, directory
+                ));
+                assert!(!windows_allow_is_safe(
+                    "S-1-3-0", USER, USER, private, FULL, directory
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn administrator_owner_rights_keep_existing_ancestor_only_policy() {
+        let administrator = "S-1-5-32-544";
+        for directory in [false, true] {
+            for private in [false, true] {
+                let explicit = windows_allow_is_safe(
+                    administrator,
+                    administrator,
+                    USER,
+                    private,
+                    FULL,
+                    directory,
+                );
+                let owner_rights =
+                    windows_allow_is_safe("S-1-3-4", administrator, USER, private, FULL, directory);
+                assert_eq!(owner_rights, explicit);
+                assert_eq!(owner_rights, !private);
+            }
+        }
+    }
+
+    #[test]
+    fn unrelated_principals_and_public_readability_are_not_private_storage() {
+        for directory in [false, true] {
+            for principal in [OTHER, "S-1-1-0", "S-1-5-32-545"] {
+                assert!(!windows_allow_is_safe(
+                    principal, USER, USER, false, FULL, directory
+                ));
+                assert!(!windows_allow_is_safe(
+                    principal, USER, USER, true, FULL, directory
+                ));
+                assert!(windows_allow_is_safe(
+                    principal, USER, USER, false, 0x120089, directory
+                ));
+                assert!(!windows_allow_is_safe(
+                    principal, USER, USER, true, 0x120089, directory
+                ));
+            }
+        }
     }
 }
