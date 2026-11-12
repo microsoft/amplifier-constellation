@@ -8,4 +8,11 @@ Optional Rust implementation support for self-contained Constellation applicatio
 
 `open_browser` accepts only a loopback HTTP/HTTPS setup URL. `show_launch_error` uses a native desktop alert when available. A separate `open_https_browser` can open an application’s already configured HTTPS origin, without embedded credentials, paths, query strings or fragments. Neither function accepts shell source.
 
+Optional feature `local-auth` supplies the existing Argon2id password profile and
+domain-separated, nonce-bound HMAC listener proofs. Applications retain their own
+credential files, sessions, cookies, rate limits and HTTP boundaries; this adds no
+shared account or identity service. Listener proof must be checked against the
+expected installation and origin before credential dispatch on the same connection.
+The computer helper does not enable this feature.
+
 Run `cargo test --locked` and `cargo clippy --locked --all-targets -- -D warnings`. The ignored startup test additionally writes/removes uniquely named current-user registrations and requires `CONSTELLATION_STARTUP_SMOKE=1` on a disposable runner. Windows x64 hosted CI uses Windows Server; desktop first-run qualification is separate from that result. Windows ARM CI uses Windows 11 ARM.
