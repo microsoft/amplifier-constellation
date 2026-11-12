@@ -454,8 +454,25 @@ mod fixture {
                     return Ok(json!({"role":role,"absent":true}));
                 }
                 let deadline = Instant::now() + Duration::from_secs(30);
+                let mut observation_errors = 0_u32;
+                let mut last_observation_error = None;
                 let observed = loop {
-                    let observed = installation::snapshot(&service)?;
+                    let observed = match installation::snapshot(&service) {
+                        Ok(observed) => observed,
+                        Err(error) => {
+                            observation_errors += 1;
+                            last_observation_error = Some(format!("{error:#}"));
+                            // Cooperative fixture exit can race the read-only
+                            // process snapshot. An error is never inactivity or
+                            // absence; require a later complete observation.
+                            ensure!(
+                                Instant::now() < deadline,
+                                "Cleanup observation did not settle: {error:#}"
+                            );
+                            thread::sleep(Duration::from_millis(100));
+                            continue;
+                        }
+                    };
                     ensure!(
                         registration::profile_matches(&service, &profile, &observed)?,
                         "Cleanup profile changed"
@@ -481,7 +498,8 @@ mod fixture {
                     registration::is_retired(&service)?,
                     "Cleanup absence unconfirmed"
                 );
-                Ok(json!({"role":role,"retired":true,"outcome":outcome}))
+                Ok(json!({"role":role,"retired":true,"outcome":outcome,
+                    "observation_errors":observation_errors,"last_observation_error":last_observation_error}))
             })();
             match result {
                 Ok(row) => rows.push(row),

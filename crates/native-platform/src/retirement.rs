@@ -67,8 +67,8 @@ fn definition(path: &Path) -> Result<Value> {
     }
     #[cfg(windows)]
     {
-        private_windows_definition(parent_path)?;
-        private_windows_definition(path)?;
+        crate::validate_private_directory(parent_path)?;
+        crate::storage::validate_windows_private_access(path)?;
     }
     let parent_identity = crate::installation_exchange::native_identity(parent_path, &parent)?;
     let identity = crate::installation_exchange::native_identity(path, &metadata)?;
@@ -92,89 +92,6 @@ fn definition(path: &Path) -> Result<Value> {
         "Definition parent changed during observation"
     );
     Ok(json!({"identity":identity,"parent_identity":parent_identity,"bytes":bytes}))
-}
-
-#[cfg(windows)]
-fn private_windows_definition(path: &Path) -> Result<()> {
-    // Same current-user/SYSTEM-only inspection as the driver's private storage
-    // policy (config::windows_access); observation never changes an ACL/owner.
-    use std::ptr;
-    use windows_sys::Win32::{
-        Foundation::LocalFree,
-        Security::{
-            ACCESS_ALLOWED_ACE,
-            Authorization::{ConvertSidToStringSidW, GetNamedSecurityInfoW, SE_FILE_OBJECT},
-            DACL_SECURITY_INFORMATION, GetAce, OWNER_SECURITY_INFORMATION,
-        },
-    };
-    unsafe fn sid_text(sid: *mut core::ffi::c_void) -> Result<String> {
-        unsafe {
-            let mut rendered = ptr::null_mut();
-            ensure!(
-                ConvertSidToStringSidW(sid, &mut rendered) != 0,
-                "Cannot read definition SID"
-            );
-            let mut size = 0;
-            while *rendered.add(size) != 0 {
-                size += 1;
-            }
-            let text = String::from_utf16(std::slice::from_raw_parts(rendered, size));
-            LocalFree(rendered.cast());
-            Ok(text?)
-        }
-    }
-    let path = crate::windows_native_path(path)?;
-    let mut owner = ptr::null_mut();
-    let mut acl = ptr::null_mut();
-    let mut descriptor = ptr::null_mut();
-    let code = unsafe {
-        GetNamedSecurityInfoW(
-            path.as_ptr(),
-            SE_FILE_OBJECT,
-            OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-            &mut owner,
-            ptr::null_mut(),
-            &mut acl,
-            ptr::null_mut(),
-            &mut descriptor,
-        )
-    };
-    ensure!(code == 0, "Cannot inspect definition owner/policy ({code})");
-    let result = (|| -> Result<()> {
-        ensure!(
-            !owner.is_null() && !acl.is_null(),
-            "Definition owner/private policy missing"
-        );
-        let user = crate::current_user_sid()?;
-        ensure!(
-            unsafe { sid_text(owner)? } == user,
-            "Definition belongs to another principal"
-        );
-        let count = unsafe { (*acl).AceCount };
-        ensure!((1..=1024).contains(&count), "Unexpected definition ACL");
-        for index in 0..count {
-            let mut entry = ptr::null_mut();
-            ensure!(
-                unsafe { GetAce(acl, u32::from(index), &mut entry) } != 0,
-                "Cannot inspect definition ACL entry"
-            );
-            let entry = entry.cast::<ACCESS_ALLOWED_ACE>();
-            ensure!(
-                unsafe { (*entry).Header.AceType } == 0,
-                "Unsupported definition ACL entry"
-            );
-            let principal = unsafe { sid_text(ptr::addr_of_mut!((*entry).SidStart).cast())? };
-            ensure!(
-                principal == user || principal == "S-1-5-18",
-                "Definition allows another principal"
-            );
-        }
-        Ok(())
-    })();
-    unsafe {
-        LocalFree(descriptor.cast());
-    }
-    result
 }
 
 fn presence(service: &Service, path: &Path) -> Result<(bool, bool)> {
@@ -599,7 +516,7 @@ mod tests {
         assert!(definition(&path).is_err());
         // A second inspection must still reject the same broad policy; retirement
         // neither tightens the parent nor removes the protected child.
-        assert!(private_windows_definition(parent).is_err());
+        assert!(crate::validate_private_directory(parent).is_err());
         assert_eq!(fs::read(&path).unwrap(), b"exact fixed profile");
     }
 }

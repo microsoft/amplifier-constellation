@@ -8,6 +8,11 @@ Windows task inspection uses Task Scheduler's Unicode XML API, so desktop apps w
 
 `private_write` commits a fully written protected temporary file; `private_create` additionally refuses any existing destination. Windows storage grants only the current user and SYSTEM; Unix directories and files are 0700 and 0600. Applications retain their state schemas, migrations and credentials.
 
+Use `validate_private_directory` to inspect an existing private directory without
+repairing it. It rejects links/reparse points, another owner, and access outside
+the current user (plus Windows SYSTEM). Missing paths are errors, not creation.
+It is an observation; callers still serialize subsequent operations.
+
 Optional feature `installation` adds lifetime locks compatible with existing Unix
 `flock`, native process generations, and observation/compare-before-dispatch for
 enrolled systemd user services, LaunchAgents and Scheduled Tasks. Start/stop
