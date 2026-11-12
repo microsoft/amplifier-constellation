@@ -1,17 +1,39 @@
 //! Optional local implementation support, not a provisioning or identity service.
 //! Applications retain their own installation, credentials and startup ownership.
+#[cfg(feature = "installation")]
+pub mod installation;
+#[cfg(feature = "installation")]
+pub mod installation_exchange;
+#[cfg(feature = "installation")]
+pub mod installation_tree;
+#[cfg(all(windows, feature = "installation"))]
+mod installation_windows;
 #[cfg(feature = "local-auth")]
 pub mod local_auth;
+#[cfg(feature = "installation")]
+pub mod locking;
 pub mod platform;
+#[cfg(feature = "installation")]
+pub mod process;
+#[cfg(feature = "installation")]
+pub mod registration;
 mod storage;
 use anyhow::{Result, ensure};
 pub use platform::*;
 #[cfg(windows)]
 pub use storage::current_user_sid;
 pub use storage::{
-    private_create, private_dir, private_write, private_write_data, protect_file,
-    publish_directory_if_absent,
+    private_create, private_create_dir, private_dir, private_write, private_write_data,
+    protect_file, publish_directory_if_absent,
 };
+
+/// Encode an absolute, null-terminated extended path for direct Win32 file APIs.
+/// This performs no filesystem lookup or permission change; callers still own
+/// path and access validation. UNC and already-extended paths are preserved.
+#[cfg(windows)]
+pub fn windows_native_path(path: &std::path::Path) -> Result<Vec<u16>> {
+    storage::wide_path(path)
+}
 
 /// Fixed application-owned startup profile. No remote command surface is exposed.
 #[derive(Clone, Copy, Debug)]
