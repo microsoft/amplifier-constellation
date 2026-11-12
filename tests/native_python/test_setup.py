@@ -206,10 +206,40 @@ class SetupTransportTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "driver_start")
 
     def test_invalid_python_inputs_do_not_start_driver(self):
-        with patch("constellation_native.client.subprocess.Popen") as spawn:
-            for timeout in (True, 0, -1, float("inf"), float("nan"), "30"):
-                with self.subTest(timeout=timeout), self.assertRaises(ValueError):
-                    initialize_root(sys.executable, self.target, timeout=timeout)
+        with patch(
+            "constellation_native.client.subprocess.Popen",
+            side_effect=AssertionError("Invalid input reached process start"),
+        ) as spawn:
+            invalid = (
+                False,
+                True,
+                0,
+                -1,
+                float("nan"),
+                float("inf"),
+                -float("inf"),
+                "30",
+                10**1000,
+                1e300,
+                threading.TIMEOUT_MAX * 2,
+            )
+            for timeout in invalid:
+                for operation in ("root", "config"):
+                    with (
+                        self.subTest(timeout=repr(timeout), operation=operation),
+                        self.assertRaises(ValueError),
+                    ):
+                        if operation == "root":
+                            initialize_root(
+                                sys.executable, self.target, timeout=timeout
+                            )
+                        else:
+                            initialize_config(
+                                sys.executable,
+                                self.target,
+                                {"version": 1},
+                                timeout=timeout,
+                            )
             with self.assertRaises(ValueError):
                 initialize_root("relative-driver", self.target)
             with self.assertRaises(ValueError):
@@ -217,9 +247,13 @@ class SetupTransportTests(unittest.TestCase):
             with self.assertRaises(TypeError):
                 initialize_config(sys.executable, self.target, b"{}")
             with self.assertRaises(ValueError):
-                initialize_config(sys.executable, self.target, {"version": float("nan")})
+                initialize_config(
+                    sys.executable, self.target, {"version": float("nan")}
+                )
             with self.assertRaises(ValueError):
-                initialize_config(sys.executable, self.target, {"padding": "x" * (2 * 1024 * 1024)})
+                initialize_config(
+                    sys.executable, self.target, {"padding": "x" * (2 * 1024 * 1024)}
+                )
             spawn.assert_not_called()
 
 

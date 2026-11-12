@@ -46,6 +46,23 @@ _MAX_SETUP_FRAME = 2 * 1024 * 1024
 _SESSIONS: weakref.WeakSet[Session] = weakref.WeakSet()
 
 
+def _duration(timeout: float) -> float:
+    """Validate every wait budget before starting a process or writing a request."""
+    if not isinstance(timeout, (int, float)) or isinstance(timeout, bool):
+        raise ValueError("Native driver timeout must be a positive finite number")
+    try:
+        duration = float(timeout)
+    except OverflowError as error:
+        raise ValueError(
+            "Native driver timeout must be a positive finite number"
+        ) from error
+    if not math.isfinite(duration) or duration <= 0:
+        raise ValueError("Native driver timeout must be a positive finite number")
+    if duration > threading.TIMEOUT_MAX:
+        raise ValueError("Native driver timeout exceeds the supported wait limit")
+    return duration
+
+
 def _after_fork() -> None:
     # Keep a forked child from extending its parent's invocation/lock lifetime.
     for session in list(_SESSIONS):
@@ -99,13 +116,7 @@ def _initialize(
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One installation-owned setup request, without a Session or retries."""
-    if (
-        not isinstance(timeout, (int, float))
-        or isinstance(timeout, bool)
-        or not math.isfinite(timeout)
-        or timeout <= 0
-    ):
-        raise ValueError("Native driver timeout must be a positive finite number")
+    duration = _duration(timeout)
     driver = Path(driver_path)
     target = Path(path)
     if not driver.is_absolute() or not target.is_absolute():
@@ -149,7 +160,7 @@ def _initialize(
     )
     reader.start()
     written: queue.Queue[Any] = queue.Queue(maxsize=1)
-    deadline = time.monotonic() + float(timeout)
+    deadline = time.monotonic() + duration
 
     def send() -> None:
         write_error: Exception | None = None
@@ -310,17 +321,14 @@ class Session:
         *,
         timeout: float = 30.0,
     ):
-        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool):
-            raise ValueError("Native driver timeout must be a positive finite number")
-        if not math.isfinite(timeout) or timeout <= 0:
-            raise ValueError("Native driver timeout must be a positive finite number")
+        duration = _duration(timeout)
         driver = Path(driver_path)
         config = Path(config_path)
         if not driver.is_absolute() or not config.is_absolute():
             raise ValueError(
                 "Native driver and owner configuration paths must be absolute"
             )
-        self.timeout = float(timeout)
+        self.timeout = duration
         self._mutex = threading.RLock()
         self._responses: queue.Queue[Any] = queue.Queue(maxsize=2)
         self._serial = 0
@@ -413,20 +421,7 @@ class Session:
     ) -> Any:
         # A forked copy may inherit a mutex held by a vanished parent thread.
         self._ensure_current()
-        duration = self.timeout
-        if _timeout is not None:
-            if not isinstance(_timeout, (int, float)) or isinstance(_timeout, bool):
-                raise ValueError("Native driver timeout must be a positive finite number")
-            try:
-                duration = float(_timeout)
-            except OverflowError as error:
-                raise ValueError(
-                    "Native driver timeout must be a positive finite number"
-                ) from error
-            if not math.isfinite(duration) or duration <= 0:
-                raise ValueError("Native driver timeout must be a positive finite number")
-            if duration > threading.TIMEOUT_MAX:
-                raise ValueError("Native driver timeout exceeds the supported wait limit")
+        duration = _duration(self.timeout if _timeout is None else _timeout)
         with self._mutex:
             self._ensure_current()
             self._serial += 1

@@ -373,13 +373,31 @@ class TransportTests(unittest.TestCase):
         self.assertNotIn("argv", result)
 
     def test_invalid_timeout_and_relative_setup_paths_refuse_before_spawn(self):
-        for timeout in (0, -1, float("inf"), float("nan"), True):
+        invalid = (
+            False,
+            True,
+            0,
+            -1,
+            float("nan"),
+            float("inf"),
+            -float("inf"),
+            "30",
+            10**1000,
+            1e300,
+            threading.TIMEOUT_MAX * 2,
+        )
+        with patch(
+            "constellation_native.client.subprocess.Popen",
+            side_effect=AssertionError("Invalid timeout reached process start"),
+        ) as spawn:
+            for timeout in invalid:
+                with self.subTest(timeout=repr(timeout)), self.assertRaises(ValueError):
+                    Session(sys.executable, self.config, timeout=timeout)
             with self.assertRaises(ValueError):
-                Session(sys.executable, self.config, timeout=timeout)
-        with self.assertRaises(ValueError):
-            Session("relative-driver", self.config)
-        with self.assertRaises(ValueError):
-            Session(sys.executable, "relative-config")
+                Session("relative-driver", self.config)
+            with self.assertRaises(ValueError):
+                Session(sys.executable, "relative-config")
+            spawn.assert_not_called()
 
     def test_oversized_request_refuses_locally_before_dispatch(self):
         session = self.session()
