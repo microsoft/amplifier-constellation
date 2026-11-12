@@ -1,5 +1,8 @@
 //! Opt-in registration/query/removal smoke for disposable platform CI runners.
 //! It never launches the registered test executable or pairs a real computer.
+// Match the downloaded desktop applications, including Windows child-process
+// output encoding when their parent has no console.
+#![cfg_attr(windows, windows_subsystem = "windows")]
 use amplifier_native_platform::{self as platform, Application, MACHINE_HELPER, OBSERVATORY};
 use std::{fs, process::Command};
 #[test]
