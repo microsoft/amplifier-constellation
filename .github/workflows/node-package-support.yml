@@ -1,0 +1,54 @@
+name: Pinned private Node inputs
+on:
+  pull_request:
+    paths: ['packaging/node/**', '.github/workflows/node-package-support.yml']
+  push:
+    branches: [main]
+    paths: ['packaging/node/**', '.github/workflows/node-package-support.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+          - runner: macos-15
+            target: macos-arm64
+          - runner: macos-15-intel
+            target: macos-x64
+          - runner: windows-2025
+            target: windows-x64
+          - runner: windows-11-arm
+            target: windows-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: python packaging/node/test_support.py
+      - name: Verify exact official Node on the native OS and architecture
+        env:
+          NODE_PACKAGE_TARGET: ${{ matrix.target }}
+        shell: python
+        run: |
+          import json, os, pathlib, subprocess, sys, tempfile
+          sys.path.insert(0, str(pathlib.Path('packaging/node').resolve()))
+          import node_support
+          with tempfile.TemporaryDirectory() as root:
+              root=pathlib.Path(root)
+              metadata=node_support.prepare(os.environ['NODE_PACKAGE_TARGET'],root/'cache',root/'runtime')
+              env={**os.environ,'PATH':str(root/'no-system-tools')}
+              version=subprocess.check_output([metadata['executable'],'--version'],env=env,text=True).strip()
+              assert version=='v'+metadata['version']
+              probe=subprocess.check_output([metadata['executable'],'--input-type=module','-e',"import {createHash} from 'node:crypto'; import {DatabaseSync} from 'node:sqlite'; const db=new DatabaseSync(':memory:'); console.log(JSON.stringify({arch:process.arch,os:process.platform,value:db.prepare('SELECT 7 as n').get().n,hash:createHash('sha256').update('native').digest('hex')}))"],env=env,text=True)
+              result=json.loads(probe);expected_arch='arm64' if metadata['target'].endswith('arm64') else 'x64'
+              assert result['arch']==expected_arch and result['value']==7
+              assert pathlib.Path(metadata['license']).stat().st_size>1000
+              print(json.dumps({'metadata':metadata,'native':result},indent=2))
