@@ -73,8 +73,8 @@ fn exercise(app: &Application) {
             .output()
             .unwrap();
         assert!(observed.status.success());
-        println!("WINDOWS_TASK_EXPECTED_HOME:{home:?}");
-        println!("WINDOWS_TASK_XML_BYTES:{:?}", observed.stdout);
+        // Its stdout may be lossy under the GUI subsystem. The idempotent
+        // registration below checks the exact Unicode path using the native API.
     }
     // A second registration is exact/idempotent and never replaces another task.
     platform::install_startup(app, &home, &id).unwrap();

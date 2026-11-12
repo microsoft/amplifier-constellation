@@ -417,28 +417,48 @@ pub fn task_matches(
 }
 #[cfg(windows)]
 fn query_windows_task(label: &str) -> Result<Option<String>> {
-    let output = Command::new("schtasks.exe")
-        .args(["/Query", "/TN", label, "/XML"])
-        .output()?;
-    if !output.status.success() {
-        return Ok(None);
-    }
-    let bytes = output.stdout;
-    if bytes.starts_with(&[0xff, 0xfe]) || bytes.starts_with(&[b'<', 0]) {
-        let start = if bytes.starts_with(&[0xff, 0xfe]) {
-            2
-        } else {
-            0
+    // schtasks XML stdout depends on the parent's console codepage. A native
+    // GUI parent can receive lossy '?' substitutions even though the registered
+    // XML is correct. Read its UTF-16 BSTR through Task Scheduler instead.
+    // A dedicated thread keeps our COM apartment independent of the caller's.
+    let label = label.to_owned();
+    std::thread::spawn(move || -> Result<Option<String>> {
+        use windows::{
+            Win32::System::{
+                Com::{
+                    CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                    CoUninitialize,
+                },
+                TaskScheduler::{ITaskService, TaskScheduler},
+                Variant::VARIANT,
+            },
+            core::{BSTR, HRESULT},
         };
-        ensure!((bytes.len() - start) % 2 == 0, "Invalid task XML encoding");
-        let wide: Vec<u16> = bytes[start..]
-            .chunks_exact(2)
-            .map(|b| u16::from_le_bytes([b[0], b[1]]))
-            .collect();
-        Ok(Some(String::from_utf16(&wide)?))
-    } else {
-        Ok(Some(String::from_utf8(bytes)?))
-    }
+        struct Apartment;
+        impl Drop for Apartment {
+            fn drop(&mut self) {
+                unsafe { CoUninitialize() };
+            }
+        }
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok()?;
+            let _apartment = Apartment;
+            let service: ITaskService =
+                CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)?;
+            let empty = VARIANT::default();
+            // Empty variants select this computer and the current user's token.
+            service.Connect(&empty, &empty, &empty, &empty)?;
+            let root = service.GetFolder(&BSTR::from("\\"))?;
+            let task = match root.GetTask(&BSTR::from(label)) {
+                Ok(task) => task,
+                Err(error) if error.code() == HRESULT::from_win32(2) => return Ok(None),
+                Err(error) => return Err(error).context("Cannot inspect startup task"),
+            };
+            Ok(Some(String::from_utf16(&task.Xml()?)?))
+        }
+    })
+    .join()
+    .map_err(|_| anyhow::anyhow!("Startup inspection did not complete"))?
 }
 
 /// Foreground launch failures must remain visible when no terminal was opened.
