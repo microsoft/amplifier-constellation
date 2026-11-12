@@ -1,4 +1,5 @@
 mod config;
+mod data_read;
 mod service_application;
 mod setup;
 mod supervision;
@@ -97,6 +98,12 @@ enum Operation {
         path: String,
         bytes: Vec<u8>,
     },
+    #[serde(rename = "storage.read_data")]
+    StorageReadData {
+        root: String,
+        path: String,
+        max_bytes: Value,
+    },
     #[serde(rename = "storage.remove")]
     StorageRemove { root: String, path: String },
     #[serde(rename = "storage.mkdir")]
@@ -165,7 +172,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.write_data","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1,"private_data_publication":1}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.write_data","storage.read_data","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1,"private_data_publication":1,"private_data_read":1}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -425,6 +432,38 @@ impl Session {
                     },
                 )
             }
+            Operation::StorageReadData {
+                root,
+                path,
+                max_bytes,
+            } => {
+                let Some(limit) = data_read::limit(&max_bytes) else {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "invalid_read_limit",
+                        "max_bytes must be an integer from 1 through 1048576",
+                    ));
+                };
+                let resolved = match self.enrollment.receipt(&root, &path) {
+                    Ok(path) => path,
+                    Err(error) => return Ok(Outcome::failure("refused", "invalid_receipt", error)),
+                };
+                Ok(match data_read::read(&resolved, limit) {
+                    Ok(None) => match self.enrollment.receipt(&root, &path) {
+                        Ok(_) => Outcome::ok(json!({"present":false})),
+                        Err(error) => Outcome::failure("refused", "invalid_receipt", error),
+                    },
+                    Ok(Some(bytes)) => Outcome::ok(json!({"present":true,"bytes":bytes})),
+                    Err(data_read::ReadError::TooLarge) => Outcome::failure(
+                        "refused",
+                        "data_too_large",
+                        "Data snapshot exceeds max_bytes",
+                    ),
+                    Err(data_read::ReadError::Io(error)) => {
+                        Outcome::failure("error", "data_read_failed", error)
+                    }
+                })
+            }
             Operation::StorageMkdir { root, path } => {
                 let path = match self.enrollment.directory(&root, &path) {
                     Ok(path) => path,
@@ -569,6 +608,7 @@ fn serve(enrollment: Enrollment) -> Result<()> {
                 "create_only",
             ],
             Some("storage.write_data") => &["version", "id", "op", "root", "path", "bytes"],
+            Some("storage.read_data") => &["version", "id", "op", "root", "path", "max_bytes"],
             Some("storage.remove" | "storage.mkdir") => &["version", "id", "op", "root", "path"],
             Some("process.launch") => &["version", "id", "op", "name", "result"],
             _ => &[],

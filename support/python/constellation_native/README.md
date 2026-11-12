@@ -51,6 +51,13 @@ not change `private_write`, its create-only option, or executable/directory
 replacement. Reader compatibility remains part of consumer qualification; the
 binding does not change Python file-opening behavior. See the driver's
 [data publication contract](../../../crates/native-platform-driver/PROTOCOL.md#data-snapshot-publication).
+Installations can explicitly use `private_read_data` for enrolled data files when
+`describe` advertises `private_data_read:1` and `storage.read_data`. It returns
+bytes or `None` for observed final-file absence, with a caller-selected limit of
+at most 1 MiB and no truncation. Its production Windows reader permits delete
+sharing; it does not replace other Python reads. The linked contract defines
+refusal, read-failure and Session-loss behavior. Consumer qualification must
+exercise both its selected reader and writer.
 Its [directory/pointer exchange operations](../../../crates/native-platform-driver/PROTOCOL.md)
 use two native renames with an observable gap, not an atomic app/venv swap. The
 domain owns the transaction journal, verification and explicit rollback.

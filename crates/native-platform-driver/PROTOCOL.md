@@ -186,6 +186,36 @@ automatic retry, permission override or implicit change to consumer readers.
 A reader denying delete sharing or a read-only destination still causes failure.
 Consumer qualification must exercise its actual reader behavior.
 
+`private_data_read:1` and `storage.read_data` advertise the corresponding
+installation-owned reader. Its request is `{root,path,max_bytes}`, with an
+integer limit from 1 through 1,048,576 bytes. It uses the same enrolled-root,
+ordinary-file, owner and path validation. It does not create parents, repair
+permissions, acquire a transaction lock or change the journal. The installation
+retains responsibility for its surrounding transaction and reference checks.
+
+The result is either `{present:true,bytes:[...]}` or `{present:false}`. Only a
+missing final file at the actual open returns absence; an empty file is present
+with an empty byte list. Invalid paths or policies are refused. Read/open errors
+remain errors, and data exceeding the requested limit is refused without
+returning a truncated snapshot. A missing or unsafe parent is not file absence.
+
+On Windows this production reader explicitly grants read, write and delete
+sharing. Its open handle keeps the selected file snapshot while a compatible
+data publication replaces the directory entry. This does not provide snapshot
+isolation from concurrent in-place writes. It rejects non-ordinary files
+and reparse points; the Unix opener also refuses symbolic links and special
+files. There is no retry across replacement and no promise of an atomic check
+against a hostile same-owner writer. Strict writes, executable replacement,
+create-only publication and directory exchange remain unchanged. Existing
+Python `Path.read_text`/`read_bytes` calls are not converted by advertising this
+operation; consumers must select and qualify the production reader explicitly.
+
+The Python method `private_read_data(root, path, max_bytes=1048576)` returns
+`bytes` or `None` for observed absence. Its limit is validated before dispatch.
+A transport failure remains a failed observation and invalidates Session-held
+locks; it is not absence or authority to retry a mutation. Invalid result shapes
+also invalidate the Session rather than supplying data or absence.
+
 Rejected preflight remains `refused`. Any publication or flush error is
 `unknown`/`write_unconfirmed`, including a flush failure after the replacement
 may have committed. Persist intent before mutation; after a lost reply, unwind
@@ -246,6 +276,7 @@ executables supplied by a request.
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
 | `private_write_data(root: str, path: str, data: bytes)` | `{}` after protected data snapshot publication; accepts serialized bytes only. Requires advertised `private_data_publication:1` and `storage.write_data`. |
+| `private_read_data(root: str, path: str, *, max_bytes: int = 1048576)` | `bytes` from one protected ordinary file, or `None` for observed final-file absence. Requires advertised `private_data_read:1` and `storage.read_data`; limits are 1 through 1,048,576 bytes, with no truncation. |
 | `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
 | `durable_remove(root: str, path: str)` | `{"absent": True}` after removal or confirmed prior absence. |
 | `launch(name: str, *, result: str \| None = None)` | Detached supervisor generation identity, not command completion or the endpoint's identity. |

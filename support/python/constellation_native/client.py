@@ -660,6 +660,39 @@ class Session:
             "storage.write_data", mutating=True, root=root, path=path, bytes=list(data)
         )
 
+    def private_read_data(
+        self, root: str, path: str, *, max_bytes: int = 1048576
+    ) -> bytes | None:
+        """Read a bounded protected snapshot; absence is distinct from empty bytes.
+
+        Requires advertised private_data_read:1 / storage.read_data. A read
+        failure grants no retry or mutation authority. Transport or malformed
+        result failure invalidates the Session and every lock it held.
+        """
+        if type(max_bytes) is not int or not 1 <= max_bytes <= 1048576:
+            raise ValueError("max_bytes must be an integer from 1 through 1048576")
+        # Preserve the fork check before taking a possibly inherited mutex, and
+        # keep response validation inside this same serialized invocation.
+        self._ensure_current()
+        with self._mutex:
+            result = self._call(
+                "storage.read_data", root=root, path=path, max_bytes=max_bytes
+            )
+            if isinstance(result, dict):
+                if set(result) == {"present"} and result["present"] is False:
+                    return None
+                if set(result) == {"present", "bytes"} and result["present"] is True:
+                    data = result["bytes"]
+                    if (
+                        isinstance(data, list)
+                        and len(data) <= max_bytes
+                        and all(type(value) is int and 0 <= value <= 255 for value in data)
+                    ):
+                        return bytes(data)
+            raise self._lost(
+                "invalid_response", "Invalid native data read result", False
+            )
+
     def private_dir(self, root: str, path: str) -> Any:
         """Create one private directory under an enrolled, existing parent."""
         return self._call("storage.mkdir", mutating=True, root=root, path=path)
