@@ -82,6 +82,8 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `process.matches`, `process.status` | `identity` | `{matches: boolean}`; observation errors remain errors |
 | `service.register` | `name` | `{created: boolean}`; configured fresh registration without start |
 | `service.snapshot` | `name` | exact native definition/state and process generation |
+| `tree.inspect` | `name`, `entry` | opaque fixed-root/child filesystem identity, or null if absent |
+| `tree.remove` | `name`, `entry`, `expected` | remove one owner-selected regenerable child under its required lock; observed absence only |
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
 | `storage.remove` | `root`, `path` | durable ordinary-file removal |
@@ -215,6 +217,8 @@ executables supplied by a request.
 | `process_status(identity: Mapping[str, Any])` | Returns the full `{"matches": bool}` object. It is the wire alias, not a second lifecycle/status model. |
 | `service_register(name: str)` | `{"created": bool}`; registers a fresh enrolled definition without starting it. |
 | `service_snapshot(name: str)` | Complete [snapshot](SERVICE-SNAPSHOT.md); an observation failure raises rather than manufacturing stopped state. |
+| `tree_inspect(name: str, entry: str)` | Opaque ordinary-directory identity or null; no recursive scan or mutation. |
+| `tree_remove(name: str, entry: str, expected: Mapping)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. |
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
 | `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
@@ -241,7 +245,7 @@ base class when their outcomes need different handling.
 Lost, malformed, mismatched or timed-out responses permanently close the session.
 For a mutating request they raise `Unknown`; for a read-only request they raise
 `DriverError`. Lock acquisition/release, registration, service action, storage
-changes, launch, pointer preparation and exchange count as mutations here.
+changes, tree removal, launch, pointer preparation and exchange count as mutations here.
 Read-only failures do not settle earlier effects. Calls after close raise
 `DriverError` with `closed_session`; use after fork raises `forked_session`.
 Oversized requests and non-finite JSON values fail before dispatch with
@@ -266,6 +270,50 @@ Pointer preparation and exchange require the configured exchange lock held in
 this same driver invocation. They neither add a new receipt format nor replace
 the domain journal. Keep the explicit two-rename and unknown-outcome behavior
 described above when using them from Python.
+
+### Regenerable trees
+
+`describe.regenerable_tree_removal == 1` advertises this optional primitive.
+It requires explicit protected Config v1 enrollment; ordinary storage permission
+does not grant recursive cleanup:
+
+```json
+{"regenerable_trees":{"stages":{"root":"state","path":"stages","lock":"installation"}}}
+```
+
+`root` selects an existing protected storage root; `path` selects an existing
+private subdirectory. The subdirectory cannot contain the enrollment file or any
+configured lock. Requests supply its enrolled `name` and exactly one normal child
+`entry`, never an absolute path, traversal, stream, or the capability root itself.
+The child must be an ordinary directory. Root and ancestor links/reparse points
+refuse. An inspection snapshot binds the fixed directory and child filesystem
+identities; it is not a content fingerprint or permission to discard current work.
+
+Before removal, the domain must hold the configured lock across its reference
+checks, durable pruning intent and dispatch. The domain retains all current,
+baseline, rollback, retained-plan and uncertain-transaction protection. An unknown
+or unmarked directory does not become regenerable because inspection succeeds.
+The shared primitive checks the expected identities and preflights the selected
+tree, rejecting mount crossings and unsupported entries. Supported descendant
+symlinks/junctions are leaves; their targets are never traversed. The shared
+preflight also compares each directory's filesystem identity with the parents of
+the enrollment file and all configured locks, so existing mount aliases cannot
+hide those control files inside the selected tree. The standard
+library performs removal synchronously in this invocation, with no detached
+traversal or retry. A final fixed-root check and actual child absence are required
+for `{absent:true}`. Errors after removal begins are `Unknown`, including partial
+deletion and an unverifiable terminal state.
+
+The installation lock coordinates enrolled writers; it is not a filesystem CAS
+or a defense against hostile same-owner/privileged replacement or concurrent
+mount-topology changes. Mount preflight observes the current process namespace,
+including Linux same-device bind mounts. Already-dispatched kernel operations may
+settle after transport loss; invocation termination is not proof of no effects.
+Leave the pruning intent unresolved, unwind lost lock ownership, then open a fresh
+Session/lock for read-only reconciliation. Observed absence may settle that same
+intent; a remaining or replaced tree does not authorize automatic redispatch.
+The normal client deadline is unchanged; neither entry count nor successful prior
+timings guarantee completion within it.
 
 Tests must distinguish actual OS lifecycle/descendant behavior from fixtures,
 and each of the six target OS/architecture runs from cross-compilation. No live

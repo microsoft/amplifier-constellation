@@ -45,6 +45,11 @@ not rewrite receipts, choose restoration plans, unmask services or renew authori
 Its [directory/pointer exchange operations](../../../crates/native-platform-driver/PROTOCOL.md)
 use two native renames with an observable gap, not an atomic app/venv swap. The
 domain owns the transaction journal, verification and explicit rollback.
+`tree_inspect` and `tree_remove` operate only on explicitly enrolled regenerable
+directories. The owner retains reference selection and pruning intent; the same
+Session must hold the required lock through inspection and removal. The
+[driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#regenerable-trees)
+owns the link, mount, identity and unknown-outcome rules.
 Background commands own their lifetime
 separately from the short invocation; `Session.close()` does not cancel them.
 

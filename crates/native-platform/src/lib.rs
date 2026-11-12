@@ -4,6 +4,8 @@
 pub mod installation;
 #[cfg(feature = "installation")]
 pub mod installation_exchange;
+#[cfg(feature = "installation")]
+pub mod installation_tree;
 #[cfg(all(windows, feature = "installation"))]
 mod installation_windows;
 #[cfg(feature = "local-auth")]

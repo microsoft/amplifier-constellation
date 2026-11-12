@@ -6,6 +6,7 @@ mod supervision;
 use amplifier_native_platform::{
     installation::{self, ActionOutcome, ServiceAction},
     installation_exchange::{self, EntryRef, MutationOutcome},
+    installation_tree,
     locking::InstallationLock,
     process,
     registration::{self, RegistrationOutcome},
@@ -65,6 +66,14 @@ enum Operation {
         retained: EntryRef,
         expected_current: Value,
         expected_incoming: Value,
+    },
+    #[serde(rename = "tree.inspect")]
+    TreeInspect { name: String, entry: String },
+    #[serde(rename = "tree.remove")]
+    TreeRemove {
+        name: String,
+        entry: String,
+        expected: Value,
     },
     #[serde(rename = "service.snapshot")]
     ServiceSnapshot { name: String },
@@ -150,7 +159,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -261,6 +270,56 @@ impl Session {
                     &expected_current,
                     &expected_incoming,
                 )?))
+            }
+            Operation::TreeInspect { name, entry } => {
+                if let Err(error) = installation_tree::validate_entry(&entry) {
+                    return Ok(Outcome::failure("refused", "invalid_tree_entry", error));
+                }
+                let root = self.enrollment.tree_directory(&name)?;
+                Ok(Outcome::ok(installation_tree::inspect(&root, &entry)?))
+            }
+            Operation::TreeRemove {
+                name,
+                entry,
+                expected,
+            } => {
+                let profile = cfg
+                    .regenerable_trees
+                    .get(&name)
+                    .context("Unenrolled regenerable tree")?;
+                if !self.locks.contains_key(&profile.lock) {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "lock_not_held",
+                        "Hold the configured tree lock across reference checks, journal and removal",
+                    ));
+                }
+                if let Err(error) = installation_tree::validate_entry(&entry) {
+                    return Ok(Outcome::failure("refused", "invalid_tree_entry", error));
+                }
+                let root = self.enrollment.tree_directory(&name)?;
+                let protected_parents = cfg
+                    .locks
+                    .values()
+                    .map(PathBuf::as_path)
+                    .chain(std::iter::once(self.enrollment.path.as_path()))
+                    .map(|path| {
+                        path.parent()
+                            .map(PathBuf::from)
+                            .context("Installation control path needs a parent")
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(
+                    match installation_tree::remove(&root, &entry, &expected, &protected_parents)? {
+                        MutationOutcome::Applied { state } => Outcome::ok(state),
+                        MutationOutcome::Refused { reason } => {
+                            Outcome::failure("refused", "tree_precondition", reason)
+                        }
+                        MutationOutcome::Unknown { phase, error } => {
+                            Outcome::failure("unknown", phase, error)
+                        }
+                    },
+                )
             }
             Operation::ServiceSnapshot { name } => {
                 let mut snapshot =
@@ -438,6 +497,8 @@ fn serve(enrollment: Enrollment) -> Result<()> {
             Some("process.identity") => &["version", "id", "op", "pid"],
             Some("process.matches" | "process.status") => &["version", "id", "op", "identity"],
             Some("exchange.inspect") => &["version", "id", "op", "name", "entry"],
+            Some("tree.inspect") => &["version", "id", "op", "name", "entry"],
+            Some("tree.remove") => &["version", "id", "op", "name", "entry", "expected"],
             Some("exchange.prepare_pointer") => &[
                 "version",
                 "id",

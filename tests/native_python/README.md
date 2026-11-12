@@ -60,3 +60,20 @@ and fixture ownership diagnostics in `native-packaged-python-result.json` and it
 log. The regular Python 3.13 pass remains; the production packaging lock and global
 PATH are unchanged. This qualifies the local driver/Python boundary, not the full
 Minecraft dependency graph, game lifecycle, or fresh consumer desktop experience.
+
+`test_tree.py` uses production setup and the actual driver to remove only an
+explicitly enrolled regenerable child. It checks lock contention, stale root and
+child identities, invalid paths, outside sentinels behind links/junctions, ordinary
+long Windows paths, and read-only reconciliation after a genuinely committed but
+discarded removal reply. The Linux bind-mount fixture runs in a separate mount
+namespace; unavailable unprivileged and noninteractive privileged namespaces are
+reported as skipped, never mount-protection proof.
+
+`run_tree_scale.py` runs once per native target, separately from both unittest
+passes: 58,924 files, 1,064 real links/junctions and 12 nested directories total
+60,000 descendants. It records actual removal time with the unchanged 30-second
+Session deadline, source/driver hashes, independent counts and outside-sentinel
+preservation. Failure retains an error/unknown receipt and performs no second
+removal request. This is one measured package-shaped fixture, not a universal
+30-second guarantee, hostile-writer filesystem isolation, or completed Minecraft
+retention/lifecycle qualification.

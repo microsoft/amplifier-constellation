@@ -87,6 +87,19 @@ jobs:
             native-packaged-python-result.json
             native-packaged-python.log
           if-no-files-found: warn
+      - name: Qualify one actual 60000-entry regenerable tree
+        run: >-
+          python tests/native_python/run_tree_scale.py
+          --output native-tree-scale-result.json
+          2>&1 | tee native-tree-scale.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-tree-scale-${{ matrix.runner }}
+          path: |
+            native-tree-scale-result.json
+            native-tree-scale.log
+          if-no-files-found: warn
       - name: Record the executed native artifact and target
         run: |
           python - <<'PY'

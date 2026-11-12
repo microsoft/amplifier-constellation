@@ -537,6 +537,21 @@ class Session:
     def service_register(self, name: str) -> Any:
         return self._call("service.register", mutating=True, name=name)
 
+    def tree_inspect(self, name: str, entry: str) -> Any:
+        """Observe one child of an explicitly enrolled regenerable directory."""
+        return self._call("tree.inspect", name=name, entry=entry)
+
+    def tree_remove(self, name: str, entry: str, expected: Mapping[str, Any]) -> Any:
+        """Remove a selected child under the caller's held installation lock.
+
+        Reference selection and durable intent belong to the installation owner.
+        Unknown does not permit retry and invalidates Session-held locks on
+        transport loss; unwind before opening a fresh reconciliation Session.
+        """
+        return self._call(
+            "tree.remove", mutating=True, name=name, entry=entry, expected=expected
+        )
+
     def exchange_inspect(
         self, name: str, entry: Mapping[str, str] | None = None
     ) -> Any:

@@ -29,6 +29,16 @@ pub struct Config {
     pub registrations: BTreeMap<String, Registration>,
     #[serde(default)]
     pub exchanges: BTreeMap<String, EnrolledExchange>,
+    #[serde(default)]
+    pub regenerable_trees: BTreeMap<String, EnrolledTree>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnrolledTree {
+    pub root: String,
+    pub path: PathBuf,
+    pub lock: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,6 +87,7 @@ impl Enrollment {
             .chain(config.service_applications.keys())
             .chain(config.registrations.keys())
             .chain(config.exchanges.keys())
+            .chain(config.regenerable_trees.keys())
         {
             ensure!(valid_name(name), "Invalid enrolled name");
         }
@@ -157,6 +168,29 @@ impl Enrollment {
                 protected_directory(root)?;
             }
         }
+        for tree in config.regenerable_trees.values() {
+            ensure!(
+                config.locks.contains_key(&tree.lock),
+                "Regenerable tree needs its enrolled critical-section lock"
+            );
+            let directory = tree_directory(&config, tree)?;
+            // A cleanup capability must never contain this driver's own
+            // enrollment or lock identities. Domain current/rollback/source
+            // references remain an additional, separately owned decision.
+            for control in config
+                .locks
+                .values()
+                .map(PathBuf::as_path)
+                .chain(std::iter::once(path))
+            {
+                let parent =
+                    fs::canonicalize(control.parent().context("Control path needs a parent")?)?;
+                ensure!(
+                    !path_is_within(&parent, &directory),
+                    "Regenerable tree contains installation control state"
+                );
+            }
+        }
         Ok(Self {
             path: path.to_owned(),
             digest: Sha256::digest(bytes).to_vec(),
@@ -179,6 +213,16 @@ impl Enrollment {
 
     pub fn directory(&self, root: &str, relative: &str) -> Result<PathBuf> {
         self.storage_path(root, relative, true)
+    }
+
+    pub fn tree_directory(&self, name: &str) -> Result<PathBuf> {
+        tree_directory(
+            &self.config,
+            self.config
+                .regenerable_trees
+                .get(name)
+                .context("Unenrolled regenerable tree")?,
+        )
     }
 
     fn storage_path(&self, root: &str, relative: &str, directory: bool) -> Result<PathBuf> {
@@ -249,6 +293,39 @@ impl Enrollment {
             .collect();
         Ok((profile, args))
     }
+}
+
+fn tree_directory(config: &Config, tree: &EnrolledTree) -> Result<PathBuf> {
+    let root = config
+        .roots
+        .get(&tree.root)
+        .context("Unenrolled tree storage root")?;
+    protected_directory(root)?;
+    ensure!(
+        !tree.path.as_os_str().is_empty()
+            && tree
+                .path
+                .components()
+                .all(|c| matches!(c, Component::Normal(_)))
+            && !tree.path.to_string_lossy().contains(':'),
+        "Regenerable tree must be a nonempty relative directory without traversal or streams"
+    );
+    let directory = root.join(&tree.path);
+    protected_directory(&directory)?;
+    Ok(fs::canonicalize(directory)?)
+}
+
+#[cfg(not(windows))]
+fn path_is_within(path: &Path, root: &Path) -> bool {
+    path.starts_with(root)
+}
+
+#[cfg(windows)]
+fn path_is_within(path: &Path, root: &Path) -> bool {
+    // Both inputs are canonical existing paths, including extended Win32 form.
+    // Treat case aliases conservatively even on a case-sensitive subtree.
+    PathBuf::from(path.to_string_lossy().to_lowercase())
+        .starts_with(PathBuf::from(root.to_string_lossy().to_lowercase()))
 }
 
 fn valid_name(name: &str) -> bool {

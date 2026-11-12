@@ -237,7 +237,7 @@ fn normalized_leaf(path: &Path) -> Result<PathBuf> {
     Ok(fs::canonicalize(parent)?.join(name))
 }
 
-fn ordinary_chain(path: &Path) -> Result<()> {
+pub(crate) fn ordinary_chain(path: &Path) -> Result<()> {
     ensure!(
         path.is_absolute()
             && path
@@ -360,18 +360,18 @@ fn sync_parent(path: &Path) -> Result<()> {
 }
 
 #[cfg(unix)]
-fn is_pointer(metadata: &fs::Metadata) -> bool {
+pub(crate) fn is_pointer(metadata: &fs::Metadata) -> bool {
     metadata.file_type().is_symlink()
 }
 #[cfg(windows)]
-fn is_pointer(metadata: &fs::Metadata) -> bool {
+pub(crate) fn is_pointer(metadata: &fs::Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;
     metadata.file_attributes()
         & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT
         != 0
 }
 #[cfg(unix)]
-fn native_identity(_: &Path, metadata: &fs::Metadata) -> Result<Value> {
+pub(crate) fn native_identity(_: &Path, metadata: &fs::Metadata) -> Result<Value> {
     use std::os::unix::fs::MetadataExt;
     Ok(
         json!({"platform":"unix","volume":metadata.dev().to_string(),"object":metadata.ino().to_string()}),
@@ -430,7 +430,7 @@ fn open_entry(path: &Path, access: u32) -> Result<fs::File> {
 }
 
 #[cfg(windows)]
-fn native_identity(path: &Path, metadata: &fs::Metadata) -> Result<Value> {
+pub(crate) fn native_identity(path: &Path, metadata: &fs::Metadata) -> Result<Value> {
     use std::os::windows::io::AsRawHandle;
     use windows_sys::Win32::Storage::FileSystem::{
         BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle, GetVolumeNameForVolumeMountPointW,
@@ -478,6 +478,15 @@ fn native_identity(path: &Path, metadata: &fs::Metadata) -> Result<Value> {
 
 #[cfg(windows)]
 fn validate_pointer_type(path: &Path, _: &fs::Metadata) -> Result<()> {
+    ensure!(
+        reparse_tag(path)? == JUNCTION_TAG,
+        "Only directory junctions are managed source pointers"
+    );
+    Ok(())
+}
+
+#[cfg(windows)]
+pub(crate) fn reparse_tag(path: &Path) -> Result<u32> {
     use std::os::windows::io::AsRawHandle;
     use windows_sys::Win32::Storage::FileSystem::{
         FILE_ATTRIBUTE_TAG_INFO, FileAttributeTagInfo, GetFileInformationByHandleEx,
@@ -496,11 +505,7 @@ fn validate_pointer_type(path: &Path, _: &fs::Metadata) -> Result<()> {
         "Cannot inspect source reparse type: {}",
         std::io::Error::last_os_error()
     );
-    ensure!(
-        info.ReparseTag == JUNCTION_TAG,
-        "Only directory junctions are managed source pointers"
-    );
-    Ok(())
+    Ok(info.ReparseTag)
 }
 
 #[cfg(windows)]
