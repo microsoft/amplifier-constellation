@@ -1,13 +1,12 @@
 #![cfg(feature = "installation")]
 //! Fresh registration only: unique sleep-only services, explicit disposable-CI opt-in.
 use amplifier_native_platform::{
-    installation::{self, Service, ServiceManager},
-    registration::{self, Registration, RegistrationOutcome},
+    installation::{self, ActionOutcome, Service, ServiceAction, ServiceManager},
+    registration::{self, Registration, RegistrationOutcome, RetirementOutcome},
 };
 use serde_json::{Value, json};
 #[cfg(unix)]
 use std::fs;
-#[cfg(not(target_os = "macos"))]
 use std::process::Command;
 use std::{
     path::PathBuf,
@@ -88,9 +87,242 @@ fn fresh_registration_never_starts_or_replaces_existing_profiles_and_pauses() {
             paused,
             "Repeat setup changed an independent pause"
         );
+        assert!(
+            !matches!(
+                registration::retire(&fixture.service, &fixture.profile, &paused),
+                Ok(RetirementOutcome::Retired { .. })
+            ),
+            "Retirement removed an independent pause"
+        );
+        assert_eq!(settled_snapshot(&fixture.service), paused);
         println!(
             "native no-start registration: autostart={autostart}, fresh/repeat/mismatch/independent-pause passed"
         );
+    }
+}
+
+#[test]
+#[ignore = "creates, starts, settles and retires unique disposable current-user services"]
+fn checked_retirement_preserves_active_changed_and_partial_states() {
+    assert_eq!(
+        std::env::var("CONSTELLATION_INSTALLATION_SMOKE").as_deref(),
+        Ok("1")
+    );
+    let fixture = Fixture::new(false);
+    assert!(!installation::manager_registration_exists(&fixture.service).unwrap());
+    assert!(registration::is_retired(&fixture.service).unwrap());
+    assert_eq!(
+        registration::register(&fixture.service, &fixture.profile).unwrap(),
+        RegistrationOutcome::Registered { created: true }
+    );
+    let registered = settled_snapshot(&fixture.service);
+    #[cfg(target_os = "macos")]
+    assert!(
+        !installation::manager_registration_exists(&fixture.service).unwrap(),
+        "No-start LaunchAgent was unexpectedly loaded"
+    );
+    #[cfg(not(target_os = "macos"))]
+    assert!(installation::manager_registration_exists(&fixture.service).unwrap());
+    assert!(!registration::is_retired(&fixture.service).unwrap());
+    #[cfg(windows)]
+    {
+        let mut manager_only = fixture.service.clone();
+        manager_only.definition_path = None;
+        assert!(installation::manager_registration_exists(&manager_only).unwrap());
+    }
+    let definition = std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap();
+    for change in ["args", "exe", "cwd", "description", "autostart"] {
+        let mut changed = fixture.profile.clone();
+        match change {
+            "args" => changed.args.push("different".into()),
+            "exe" => changed.executable = std::env::current_exe().unwrap(),
+            "cwd" => changed.cwd = fixture._temp.path().canonicalize().unwrap(),
+            "description" => changed.description.push_str(" changed"),
+            "autostart" => changed.autostart = true,
+            _ => unreachable!(),
+        }
+        assert!(
+            matches!(
+                registration::retire(&fixture.service, &changed, &registered).unwrap(),
+                RetirementOutcome::Refused { .. }
+            ),
+            "Accepted changed {change}"
+        );
+        assert_eq!(
+            std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap(),
+            definition
+        );
+    }
+    assert_eq!(
+        installation::request_state(&fixture.service, ServiceAction::Start, &registered).unwrap(),
+        ActionOutcome::Accepted
+    );
+    let active = wait_activity(&fixture.service, true);
+    assert!(matches!(
+        registration::retire(&fixture.service, &fixture.profile, &active).unwrap(),
+        RetirementOutcome::Refused { .. }
+    ));
+    assert_eq!(
+        settled_snapshot(&fixture.service)["active"],
+        true,
+        "Retirement stopped a live operation"
+    );
+    assert_eq!(
+        installation::request_state(&fixture.service, ServiceAction::Stop, &active).unwrap(),
+        ActionOutcome::Accepted
+    );
+    let inactive = wait_activity(&fixture.service, false);
+    assert_eq!(
+        registration::retire(&fixture.service, &fixture.profile, &inactive).unwrap(),
+        RetirementOutcome::Retired { removed: true }
+    );
+    assert!(registration::is_retired(&fixture.service).unwrap());
+    assert!(!installation::manager_registration_exists(&fixture.service).unwrap());
+    assert_eq!(
+        registration::retire(&fixture.service, &fixture.profile, &inactive).unwrap(),
+        RetirementOutcome::Retired { removed: false }
+    );
+    // An exported/remaining file does not become manager presence. Neither
+    // absence observation is permission to create or run this operation again.
+    amplifier_native_platform::private_create(
+        fixture.service.definition_path.as_ref().unwrap(),
+        &definition,
+    )
+    .unwrap();
+    #[cfg(target_os = "macos")]
+    assert!(!registration::is_retired(&fixture.service).unwrap());
+    #[cfg(windows)]
+    {
+        let mut manager_only = fixture.service.clone();
+        manager_only.definition_path = None;
+        assert!(!installation::manager_registration_exists(&manager_only).unwrap());
+        assert!(registration::is_retired(&fixture.service).is_err());
+    }
+    let mut invalid = fixture.service.clone();
+    invalid.name = "--not-a-service".into();
+    assert!(installation::manager_registration_exists(&invalid).is_err());
+}
+fn wait_activity(service: &Service, active: bool) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        let observed = settled_snapshot(service);
+        if observed["active"] == active && (active || observed["processes"] == json!([])) {
+            return observed;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "Service did not settle active={active}: {observed}"
+        );
+        thread::sleep(Duration::from_millis(100));
+    }
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "changes only a fresh UUID disposable task's disabled future trigger"]
+fn retirement_checks_full_native_task_not_only_unchanged_action() {
+    use windows::{
+        Win32::System::TaskScheduler::{
+            TASK_IGNORE_REGISTRATION_TRIGGERS, TASK_LOGON_INTERACTIVE_TOKEN, TASK_TRIGGER_TIME,
+            TASK_UPDATE,
+        },
+        core::BSTR,
+    };
+    assert_eq!(
+        std::env::var("CONSTELLATION_INSTALLATION_SMOKE").as_deref(),
+        Ok("1")
+    );
+    let fixture = Fixture::new(false);
+    assert_eq!(
+        registration::register(&fixture.service, &fixture.profile).unwrap(),
+        RegistrationOutcome::Registered { created: true }
+    );
+    let exported = std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap();
+    let changed = with_task(&fixture, |scheduler, task| unsafe {
+        let definition = task.Definition().unwrap();
+        let trigger = definition
+            .Triggers()
+            .unwrap()
+            .Create(TASK_TRIGGER_TIME)
+            .unwrap();
+        trigger.SetEnabled(false.into()).unwrap();
+        trigger
+            .SetStartBoundary(&BSTR::from("2099-12-31T12:00:00"))
+            .unwrap();
+        let empty = windows::Win32::System::Variant::VARIANT::default();
+        let updated = scheduler
+            .GetFolder(&BSTR::from("\\"))
+            .unwrap()
+            .RegisterTaskDefinition(
+                &BSTR::from(&fixture.service.name),
+                &definition,
+                TASK_UPDATE.0 | TASK_IGNORE_REGISTRATION_TRIGGERS.0,
+                &empty,
+                &empty,
+                TASK_LOGON_INTERACTIVE_TOKEN,
+                &empty,
+            )
+            .unwrap();
+        String::from_utf16(&updated.Xml().unwrap()).unwrap()
+    });
+    let observed = settled_snapshot(&fixture.service);
+    assert!(
+        registration::profile_matches(&fixture.service, &fixture.profile, &observed).unwrap(),
+        "Fixed action is still the same; trigger differs"
+    );
+    assert!(matches!(
+        registration::retire(&fixture.service, &fixture.profile, &observed).unwrap(),
+        RetirementOutcome::Refused { .. }
+    ));
+    assert_eq!(
+        with_task(&fixture, |_, task| unsafe {
+            String::from_utf16(&task.Xml().unwrap()).unwrap()
+        }),
+        changed
+    );
+    assert_eq!(
+        std::fs::read(fixture.service.definition_path.as_ref().unwrap()).unwrap(),
+        exported
+    );
+}
+#[cfg(windows)]
+fn with_task<T>(
+    fixture: &Fixture,
+    inspect: impl FnOnce(
+        &windows::Win32::System::TaskScheduler::ITaskService,
+        &windows::Win32::System::TaskScheduler::IRegisteredTask,
+    ) -> T,
+) -> T {
+    use windows::{
+        Win32::System::{
+            Com::{
+                CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                CoUninitialize,
+            },
+            TaskScheduler::{ITaskService, TaskScheduler},
+            Variant::VARIANT,
+        },
+        core::BSTR,
+    };
+    struct Apartment;
+    impl Drop for Apartment {
+        fn drop(&mut self) {
+            unsafe { CoUninitialize() };
+        }
+    }
+    unsafe {
+        CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+        let _apartment = Apartment;
+        let scheduler: ITaskService =
+            CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER).unwrap();
+        let empty = VARIANT::default();
+        scheduler.Connect(&empty, &empty, &empty, &empty).unwrap();
+        let task = scheduler
+            .GetFolder(&BSTR::from("\\"))
+            .unwrap()
+            .GetTask(&BSTR::from(&fixture.service.name))
+            .unwrap();
+        inspect(&scheduler, &task)
     }
 }
 fn settled_snapshot(service: &Service) -> Value {
@@ -123,7 +355,7 @@ impl Fixture {
     fn new(autostart: bool) -> Self {
         let temp = tempfile::tempdir().unwrap();
         let cwd = temp.path().canonicalize().unwrap().join("literal $cwd");
-        amplifier_native_platform::private_dir(&cwd).unwrap();
+        amplifier_native_platform::private_create_dir(&cwd).unwrap();
         let label = format!("constellation-registration-test-{}", uuid::Uuid::new_v4());
         #[cfg(target_os = "linux")]
         let service = {
@@ -236,6 +468,12 @@ impl Drop for Fixture {
         }
         #[cfg(target_os = "macos")]
         {
+            let _ = Command::new("/bin/launchctl")
+                .args([
+                    "bootout",
+                    &format!("gui/{}/{}", unsafe { libc::geteuid() }, self.service.name),
+                ])
+                .output();
             let _ = fs::remove_file(self.service.definition_path.as_ref().unwrap());
         }
         #[cfg(windows)]

@@ -144,6 +144,30 @@ fn task(name: &str, expired: &AtomicBool) -> Result<(ITaskService, IRegisteredTa
     }
 }
 
+pub(crate) fn registration_exists(name: String) -> Result<bool> {
+    use windows::{
+        Win32::System::{
+            Com::{CLSCTX_INPROC_SERVER, CoCreateInstance},
+            TaskScheduler::{ITaskService, TaskScheduler},
+            Variant::VARIANT,
+        },
+        core::{BSTR, HRESULT},
+    };
+    bounded(move |expired| unsafe {
+        live(expired)?;
+        let scheduler: ITaskService = CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)?;
+        let empty = VARIANT::default();
+        scheduler.Connect(&empty, &empty, &empty, &empty)?;
+        let root = scheduler.GetFolder(&BSTR::from("\\"))?;
+        live(expired)?;
+        match root.GetTask(&BSTR::from(name)) {
+            Ok(_) => Ok(true),
+            Err(error) if error.code() == HRESULT::from_win32(2) => Ok(false),
+            Err(error) => Err(error).context("Cannot establish task absence"),
+        }
+    })
+}
+
 fn text(value: BSTR) -> Result<String> {
     Ok(String::from_utf16(&value)?)
 }
@@ -233,7 +257,7 @@ pub(crate) fn account_sid(account: &str) -> Result<String> {
     }
 }
 
-fn view(
+pub(crate) fn view(
     service: &ITaskService,
     task: &IRegisteredTask,
     expired: &AtomicBool,

@@ -20,6 +20,28 @@ uses [two explicit native renames](../native-platform-driver/PROTOCOL.md), with 
 observable gap. It is separate from protected JSON writes and is not an atomic
 app/venv swap; the domain owns the transaction journal, verification and rollback.
 
+Fixed operation workers can use Rust `registration::register` with
+`autostart: false`, followed by the existing checked start. After the worker
+settles, `registration::retire(service, profile, expected_snapshot)` removes only
+that exact inactive profile. It checks the current owner, protected definition
+and parent, unchanged definition/process observations, and independent pauses.
+Windows additionally compares the full normalized current-user task, including
+triggers and principal. Retirement never stops, enables, unmasks, repairs, or
+recursively removes anything. `Unknown` after a possible mutation requires
+observation with the original journal; it never authorizes running the operation
+again. Native managers have no atomic compare-and-delete, so callers serialize
+their writers and retain the same-owner edit race after the final observation.
+
+`registration::is_retired` confirms native registration **and** definition absence.
+A remaining unloaded LaunchAgent plist returns false because it is also a normal
+no-start registration; other partial or uninspectable states remain errors.
+False grants no cleanup or retry authority. The separate read-only
+`installation::manager_registration_exists` checks only the exact native name;
+false does not say that a plist or exported task XML is absent. Neither API is a
+new Python/driver command. Six-platform opt-in lifetime tests register a fresh
+worker through its parent, replace the parent, then retire the worker while
+checking that the replacement process keeps its identity and heartbeat.
+
 Use `private_write_data` for data journals read while they are published. Existing
 readers keep their opened snapshot; new readers see the replacement. Windows
 readers must grant delete sharing, as Rust's ordinary file reads do. A reader that

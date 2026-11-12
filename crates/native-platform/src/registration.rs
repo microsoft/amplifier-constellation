@@ -12,6 +12,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[path = "retirement.rs"]
+mod retirement;
+pub use retirement::{RetirementOutcome, is_retired, retire};
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Registration {
