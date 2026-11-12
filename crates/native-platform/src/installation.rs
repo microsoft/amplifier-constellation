@@ -124,6 +124,66 @@ impl Service {
     }
 }
 
+/// Read-only native-manager presence for one exact current-user service name.
+/// False requires explicit native not-found; inspection errors remain errors.
+/// An unloaded LaunchAgent plist or exported task XML can still exist. This
+/// grants no ownership, cleanup, start, or retry authority. Windows callers may
+/// omit definition_path when only the manager registration is being inspected.
+pub fn manager_registration_exists(service: &Service) -> Result<bool> {
+    service.validate()?;
+    match service.manager {
+        ServiceManager::SystemdUser => {
+            let result = execute(systemctl(&[
+                "show",
+                "--property=LoadState,FragmentPath",
+                "--",
+                &service.name,
+            ]))?;
+            let props = properties(&result.stdout)?;
+            if props.get("LoadState").map(String::as_str) == Some("not-found")
+                && props.get("FragmentPath").map(String::as_str) == Some("")
+            {
+                return Ok(false);
+            }
+            ensure!(
+                result.status.success(),
+                "Cannot establish systemd registration state"
+            );
+            ensure!(
+                matches!(
+                    props.get("LoadState").map(String::as_str),
+                    Some("loaded" | "masked")
+                ),
+                "Unknown systemd registration state"
+            );
+            Ok(true)
+        }
+        #[cfg(target_os = "macos")]
+        ServiceManager::LaunchAgent => {
+            let domain = format!("gui/{}", unsafe { libc::geteuid() });
+            let mut check = std::process::Command::new("/bin/launchctl");
+            check.args(["print-disabled", &domain]);
+            disabled_override(&checked(check)?, &service.name)?;
+            let mut query = std::process::Command::new("/bin/launchctl");
+            query.args(["print", &format!("{domain}/{}", service.name)]);
+            let result = execute(query)?;
+            if result.status.success() {
+                return Ok(true);
+            }
+            ensure!(
+                result.status.code() == Some(113),
+                "Cannot establish LaunchAgent absence"
+            );
+            Ok(false)
+        }
+        #[cfg(windows)]
+        ServiceManager::ScheduledTask => {
+            crate::installation_windows::registration_exists(service.name.clone())
+        }
+        #[allow(unreachable_patterns)]
+        _ => anyhow::bail!("Unsupported service manager"),
+    }
+}
 /// Read-only failure remains an error; it is never evidence that a service stopped.
 pub fn snapshot(service: &Service) -> Result<Value> {
     service.validate()?;
@@ -180,12 +240,12 @@ pub fn request_state_checked(
     dispatch(service, action, &current)
 }
 
-enum CheckedSnapshot {
+pub(crate) enum CheckedSnapshot {
     Confirmed(Value),
     Refused(ActionOutcome),
 }
 
-fn action_snapshot(
+pub(crate) fn action_snapshot(
     expected: &Value,
     mut observe: impl FnMut() -> Result<Value>,
     validate: impl FnOnce(&Value) -> Result<Option<ActionOutcome>>,
@@ -276,7 +336,7 @@ fn process_observation(role: &str, pid: u32) -> Result<Option<Value>> {
         crate::process::identity(pid)?.context("Service process vanished during observation")?;
     Ok(Some(json!({"role":role,"identity":identity})))
 }
-fn observe(service: &Service) -> Result<Value> {
+pub(crate) fn observe(service: &Service) -> Result<Value> {
     match service.manager {
         ServiceManager::SystemdUser => systemd_snapshot(service),
         ServiceManager::LaunchAgent => launch_snapshot(service),
@@ -396,7 +456,7 @@ pub(crate) fn systemctl(args: &[&str]) -> Command {
         .args(args);
     command
 }
-fn properties(text: &str) -> Result<BTreeMap<String, String>> {
+pub(crate) fn properties(text: &str) -> Result<BTreeMap<String, String>> {
     let mut map = BTreeMap::new();
     for line in text.lines() {
         let (key, value) = line.split_once('=').context("Malformed service property")?;

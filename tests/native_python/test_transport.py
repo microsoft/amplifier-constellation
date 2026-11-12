@@ -51,7 +51,7 @@ for line in sys.stdin.buffer:
         held = None
     if mode == "lost" and request["op"] == "process.launch":
         sys.exit(0)
-    if mode == "timeout":
+    if mode == "timeout" and request["op"] != "describe":
         time.sleep(30)
     if mode == "wrong_id":
         response["id"] = "not-the-request"
@@ -311,12 +311,29 @@ class TransportTests(unittest.TestCase):
                 session.close()
 
     def test_response_timeout_is_bounded_and_unknown_for_mutation(self):
-        session = self.session("timeout", timeout=0.25)
+        # This is a stalled response after receipt, not a Python-startup race.
+        # A deliberately slow peer must first prove read-only readiness using
+        # the setup budget; only the mutation gets the exact 250ms deadline.
+        self.script.write_text(
+            FIXTURE.replace(
+                "held = None",
+                'held = None\nif mode == "timeout":\n    time.sleep(0.5)',
+                1,
+            ),
+            encoding="utf-8",
+        )
+        session = self.session("timeout", timeout=2)
+        self.assertEqual(session.describe()["op"], "describe")
+        session.timeout = 0.25
         start = time.monotonic()
         with self.assertRaises(Unknown):
             session.launch("probe")
         self.assertLess(time.monotonic() - start, 3)
-        self.assertEqual(len(self.requests()), 1)
+        self.assertEqual([r["op"] for r in self.requests()], ["describe", "process.launch"])
+        with self.assertRaises(DriverError) as caught:
+            session.launch("probe")
+        self.assertEqual(caught.exception.code, "closed_session")
+        self.assertEqual([r["op"] for r in self.requests()], ["describe", "process.launch"])
 
     def test_full_request_pipe_cannot_bypass_deadline(self):
         session = self.session("no_read", timeout=0.25)

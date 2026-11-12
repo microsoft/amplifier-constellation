@@ -97,6 +97,36 @@ fn writing_or_creating_token_does_not_restrict_existing_public_parent() {
     assert_eq!(fs::read_dir(parent).unwrap().count(), 1);
 }
 
+#[test]
+fn private_directory_validation_never_creates_or_repairs_existing_policy() {
+    use amplifier_native_platform::{private_create_dir, validate_private_directory};
+    let temp = tempfile::tempdir().unwrap();
+    let directory = temp.path().join("private-observation");
+    assert!(validate_private_directory(&directory).is_err());
+    assert!(!directory.exists());
+    private_create_dir(&directory).unwrap();
+    private_create(&directory.join("retained"), b"same data").unwrap();
+    validate_private_directory(&directory).unwrap();
+    let private_policy = parent_policy(&directory);
+    validate_private_directory(&directory).unwrap();
+    assert_eq!(parent_policy(&directory), private_policy);
+    assert!(validate_private_directory(&directory.join("retained")).is_err());
+    make_public(&directory);
+    let public_policy = parent_policy(&directory);
+    assert!(validate_private_directory(&directory).is_err());
+    assert_eq!(parent_policy(&directory), public_policy);
+    assert_eq!(fs::read(directory.join("retained")).unwrap(), b"same data");
+    #[cfg(unix)]
+    {
+        let target = temp.path().join("private-target");
+        private_create_dir(&target).unwrap();
+        let link = temp.path().join("link");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert!(validate_private_directory(&link).is_err());
+        assert!(link.is_symlink());
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn new_directories_and_files_are_private_but_existing_ancestor_is_unchanged() {
