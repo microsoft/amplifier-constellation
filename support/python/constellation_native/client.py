@@ -646,6 +646,20 @@ class Session:
             create_only=create_only,
         )
 
+    def private_write_data(self, root: str, path: str, data: bytes) -> Any:
+        """Publish a protected data snapshot while compatible readers keep the old one.
+
+        Requires advertised private_data_publication:1 / storage.write_data.
+        Windows readers must permit delete sharing. This is for data journals,
+        not executable or directory replacement. Publication/flush uncertainty
+        remains Unknown; never infer that the old file survived or retry.
+        """
+        if not isinstance(data, bytes):
+            raise TypeError("private_write_data expects already serialized bytes")
+        return self._call(
+            "storage.write_data", mutating=True, root=root, path=path, bytes=list(data)
+        )
+
     def private_dir(self, root: str, path: str) -> Any:
         """Create one private directory under an enrolled, existing parent."""
         return self._call("storage.mkdir", mutating=True, root=root, path=path)

@@ -91,6 +91,12 @@ enum Operation {
         #[serde(default)]
         create_only: bool,
     },
+    #[serde(rename = "storage.write_data")]
+    StorageWriteData {
+        root: String,
+        path: String,
+        bytes: Vec<u8>,
+    },
     #[serde(rename = "storage.remove")]
     StorageRemove { root: String, path: String },
     #[serde(rename = "storage.mkdir")]
@@ -159,7 +165,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.write_data","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1,"private_data_publication":1}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -403,6 +409,22 @@ impl Session {
                     Err(e) => Outcome::failure("unknown", "write_unconfirmed", e),
                 })
             }
+            Operation::StorageWriteData { root, path, bytes } => {
+                let path = match self.enrollment.receipt(&root, &path) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        return Ok(Outcome::failure("refused", "invalid_receipt", error));
+                    }
+                };
+                // Explicit data publication only. Strict writes and executable
+                // replacement retain their existing lifecycle and share rules.
+                Ok(
+                    match amplifier_native_platform::private_write_data(&path, &bytes) {
+                        Ok(()) => Outcome::ok(json!({})),
+                        Err(error) => Outcome::failure("unknown", "write_unconfirmed", error),
+                    },
+                )
+            }
             Operation::StorageMkdir { root, path } => {
                 let path = match self.enrollment.directory(&root, &path) {
                     Ok(path) => path,
@@ -546,6 +568,7 @@ fn serve(enrollment: Enrollment) -> Result<()> {
                 "bytes",
                 "create_only",
             ],
+            Some("storage.write_data") => &["version", "id", "op", "root", "path", "bytes"],
             Some("storage.remove" | "storage.mkdir") => &["version", "id", "op", "root", "path"],
             Some("process.launch") => &["version", "id", "op", "name", "result"],
             _ => &[],

@@ -86,6 +86,7 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `tree.remove` | `name`, `entry`, `expected` | remove one owner-selected regenerable child under its required lock; observed absence only |
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
+| `storage.write_data` | `root`, `path`, `bytes` (array of octets) | protected data snapshot publication; compatible open readers retain the old snapshot |
 | `storage.remove` | `root`, `path` | durable ordinary-file removal |
 | `storage.mkdir` | `root`, `path` | private child directory under an existing private parent; existing policies are not changed |
 | `process.launch` | `name`, optional `result` | detached supervisor generation identity |
@@ -169,6 +170,29 @@ the next incoming and a fresh retention destination. No deletion, automatic retr
 or whole-state rollback is provided. Domain owners still journal operations,
 verify source fingerprints, close admission and settle services.
 
+## Data snapshot publication
+
+`describe` advertises `private_data_publication:1` and `storage.write_data` when
+the explicit data writer is available. It uses the same protected enrolled-root,
+ordinary-file, owner and path checks as `storage.write`; it adds no path authority.
+The installation chooses this operation only for serialized data snapshots such
+as journals. Existing strict `storage.write`, create-only writes, executable
+replacement and directory exchange retain their original behavior.
+
+On Windows, this reuses the native library's `private_write_data`: compatible
+readers must grant delete sharing. An already-open reader retains the old file;
+a fresh open sees the complete replacement. There is no missing-file fallback,
+automatic retry, permission override or implicit change to consumer readers.
+A reader denying delete sharing or a read-only destination still causes failure.
+Consumer qualification must exercise its actual reader behavior.
+
+Rejected preflight remains `refused`. Any publication or flush error is
+`unknown`/`write_unconfirmed`, including a flush failure after the replacement
+may have committed. Persist intent before mutation; after a lost reply, unwind
+the Session-held critical section and reacquire before freshly reading the same
+intent. Cached old reader bytes do not prove publication failed. This operation
+does not settle the domain journal or authorize a second dispatch.
+
 ## Python binding
 
 Import `Session`, `DriverError`, `Busy`, `Refused`, and `Unknown` from
@@ -221,6 +245,7 @@ executables supplied by a request.
 | `tree_remove(name: str, entry: str, expected: Mapping, *, timeout: float \| None = None)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. Optional timeout applies only to this call. |
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
+| `private_write_data(root: str, path: str, data: bytes)` | `{}` after protected data snapshot publication; accepts serialized bytes only. Requires advertised `private_data_publication:1` and `storage.write_data`. |
 | `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
 | `durable_remove(root: str, path: str)` | `{"absent": True}` after removal or confirmed prior absence. |
 | `launch(name: str, *, result: str \| None = None)` | Detached supervisor generation identity, not command completion or the endpoint's identity. |

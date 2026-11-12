@@ -42,6 +42,15 @@ parent. An existing path must already be an ordinary private directory; it never
 repairs an unrelated path's permissions or recursively invents parents.
 `private_write` accepts the caller's already serialized bytes. The binding does
 not rewrite receipts, choose restoration plans, unmask services or renew authority.
+For data journals, an installation may explicitly select `private_write_data`
+after checking `describe` advertises `private_data_publication:1` and
+`storage.write_data`. Windows readers must permit delete sharing; an existing
+reader keeps its old snapshot, while a fresh open observes the published one.
+Use a fresh read to reconcile the original intent after uncertainty. This does
+not change `private_write`, its create-only option, or executable/directory
+replacement. Reader compatibility remains part of consumer qualification; the
+binding does not change Python file-opening behavior. See the driver's
+[data publication contract](../../../crates/native-platform-driver/PROTOCOL.md#data-snapshot-publication).
 Its [directory/pointer exchange operations](../../../crates/native-platform-driver/PROTOCOL.md)
 use two native renames with an observable gap, not an atomic app/venv swap. The
 domain owns the transaction journal, verification and explicit rollback.
