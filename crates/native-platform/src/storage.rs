@@ -195,3 +195,58 @@ fn commit(from: &Path, to: &Path, create_only: bool) -> Result<()> {
     }
     Ok(())
 }
+
+/// Publish a completed installation directory without replacing any destination,
+/// including a concurrently created empty directory. No copying fallback is used.
+pub fn publish_directory_if_absent(from: &Path, to: &Path) -> Result<()> {
+    ensure!(
+        !from.is_symlink() && from.is_dir(),
+        "Publish an ordinary staged directory"
+    );
+    ensure!(!to.is_symlink(), "An existing destination was preserved");
+    publish_directory_native(from, to)?;
+    #[cfg(unix)]
+    {
+        if let Some(parent) = from.parent() {
+            File::open(parent)?.sync_all()?;
+        }
+        if to.parent() != from.parent()
+            && let Some(parent) = to.parent()
+        {
+            File::open(parent)?.sync_all()?;
+        }
+    }
+    Ok(())
+}
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt};
+    let from = CString::new(from.as_os_str().as_bytes())?;
+    let to = CString::new(to.as_os_str().as_bytes())?;
+    #[cfg(target_os = "linux")]
+    let result = unsafe {
+        libc::renameat2(
+            libc::AT_FDCWD,
+            from.as_ptr(),
+            libc::AT_FDCWD,
+            to.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    };
+    #[cfg(target_os = "macos")]
+    let result = unsafe { libc::renamex_np(from.as_ptr(), to.as_ptr(), libc::RENAME_EXCL) };
+    if result != 0 {
+        return Err(std::io::Error::last_os_error()).context(
+            "Cannot publish installation; the destination and staged files were preserved",
+        );
+    }
+    Ok(())
+}
+#[cfg(windows)]
+fn publish_directory_native(from: &Path, to: &Path) -> Result<()> {
+    commit(from, to, true)
+}
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+fn publish_directory_native(_from: &Path, _to: &Path) -> Result<()> {
+    anyhow::bail!("Atomic installation publication is not supported on this platform")
+}

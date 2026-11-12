@@ -188,3 +188,48 @@ fn configured_https_origin_is_separate_from_local_setup() {
         assert!(validate_https_origin(value).is_err(), "{value}");
     }
 }
+
+#[test]
+fn staged_directory_publication_preserves_even_empty_existing_destination() {
+    let temp = tempfile::tempdir().unwrap();
+    let from = temp.path().join("stage");
+    let to = temp.path().join("installed");
+    fs::create_dir(&from).unwrap();
+    fs::write(from.join("identity"), b"preserve").unwrap();
+    fs::create_dir(&to).unwrap();
+    assert!(publish_directory_if_absent(&from, &to).is_err());
+    assert_eq!(fs::read(from.join("identity")).unwrap(), b"preserve");
+    assert_eq!(fs::read_dir(&to).unwrap().count(), 0);
+    fs::remove_dir(&to).unwrap();
+    publish_directory_if_absent(&from, &to).unwrap();
+    assert!(!from.exists());
+    assert_eq!(fs::read(to.join("identity")).unwrap(), b"preserve");
+}
+#[test]
+fn concurrent_destination_creation_is_never_replaced() {
+    for _ in 0..16 {
+        let temp = tempfile::tempdir().unwrap();
+        let from = temp.path().join("stage");
+        let to = temp.path().join("installed");
+        fs::create_dir(&from).unwrap();
+        fs::write(from.join("identity"), b"new installation").unwrap();
+        let barrier = Arc::new(Barrier::new(2));
+        let start = barrier.clone();
+        let target = to.clone();
+        let other = std::thread::spawn(move || {
+            start.wait();
+            fs::create_dir(&target).is_ok()
+        });
+        barrier.wait();
+        let published = publish_directory_if_absent(&from, &to).is_ok();
+        let created = other.join().unwrap();
+        assert_ne!(published, created);
+        if created {
+            assert!(from.join("identity").exists());
+            assert_eq!(fs::read_dir(&to).unwrap().count(), 0);
+        } else {
+            assert!(!from.exists());
+            assert_eq!(fs::read(to.join("identity")).unwrap(), b"new installation");
+        }
+    }
+}

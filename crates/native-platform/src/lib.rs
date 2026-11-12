@@ -6,7 +6,9 @@ use anyhow::{Result, ensure};
 pub use platform::*;
 #[cfg(windows)]
 pub use storage::current_user_sid;
-pub use storage::{private_create, private_dir, private_write, protect_file};
+pub use storage::{
+    private_create, private_dir, private_write, protect_file, publish_directory_if_absent,
+};
 
 /// Fixed application-owned startup profile. No remote command surface is exposed.
 #[derive(Clone, Copy, Debug)]
