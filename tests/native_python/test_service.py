@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -15,16 +16,31 @@ import uuid
 from test_driver import DRIVER, Refused, Session, protect
 
 
+@contextmanager
+def fixture_directory():
+    temp = tempfile.TemporaryDirectory(
+        prefix="native-service-app-",
+        dir=os.environ.get("CONSTELLATION_NATIVE_TEST_ROOT"),
+    )
+    try:
+        yield temp.name
+    finally:
+        failure = sys.exc_info()[1]
+        try:
+            temp.cleanup()
+        except Exception as error:
+            if failure is None:
+                raise
+            failure.add_note(f"Disposable directory cleanup also failed: {error!r}")
+
+
 @unittest.skipUnless(
     DRIVER and os.environ.get("CONSTELLATION_INSTALLATION_SMOKE") == "1",
     "Requires an opted-in disposable native service runner",
 )
 class NativeServiceApplicationTests(unittest.TestCase):
     def test_fresh_no_start_exact_controller_binding_and_preserved_pause(self):
-        with tempfile.TemporaryDirectory(
-            prefix="native-service-app-",
-            dir=os.environ.get("CONSTELLATION_NATIVE_TEST_ROOT"),
-        ) as temp:
+        with fixture_directory() as temp:
             root = Path(temp).resolve()
             protect(root)
             config = root / "owner.json"
@@ -171,7 +187,13 @@ class NativeServiceApplicationTests(unittest.TestCase):
                     flush=True,
                 )
             finally:
-                self.cleanup(name, definition)
+                failure = sys.exc_info()[1]
+                try:
+                    self.cleanup(name, definition, config, receipt)
+                except Exception as error:
+                    if failure is None:
+                        raise
+                    failure.add_note(f"Disposable service cleanup also failed: {error!r}")
 
     @staticmethod
     def wait(session, active):
@@ -193,14 +215,14 @@ class NativeServiceApplicationTests(unittest.TestCase):
         raise AssertionError(f"Native application did not settle: {latest}")
 
     @staticmethod
-    def powershell(script, name):
+    def powershell(script, name, **environment):
         exe = (
             Path(os.environ["SystemRoot"])
             / "System32/WindowsPowerShell/v1.0/powershell.exe"
         )
         subprocess.run(
             [str(exe), "-NoProfile", "-NonInteractive", "-Command", script],
-            env=dict(os.environ, DISPOSABLE_SERVICE_NAME=name),
+            env=dict(os.environ, DISPOSABLE_SERVICE_NAME=name, **environment),
             check=True,
             timeout=30,
         )
@@ -226,7 +248,7 @@ class NativeServiceApplicationTests(unittest.TestCase):
                 name,
             )
 
-    def cleanup(self, name, definition):
+    def cleanup(self, name, definition, config, receipt):
         if sys.platform == "linux":
             subprocess.run(
                 ["systemctl", "--user", "stop", name], capture_output=True, timeout=10
@@ -251,7 +273,110 @@ class NativeServiceApplicationTests(unittest.TestCase):
             )
             definition.unlink(missing_ok=True)
         else:
+            # The ownership failure is diagnostic evidence, not a reason to
+            # skip stopping this unique disposable task. Never repair its ACL.
+            try:
+                self.powershell(
+                    "$ErrorActionPreference='Stop';"
+                    "$rows=@();foreach($p in @($env:DISPOSABLE_ROOT,$env:DISPOSABLE_RECEIPT,$env:DISPOSABLE_LOCK)){"
+                    "if(Test-Path -LiteralPath $p){$a=Get-Acl -LiteralPath $p;"
+                    "$rows+=@{path=$p;owner_sid=$a.GetOwner([System.Security.Principal.SecurityIdentifier]).Value}}};"
+                    "@{fixture_owners=$rows;current_sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value}|ConvertTo-Json -Compress -Depth 4",
+                    name,
+                    DISPOSABLE_ROOT=str(config.parent),
+                    DISPOSABLE_RECEIPT=str(receipt),
+                    DISPOSABLE_LOCK=str(receipt.with_suffix(".invocation.lock")),
+                )
+            except Exception as error:
+                print(f"Disposable owner diagnostics failed: {error!r}", flush=True)
+            identities = []
+            try:
+                identities = self.receipt_identities(receipt)
+            except Exception as error:
+                # An unreadable receipt must not prevent stopping our fixture.
+                # The post-stop observation will still fail if it stays unknown.
+                print(f"Disposable pre-stop receipt read failed: {error!r}", flush=True)
             self.powershell(
-                "$s=New-Object -ComObject 'Schedule.Service';$s.Connect();$f=$s.GetFolder('\\');try{$t=$f.GetTask($env:DISPOSABLE_SERVICE_NAME);$t.Stop(0);$f.DeleteTask($env:DISPOSABLE_SERVICE_NAME,0)}catch{if($_.Exception.HResult -ne -2147024894){throw}}",
+                "$ErrorActionPreference='Stop';$s=New-Object -ComObject 'Schedule.Service';$s.Connect();"
+                "$f=$s.GetFolder('\\');try{$t=$f.GetTask($env:DISPOSABLE_SERVICE_NAME)}"
+                "catch{if($_.Exception.HResult -eq -2147024894){exit 0}else{throw}};"
+                "$t.Stop(0);$w=[Diagnostics.Stopwatch]::StartNew();"
+                "while($t.GetInstances(0).Count -ne 0){"
+                "if($w.Elapsed.TotalSeconds -ge 25){throw 'Disposable task did not stop'};Start-Sleep -Milliseconds 100}",
                 name,
             )
+            # TaskScheduler Stop acknowledges the request before its wrapper's
+            # job descendants and non-inherited invocation lock have settled.
+            # Observe exact generations; never kill a PID from a stale receipt.
+            self.wait_windows_release(config, receipt, identities)
+            self.powershell(
+                "$s=New-Object -ComObject 'Schedule.Service';$s.Connect();$f=$s.GetFolder('\\');"
+                "try{$f.DeleteTask($env:DISPOSABLE_SERVICE_NAME,0)}"
+                "catch{if($_.Exception.HResult -ne -2147024894){throw}}",
+                name,
+            )
+
+    @staticmethod
+    def receipt_identities(receipt):
+        if not receipt.exists():
+            return []
+        value = json.loads(receipt.read_text())
+        if value.get("schema") != 1 or value.get("service") != "controller":
+            raise AssertionError("Unrecognized disposable application receipt")
+        return [value[key] for key in ("supervisor", "application")]
+
+    @staticmethod
+    def windows_lock_released(path):
+        """Read-only exclusive open: no delete, repair, or lock-file rewrite."""
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        create = kernel.CreateFileW
+        create.argtypes = [
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        ]
+        create.restype = wintypes.HANDLE
+        close = kernel.CloseHandle
+        close.argtypes = [wintypes.HANDLE]
+        close.restype = wintypes.BOOL
+        handle = create(str(path), 0x80000000, 0, None, 3, 0x80, None)
+        if handle == ctypes.c_void_p(-1).value:
+            error = ctypes.get_last_error()
+            if error == 2:  # No invocation was started / lock absent.
+                return True
+            if error in (32, 33):  # Sharing / lock violation: still owned.
+                return False
+            raise ctypes.WinError(error)
+        if not close(handle):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return True
+
+    def wait_windows_release(self, config, receipt, identities):
+        until = time.monotonic() + 25
+        latest = None
+        with Session(DRIVER, config, timeout=5) as session:
+            while time.monotonic() < until:
+                for identity in self.receipt_identities(receipt):
+                    if identity not in identities:
+                        identities.append(identity)
+                live = [
+                    identity
+                    for identity in identities
+                    if session.process_matches(identity)
+                ]
+                released = self.windows_lock_released(
+                    receipt.with_suffix(".invocation.lock")
+                )
+                latest = {"live_generations": live, "invocation_lock_released": released}
+                if not live and released:
+                    print(json.dumps({"disposable_service_cleanup": latest}), flush=True)
+                    return
+                time.sleep(0.1)
+        raise AssertionError(f"Disposable service descendants did not settle: {latest}")

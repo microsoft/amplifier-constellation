@@ -683,6 +683,124 @@ mod tests {
         view["native"]["actions"] = serde_json::json!([]);
         assert!(!task_profile_matches(&profile, &view).unwrap());
     }
+    #[cfg(windows)]
+    fn detached_logon_definition(
+        check: impl FnOnce(
+            &windows::Win32::System::TaskScheduler::ITaskDefinition,
+            &windows::Win32::System::TaskScheduler::ILogonTrigger,
+            &str,
+            &windows::core::BSTR,
+        ),
+    ) {
+        use windows::{
+            Win32::System::{
+                Com::{
+                    CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+                    CoUninitialize,
+                },
+                TaskScheduler::{ILogonTrigger, ITaskService, TaskScheduler},
+                Variant::VARIANT,
+            },
+            core::{BSTR, Interface},
+        };
+        struct Apartment;
+        impl Drop for Apartment {
+            fn drop(&mut self) {
+                unsafe { CoUninitialize() };
+            }
+        }
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+            let _apartment = Apartment;
+            let scheduler: ITaskService =
+                CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER).unwrap();
+            let empty = VARIANT::default();
+            scheduler.Connect(&empty, &empty, &empty, &empty).unwrap();
+            let (_temp, mut profile) = fixture();
+            profile.autostart = true;
+            let service = Service {
+                manager: ServiceManager::ScheduledTask,
+                name: "detached-normalization-test".into(),
+                definition_path: None,
+            };
+            let sid = crate::current_user_sid().unwrap();
+            let definition = scheduler.NewTask(0).unwrap();
+            definition
+                .SetXmlText(&BSTR::from(task_xml(&service, &profile, &sid).unwrap()))
+                .unwrap();
+            let expected = normalized_task_definition(&definition, &sid)
+                .unwrap()
+                .unwrap();
+            let logon: ILogonTrigger = definition
+                .Triggers()
+                .unwrap()
+                .get_Item(1)
+                .unwrap()
+                .cast()
+                .unwrap();
+            // NewTask and property setters operate on detached descriptions.
+            // No RegisterTaskDefinition, existing task lookup, or service action.
+            check(&definition, &logon, &sid, &expected);
+        }
+    }
+    #[cfg(windows)]
+    #[test]
+    fn logon_normalization_preserves_any_user_as_unequal() {
+        use windows::core::BSTR;
+        detached_logon_definition(|definition, logon, sid, expected| unsafe {
+            logon.SetUserId(&BSTR::new()).unwrap();
+            let mut before = BSTR::new();
+            definition.XmlText(&mut before).unwrap();
+            assert_ne!(&before, expected);
+            let actual = normalized_task_definition(definition, sid)
+                .unwrap()
+                .unwrap();
+            assert_ne!(
+                &actual, expected,
+                "Any-user trigger must not match this user"
+            );
+            assert_eq!(actual, before, "An empty identity must not be filled in");
+        });
+    }
+    #[cfg(windows)]
+    #[test]
+    fn logon_normalization_refuses_a_different_user_without_editing_it() {
+        use windows::core::BSTR;
+        detached_logon_definition(|definition, logon, sid, _| unsafe {
+            let other_sid = if sid == "S-1-5-18" {
+                "S-1-5-19"
+            } else {
+                "S-1-5-18"
+            };
+            logon.SetUserId(&BSTR::from(other_sid)).unwrap();
+            let mut before = BSTR::new();
+            definition.XmlText(&mut before).unwrap();
+            assert!(
+                normalized_task_definition(definition, sid)
+                    .unwrap()
+                    .is_none()
+            );
+            let mut after = BSTR::new();
+            definition.XmlText(&mut after).unwrap();
+            assert_eq!(after, before, "A different identity must be preserved");
+        });
+    }
+    #[cfg(windows)]
+    #[test]
+    fn logon_normalization_preserves_changed_delay_as_unequal() {
+        use windows::core::BSTR;
+        detached_logon_definition(|definition, logon, sid, expected| unsafe {
+            logon.SetDelay(&BSTR::from("PT1M")).unwrap();
+            let mut before = BSTR::new();
+            definition.XmlText(&mut before).unwrap();
+            assert_ne!(&before, expected);
+            let actual = normalized_task_definition(definition, sid)
+                .unwrap()
+                .unwrap();
+            assert_ne!(&actual, expected, "Changed timing must remain a mismatch");
+            assert_eq!(actual, before, "Normalization must preserve trigger timing");
+        });
+    }
     #[cfg(target_os = "linux")]
     #[test]
     fn unix_profile_match_requires_explicit_empty_overrides_and_exact_bytes() {

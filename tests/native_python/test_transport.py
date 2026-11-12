@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest.mock import patch
@@ -33,7 +34,7 @@ for line in sys.stdin.buffer:
         subprocess.Popen([sys.executable, "-c", "import time; time.sleep(1.5)"],
                          stdin=subprocess.DEVNULL, stdout=sys.stdout,
                          stderr=subprocess.DEVNULL)
-    if mode == "locked_no_read" and request["op"] == "lock.acquire":
+    if mode in ("locked_no_read", "locked_echo") and request["op"] == "lock.acquire":
         held = open(Path(capture).with_suffix(".lock"), "a+b", buffering=0)
         held.write(b"x")
         held.seek(0)
@@ -43,6 +44,9 @@ for line in sys.stdin.buffer:
         else:
             import fcntl
             fcntl.flock(held.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    if mode == "locked_echo" and request["op"] == "lock.release":
+        held.close()
+        held = None
     if mode == "lost" and request["op"] == "process.launch":
         sys.exit(0)
     if mode == "timeout":
@@ -125,6 +129,66 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(
             [r["op"] for r in self.requests()], ["lock.acquire", "lock.release"]
         )
+
+    def test_other_thread_close_waits_for_whole_critical_section(self):
+        # Real child process and kernel lock, with only the JSONL peer simulated.
+        session = self.session("locked_echo", timeout=2)
+        close_started = threading.Event()
+        closed = threading.Event()
+        failures = []
+
+        def close_from_other_thread():
+            close_started.set()
+            try:
+                session.close()
+            except BaseException as error:
+                failures.append(error)
+            finally:
+                closed.set()
+
+        def kernel_lock_available():
+            with self.capture.with_suffix(".lock").open("r+b", buffering=0) as lock:
+                if sys.platform == "win32":
+                    import msvcrt
+
+                    try:
+                        msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+                    except OSError:
+                        return False
+                    msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    try:
+                        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        return False
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                return True
+
+        closer = threading.Thread(target=close_from_other_thread, daemon=True)
+        try:
+            with session.lock("installation"):
+                self.assertFalse(kernel_lock_available())
+                closer.start()
+                self.assertTrue(close_started.wait(2))
+                self.assertFalse(
+                    closed.wait(0.5),
+                    "Another thread closed the driver inside the critical section",
+                )
+                self.assertIsNone(session._process.poll())
+                self.assertFalse(kernel_lock_available())
+                session.describe()  # Reentrant calls by the owner still work.
+            self.assertTrue(closed.wait(3))
+            self.assertEqual(failures, [])
+            self.assertTrue(kernel_lock_available())
+            self.assertEqual(
+                [r["op"] for r in self.requests()],
+                ["lock.acquire", "describe", "lock.release"],
+            )
+        finally:
+            if closer.ident is not None:
+                closer.join(timeout=3)
 
     def test_lost_launch_ack_is_unknown_and_never_redispatched(self):
         session = self.session("lost")

@@ -16,7 +16,9 @@ and restoration decisions. No helper enables or unmasks a paused service. The
 [local driver](../native-platform-driver/PROTOCOL.md) exposes these primitives to
 the [thin Python binding](../../support/python/constellation_native/README.md).
 It owns no scheduler or network listener. Managed source-directory/pointer exchange
-is a separate integration requirement, not a capability of protected JSON writes.
+uses [two explicit native renames](../native-platform-driver/PROTOCOL.md), with an
+observable gap. It is separate from protected JSON writes and is not an atomic
+app/venv swap; the domain owns the transaction journal, verification and rollback.
 
 `open_browser` accepts only a loopback HTTP/HTTPS setup URL. `show_launch_error` uses a native desktop alert when available. A separate `open_https_browser` can open an application’s already configured HTTPS origin, without embedded credentials, paths, query strings or fragments. Neither function accepts shell source.
 

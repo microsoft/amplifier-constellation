@@ -297,6 +297,8 @@ class Session:
     @contextlib.contextmanager
     def lock(self, name: str) -> Iterator[None]:
         """Hold the enrolled lock across the whole caller critical section."""
+        # Keep other threads from dispatching under this owner's lock or closing
+        # its driver before the critical section ends. Owner calls are reentrant.
         with self._mutex:
             if name in self._locks:
                 raise DriverError(
@@ -304,10 +306,9 @@ class Session:
                 )
             self._call("lock.acquire", mutating=True, name=name)
             self._locks.add(name)
-        try:
-            yield
-        finally:
-            with self._mutex:
+            try:
+                yield
+            finally:
                 if name in self._locks:
                     self._call("lock.release", mutating=True, name=name)
                     self._locks.remove(name)

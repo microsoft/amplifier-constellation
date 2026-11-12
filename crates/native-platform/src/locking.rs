@@ -82,14 +82,17 @@ fn open_lock_file(path: &Path) -> io::Result<File> {
         ));
     }
     name.push(0);
-    // SAFETY: the path is terminated. Null security attributes create a
-    // non-inheritable handle; OPEN_ALWAYS leaves existing bytes unchanged.
+    let security = crate::storage::PrivateSecurity::new(false).map_err(io::Error::other)?;
+    // SAFETY: the path and protected owner/DACL descriptor remain valid for
+    // this call. OPEN_ALWAYS applies security only to a new file; existing
+    // ownership, ACLs, identity and bytes remain unchanged. Handle inheritance
+    // stays disabled in either case.
     let handle = unsafe {
         CreateFileW(
             name.as_ptr(),
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
-            std::ptr::null(),
+            &security.attributes(),
             OPEN_ALWAYS,
             FILE_FLAG_OPEN_REPARSE_POINT,
             std::ptr::null_mut(),

@@ -30,8 +30,11 @@ requests are not completed service transitions.
 parent. An existing path must already be an ordinary private directory; it never
 repairs an unrelated path's permissions or recursively invents parents.
 `private_write` accepts the caller's already serialized bytes. The binding does
-not rewrite receipts, choose restoration plans, unmask services, renew authority
-or implement directory/pointer exchange. Background commands own their lifetime
+not rewrite receipts, choose restoration plans, unmask services or renew authority.
+Its [directory/pointer exchange operations](../../../crates/native-platform-driver/PROTOCOL.md)
+use two native renames with an observable gap, not an atomic app/venv swap. The
+domain owns the transaction journal, verification and explicit rollback.
+Background commands own their lifetime
 separately from the short invocation; `Session.close()` does not cancel them.
 
 The [serving driver](../../../crates/native-platform-driver/PROTOCOL.md) defines

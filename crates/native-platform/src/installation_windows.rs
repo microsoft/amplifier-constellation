@@ -148,6 +148,32 @@ fn text(value: BSTR) -> Result<String> {
     Ok(String::from_utf16(&value)?)
 }
 
+// A collection can retain an instance which ended before its properties were
+// read. Only this exact native observation proves absence. In particular, an
+// unavailable or inaccessible global enumeration cannot prove engine uniqueness.
+fn read_enumerated_instance<T>(
+    scope: &str,
+    index: i32,
+    read: impl FnOnce() -> Result<T>,
+) -> Result<Option<T>> {
+    match read() {
+        Ok(value) => Ok(Some(value)),
+        Err(error)
+            if error
+                .downcast_ref::<windows::core::Error>()
+                .is_some_and(|error| {
+                    error.code().0 == windows_sys::Win32::Foundation::SCHED_E_TASK_NOT_RUNNING
+                }) =>
+        {
+            Ok(None)
+        }
+        Err(error) => {
+            let context = format!("Read {scope} task instance {index}: {error:#}");
+            Err(error.context(context))
+        }
+    }
+}
+
 pub(crate) fn account_sid(account: &str) -> Result<String> {
     if account.starts_with("S-1-") {
         return Ok(account.to_owned());
@@ -257,8 +283,10 @@ fn view(
             }
             action_views.push(observation);
         }
-        let collection = task.GetInstances(0)?;
-        let count = collection.Count()?;
+        let collection = task
+            .GetInstances(0)
+            .context("Enumerate target task instances (GetInstances)")?;
+        let count = collection.Count().context("Count target task instances")?;
         ensure!(
             (0..=4096).contains(&count),
             "Unexpected task instance count"
@@ -266,15 +294,21 @@ fn view(
         let mut instances = Vec::with_capacity(count as usize);
         for index in 1..=count {
             live(expired)?;
-            let running = collection.get_Item(&VARIANT::from(index))?;
-            running.Refresh()?;
-            let observation = json!({
-                "instance_guid":text(running.InstanceGuid()?)?,
-                "engine_pid":running.EnginePID()?,
-                "state":running.State()?.0,
-                "current_action":text(running.CurrentAction()?)?
-            });
-            instances.push((observation, running));
+            if let Some(instance) = read_enumerated_instance("target", index, || {
+                let running = collection
+                    .get_Item(&VARIANT::from(index))
+                    .context("GetInstances item")?;
+                running.Refresh().context("Refresh")?;
+                let observation = json!({
+                    "instance_guid":text(running.InstanceGuid().context("InstanceGuid")?)?,
+                    "engine_pid":running.EnginePID().context("EnginePID")?,
+                    "state":running.State().context("State")?.0,
+                    "current_action":text(running.CurrentAction().context("CurrentAction")?)?
+                });
+                Ok((observation, running))
+            })? {
+                instances.push(instance);
+            }
         }
         if !instances.is_empty() {
             // EnginePID identifies a scheduler engine, which can be shared.
@@ -287,8 +321,10 @@ fn view(
             // Excluding hidden tasks would make engine uniqueness unproven.
             // Unsupported full enumeration remains an error, never a fallback
             // to a smaller list that could silently omit another invocation.
-            let running = service.GetRunningTasks(TASK_ENUM_HIDDEN.0)?;
-            let count = running.Count()?;
+            let running = service
+                .GetRunningTasks(TASK_ENUM_HIDDEN.0)
+                .context("Enumerate global task instances (GetRunningTasks)")?;
+            let count = running.Count().context("Count global task instances")?;
             ensure!(
                 (0..=4096).contains(&count),
                 "Unexpected global running-task count"
@@ -296,14 +332,24 @@ fn view(
             let mut shared: BTreeMap<u64, BTreeSet<String>> = BTreeMap::new();
             for index in 1..=count {
                 live(expired)?;
-                let instance = running.get_Item(&VARIANT::from(index))?;
-                instance.Refresh()?;
-                let pid = u64::from(instance.EnginePID()?);
-                if wanted.contains(&pid) {
-                    shared
-                        .entry(pid)
-                        .or_default()
-                        .insert(text(instance.InstanceGuid()?)?);
+                let Some((pid, guid)) = read_enumerated_instance("global", index, || {
+                    let instance = running
+                        .get_Item(&VARIANT::from(index))
+                        .context("GetRunningTasks item")?;
+                    instance.Refresh().context("Refresh")?;
+                    let pid = u64::from(instance.EnginePID().context("EnginePID")?);
+                    let guid = if wanted.contains(&pid) {
+                        Some(text(instance.InstanceGuid().context("InstanceGuid")?)?)
+                    } else {
+                        None
+                    };
+                    Ok((pid, guid))
+                })?
+                else {
+                    continue;
+                };
+                if let Some(guid) = guid {
+                    shared.entry(pid).or_default().insert(guid);
                 }
             }
             for (value, _) in &mut instances {
@@ -387,4 +433,63 @@ pub(crate) fn dispatch(
             message: error.to_string(),
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use windows::core::{Error, HRESULT};
+
+    #[test]
+    fn ended_enumerated_instance_is_absent_without_repeating_observation() {
+        for scope in ["target", "global"] {
+            let mut calls = 0;
+            let value = read_enumerated_instance::<()>(scope, 3, || {
+                calls += 1;
+                Err(Error::from_hresult(HRESULT(
+                    windows_sys::Win32::Foundation::SCHED_E_TASK_NOT_RUNNING,
+                )))
+                .context("Refresh")
+            })
+            .unwrap();
+            assert!(value.is_none());
+            assert_eq!(calls, 1);
+        }
+    }
+
+    #[test]
+    fn enumerated_instance_access_and_other_com_failures_retain_scope_and_operation() {
+        for scope in ["target", "global"] {
+            for code in [0x8007_0005_u32, 0x8007_06ba, 0x8000_4005] {
+                let error = read_enumerated_instance::<()>(scope, 7, || {
+                    Err(Error::from_hresult(HRESULT(code as i32))).context("EnginePID")
+                })
+                .unwrap_err();
+                assert_eq!(
+                    error.downcast_ref::<Error>().unwrap().code(),
+                    HRESULT(code as i32)
+                );
+                assert!(
+                    error
+                        .to_string()
+                        .contains(&format!("Read {scope} task instance 7"))
+                );
+                assert!(error.to_string().contains("EnginePID"));
+            }
+        }
+    }
+
+    #[test]
+    fn arbitrary_error_text_is_not_native_absence_evidence() {
+        let error = read_enumerated_instance::<()>("global", 2, || {
+            anyhow::bail!("There is no running instance of the task. (0x8004130B)")
+        })
+        .unwrap_err();
+        assert!(error.to_string().contains("Read global task instance 2"));
+        assert_eq!(
+            read_enumerated_instance("target", 1, || Ok(json!({"instance_guid":"original"})))
+                .unwrap(),
+            Some(json!({"instance_guid":"original"}))
+        );
+    }
 }
