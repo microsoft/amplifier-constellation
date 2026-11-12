@@ -1,5 +1,6 @@
 mod config;
 mod service_application;
+mod setup;
 mod supervision;
 
 use amplifier_native_platform::{
@@ -510,9 +511,15 @@ fn serve(enrollment: Enrollment) -> Result<()> {
 
 fn run() -> Result<i32> {
     let mut args = std::env::args_os().skip(1);
+    let first = args.next();
+    if first.as_deref() == Some(std::ffi::OsStr::new("initialize")) {
+        ensure!(args.next().is_none(), "Unexpected setup argument");
+        setup::run()?;
+        return Ok(0);
+    }
     ensure!(
-        args.next().as_deref() == Some(std::ffi::OsStr::new("--config")),
-        "Usage: constellation-native-driver --config PATH serve|exec --command NAME"
+        first.as_deref() == Some(std::ffi::OsStr::new("--config")),
+        "Usage: constellation-native-driver initialize | --config PATH serve|exec --command NAME"
     );
     let path = PathBuf::from(args.next().context("Configuration path required")?);
     let enrollment = Enrollment::load(&path)?;

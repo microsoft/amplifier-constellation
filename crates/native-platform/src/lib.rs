@@ -21,7 +21,8 @@ pub use platform::*;
 #[cfg(windows)]
 pub use storage::current_user_sid;
 pub use storage::{
-    private_create, private_dir, private_write, protect_file, publish_directory_if_absent,
+    private_create, private_create_dir, private_dir, private_write, protect_file,
+    publish_directory_if_absent,
 };
 
 /// Encode an absolute, null-terminated extended path for direct Win32 file APIs.

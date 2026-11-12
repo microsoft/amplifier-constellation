@@ -59,8 +59,14 @@ impl Enrollment {
     pub fn load(path: &Path) -> Result<Self> {
         protected_file(path)?;
         let bytes = fs::read(path)?;
+        Self::from_bytes(path, &bytes)
+    }
+
+    /// Validate owner-supplied configuration and its existing referenced paths,
+    /// without reading, creating or replacing the destination configuration.
+    pub fn from_bytes(path: &Path, bytes: &[u8]) -> Result<Self> {
         ensure!(bytes.len() <= 1024 * 1024, "Configuration is too large");
-        let config: Config = serde_json::from_slice(&bytes)?;
+        let config: Config = serde_json::from_slice(bytes)?;
         ensure!(config.version == 1, "Unsupported configuration version");
         for name in config
             .roots
@@ -153,7 +159,7 @@ impl Enrollment {
         }
         Ok(Self {
             path: path.to_owned(),
-            digest: Sha256::digest(&bytes).to_vec(),
+            digest: Sha256::digest(bytes).to_vec(),
             config,
         })
     }

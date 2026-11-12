@@ -19,6 +19,13 @@ uses actual user/SYSTEM ACLs; macOS resolves its system temporary-directory alia
 before enrollment. No live agent, original game session or production service is
 opened. Missing binary coverage is reported as skipped, not passed.
 
+`test_setup.py` exercises the production local setup entry point: fresh protected
+directories and configuration are created through the actual driver, without
+fixture ACL creation. It then opens a normal Session and tests protected storage
+and locking. Refusal cases check that existing paths, contents and deliberately
+broadened permissions are preserved. Transport fixtures test lost or malformed
+acknowledgments separately from actual filesystem qualification.
+
 If a local sandbox remaps the system temporary root to an untrusted owner, set
 `CONSTELLATION_NATIVE_TEST_ROOT` to an existing directory owned by the test user.
 The fixture still creates its own protected subdirectory; it does not relax the

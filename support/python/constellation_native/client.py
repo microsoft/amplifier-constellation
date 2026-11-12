@@ -42,6 +42,7 @@ class Unknown(DriverError):
 
 _OUTCOMES = {"ok", "busy", "refused", "unknown", "error"}
 _MAX_FRAME = 16 * 1024 * 1024
+_MAX_SETUP_FRAME = 2 * 1024 * 1024
 _SESSIONS: weakref.WeakSet[Session] = weakref.WeakSet()
 
 
@@ -87,6 +88,199 @@ def _read_responses(stream: Any, responses: queue.Queue[Any]) -> None:
         # A detached descendant may delay EOF beyond Session.close's join bound.
         # The reader still owns this pipe and closes it when it eventually ends.
         stream.close()
+
+
+def _initialize(
+    driver_path: os.PathLike[str] | str,
+    path: os.PathLike[str] | str,
+    op: str,
+    *,
+    timeout: float,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """One installation-owned setup request, without a Session or retries."""
+    if (
+        not isinstance(timeout, (int, float))
+        or isinstance(timeout, bool)
+        or not math.isfinite(timeout)
+        or timeout <= 0
+    ):
+        raise ValueError("Native driver timeout must be a positive finite number")
+    driver = Path(driver_path)
+    target = Path(path)
+    if not driver.is_absolute() or not target.is_absolute():
+        raise ValueError("Native driver and setup paths must be absolute")
+    request_id = str(uuid.uuid4())
+    request: dict[str, Any] = {
+        "version": 1,
+        "id": request_id,
+        "op": op,
+        "path": os.fspath(path),
+    }
+    if config is not None:
+        request["config"] = config
+    encoded = (
+        json.dumps(
+            request, allow_nan=False, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        + b"\n"
+    )
+    if len(encoded) > _MAX_SETUP_FRAME:
+        raise ValueError("Native setup request exceeds its framing limit")
+    try:
+        process = subprocess.Popen(
+            [str(driver), "initialize"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            bufsize=0,
+        )
+    except OSError as error:
+        raise DriverError(
+            "driver_start", "Unable to start the native setup driver"
+        ) from error
+    responses: queue.Queue[Any] = queue.Queue(maxsize=2)
+    reader = threading.Thread(
+        target=_read_responses,
+        args=(process.stdout, responses),
+        name="constellation-native-setup-response",
+        daemon=True,
+    )
+    reader.start()
+    written: queue.Queue[Any] = queue.Queue(maxsize=1)
+    deadline = time.monotonic() + float(timeout)
+
+    def send() -> None:
+        try:
+            assert process.stdin is not None
+            remaining = memoryview(encoded)
+            while remaining:
+                count = process.stdin.write(remaining)
+                if not count:
+                    raise BrokenPipeError("Native setup request pipe closed")
+                remaining = remaining[count:]
+            process.stdin.close()
+            written.put(None)
+        except (OSError, ValueError) as error:
+            written.put(error)
+
+    writer = threading.Thread(
+        target=send, name="constellation-native-setup-request", daemon=True
+    )
+    writer.start()
+    try:
+        try:
+            write_error = written.get(timeout=max(0, deadline - time.monotonic()))
+        except queue.Empty as error:
+            raise Unknown(
+                "transport_timeout", "Native setup request was not acknowledged"
+            ) from error
+        if isinstance(write_error, Exception):
+            raise Unknown(
+                "transport_write", "Native setup request outcome is unavailable"
+            ) from write_error
+        try:
+            raw = responses.get(timeout=max(0, deadline - time.monotonic()))
+        except queue.Empty as error:
+            raise Unknown(
+                "transport_timeout", "Native setup request was not acknowledged"
+            ) from error
+        if isinstance(raw, Exception):
+            raise Unknown("transport_closed", "Native setup response was lost") from raw
+        try:
+            response = json.loads(raw)
+            if (
+                not isinstance(response, dict)
+                or type(response.get("version")) is not int
+                or response["version"] != 1
+                or response.get("id") != request_id
+                or response.get("outcome") not in _OUTCOMES
+            ):
+                raise ValueError("Invalid setup response envelope")
+            if response["outcome"] == "ok":
+                result = response.get("result")
+                if (
+                    not isinstance(result, dict)
+                    or result.get("path") != request["path"]
+                    or type(result.get("created")) is not bool
+                ):
+                    raise ValueError("Invalid setup result")
+                if op == "setup.config":
+                    digest = result.get("sha256")
+                    if (
+                        not isinstance(digest, str)
+                        or len(digest) != 64
+                        or any(c not in "0123456789abcdef" for c in digest)
+                    ):
+                        raise ValueError("Invalid setup configuration digest")
+                return result
+            detail = response.get("error")
+            if (
+                not isinstance(detail, dict)
+                or not isinstance(detail.get("code"), str)
+                or not isinstance(detail.get("message"), str)
+            ):
+                raise ValueError("Invalid setup error envelope")
+        except (ValueError, TypeError, UnicodeError) as error:
+            raise Unknown(
+                "protocol_response", "Native setup response could not be correlated"
+            ) from error
+        error_type = {
+            "busy": Busy,
+            "refused": Refused,
+            "unknown": Unknown,
+            "error": DriverError,
+        }[response["outcome"]]
+        raise error_type(detail["code"], detail["message"])
+    finally:
+        # These commands never launch services or probes. Close only this short
+        # invocation; an uncertain operation is not repeated or rolled back.
+        if process.stdin is not None:
+            with contextlib.suppress(OSError):
+                process.stdin.close()
+        try:
+            process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            with contextlib.suppress(OSError):
+                process.kill()
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                process.wait(timeout=4)
+        reader.join(timeout=1)
+
+
+def initialize_root(
+    driver_path: os.PathLike[str] | str,
+    path: os.PathLike[str] | str,
+    *,
+    timeout: float = 30.0,
+) -> dict[str, Any]:
+    """Create one private root, or validate it without changing existing policy.
+
+    Its parent must already exist. The local installer supplies the reviewed
+    absolute path; this is not an enrolled Session capability.
+    """
+    return _initialize(driver_path, path, "setup.root", timeout=timeout)
+
+
+def initialize_config(
+    driver_path: os.PathLike[str] | str,
+    config_path: os.PathLike[str] | str,
+    config: dict[str, Any],
+    *,
+    timeout: float = 30.0,
+) -> dict[str, Any]:
+    """Publish or verify an exact Config v1 without overwriting existing bytes.
+
+    Roots and configured command prerequisites must already exist. The driver
+    owns canonical serialization and private publication; credentials belong
+    outside this configuration.
+    """
+    if not isinstance(config, dict):
+        raise TypeError("initialize_config expects a configuration object")
+    return _initialize(
+        driver_path, config_path, "setup.config", timeout=timeout, config=config
+    )
 
 
 class Session:

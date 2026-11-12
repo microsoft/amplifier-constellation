@@ -14,6 +14,58 @@ critical section. EOF releases its kernel locks. A lost reply never authorizes a
 second dispatch. Requests are correlated, not deduplicated by the driver: the
 existing domain transaction remains the durable source of operation identity.
 
+## Initial local setup
+
+Before a `Session` can open, installation setup creates its private directories
+and publishes the reviewed owner configuration. The local command
+`constellation-native-driver initialize` accepts exactly one bounded JSONL request
+on stdin, followed by EOF, and returns one correlated version-1 outcome. This is a
+local installer entry point, not an operation exposed by `serve`, an agent tool
+or a web endpoint. Only trusted installation setup supplies these absolute paths
+and profiles. The request is limited to 2 MiB; serialized Config v1 remains
+limited to 1 MiB.
+
+| Setup operation | Fields after version/id/op | Successful result |
+|---|---|---|
+| `setup.root` | `path`: absolute directory | `{path, created}` |
+| `setup.config` | `path`: absolute config file, `config`: existing Config v1 object | `{path, created, sha256}` |
+
+`setup.root` creates one directory with the native private storage policy beneath
+an existing, safe parent. It never recursively creates parents or changes an
+existing path's permissions. An existing directory must already be private to
+this installation user; `created:false` does not prove an unused connection home.
+The domain retains its fresh-installation and existing-state checks.
+
+`setup.config` requires an already protected parent and applies the same Config v1
+enrollment checks as `serve`, including existing roots and configured command and
+application prerequisites. Full service registration/profile validation still
+belongs to the later `service.register` call; publishing configuration does not
+assert service readiness. Setup publishes a protected file without replacing an
+existing destination. The file contains the driver's compact JSON serialization.
+An exact existing configuration is validated and returns `created:false`;
+different contents, ownership, permissions or links refuse without repair.
+The returned SHA-256 binds the published bytes.
+
+Setup calls do not register or start services, enable startup, copy credentials,
+create sessions, launch configured commands or enroll an updater. The domain
+creates required directories in explicit order, stages its verified package and
+existing connection files, then publishes the complete configuration. It can then
+open a normal `Session` and invoke its fixed no-start registration profiles.
+
+Known preflight rejection is `refused`; uncertain mutation or acknowledgment loss
+is `unknown`. No automatic retry, cleanup or ACL repair follows. After lost
+acknowledgment, a subsequent explicit setup call may validate an exact existing
+artifact without changing it; a changed artifact is not silently adopted.
+
+The Python helpers are `initialize_root(driver_path, path, *, timeout=30.0)` and
+`initialize_config(driver_path, config_path, config, *, timeout=30.0)`. Both use
+this one-shot entry point, preserve the existing exception classes and perform no
+Python filesystem or ACL setup. They do not alter `Session` timeout or lock
+semantics. Successful shared initialization is not complete domain installation
+qualification.
+
+## Enrolled operations
+
 Request: `{"version":1,"id":"opaque-id","op":"lock.acquire","name":"installation"}`.
 Reply: `{"version":1,"id":"opaque-id","outcome":"ok","result":{}}`.
 Outcomes are `ok`, `busy`, `refused`, `unknown`, and `error`. Non-ok replies carry
@@ -41,7 +93,7 @@ means a known rejection before dispatch. An observation/storage failure is an
 
 Unknown fields and unenrolled names reject. `path` and `result` are relative
 paths under configured storage roots, with no traversal, links or reparse
-ancestors. No request accepts executable paths, shell, environment or service
+ancestors. No enrolled request accepts executable paths, shell, environment or service
 names. `process.identity` is read-only; it never grants control of that process.
 Linux generation identity retains `{pid, start_ticks, boot_id}` exactly, including
 the string start_ticks used by existing receipts. Other platforms identify their

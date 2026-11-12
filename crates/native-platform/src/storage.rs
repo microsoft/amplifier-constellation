@@ -128,6 +128,11 @@ pub fn private_write(path: &Path, bytes: &[u8]) -> Result<()> {
 pub fn private_create(path: &Path, bytes: &[u8]) -> Result<()> {
     write_atomic(path, bytes, true)
 }
+/// Exclusively create one private directory under an existing parent.
+/// Existing entries and their policies are never changed; parents are not created.
+pub fn private_create_dir(path: &Path) -> std::io::Result<()> {
+    create_private_directory(path)
+}
 fn write_atomic(path: &Path, bytes: &[u8], create_only: bool) -> Result<()> {
     let parent = path
         .parent()

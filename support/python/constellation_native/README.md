@@ -5,6 +5,17 @@ It uses one local process and has no network listener or third-party Python
 dependency. The installation supplies both absolute setup paths. Callers select
 named services, locks, commands and storage roots from that protected configuration.
 
+For first installation, `initialize_root(driver_path, path)` creates one private
+directory beneath an existing safe parent, and
+`initialize_config(driver_path, config_path, config)` validates and publishes the
+reviewed Config v1 without replacing an existing file. Both use the driver's
+separate local `initialize` entry point, not a Session operation. Existing paths
+are validated without changing permissions; a different configuration refuses.
+Create directories in explicit order, stage the verified package and connection
+prerequisites, then publish the configuration. No service starts or credentials
+are copied. The [driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#initial-local-setup)
+owns the exact setup behavior and uncertainty rules.
+
 ```python
 from constellation_native import Session, Busy, Unknown
 

@@ -13,7 +13,8 @@ import time
 import unittest
 import uuid
 
-from test_driver import DRIVER, Refused, Session, protect
+from test_driver import DRIVER, Refused, Session
+from constellation_native import initialize_config, initialize_root
 
 
 @contextmanager
@@ -41,8 +42,8 @@ def fixture_directory():
 class NativeServiceApplicationTests(unittest.TestCase):
     def test_fresh_no_start_exact_controller_binding_and_preserved_pause(self):
         with fixture_directory() as temp:
-            root = Path(temp).resolve()
-            protect(root)
+            root = Path(temp).resolve() / "installation"
+            self.assertTrue(initialize_root(DRIVER, root)["created"])
             config = root / "owner.json"
             name = "constellation-driver-test-" + uuid.uuid4().hex
             definition = None
@@ -67,7 +68,6 @@ class NativeServiceApplicationTests(unittest.TestCase):
                 + ').write_text(json.dumps({"pid":os.getpid()}))\n'
                 "time.sleep(120)\n"
             )
-            protect(program)
             data = {
                 "version": 1,
                 "roots": {"state": str(root)},
@@ -103,8 +103,7 @@ class NativeServiceApplicationTests(unittest.TestCase):
                     }
                 },
             }
-            config.write_text(json.dumps(data))
-            protect(config)
+            self.assertTrue(initialize_config(DRIVER, config, data)["created"])
             application = None
             try:
                 with Session(DRIVER, config) as session, session.lock("installation"):
@@ -180,6 +179,7 @@ class NativeServiceApplicationTests(unittest.TestCase):
                             "platform": sys.platform,
                             "actual_application": application,
                             "no_start": True,
+                            "production_initialization": True,
                             "generation_binding": True,
                             "independent_pause_preserved": True,
                         }
