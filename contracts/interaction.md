@@ -92,6 +92,13 @@ work without becoming its message relay.
    checks protecting newer intent. Count setup, recovery and administrator effort
    alongside user effort; reuse known configuration where permitted.
 
+10. **Recognize agents as artificial collaborators.** Use an agent's name,
+    they/them or it/its in authored product language and documentation; do not
+    assign agents human genders. Presentation distinguishes agents from people
+    while keeping their identities recognizable across places. Artwork remains
+    an experience choice; the [portrait convention](../reference/agent-portraits.md)
+    governs shared portrait assets.
+
 ## Check the combined experience
 
 Observe people and agents making a decision, coordinating quietly, joining and
@@ -102,6 +109,8 @@ parallel tools, failed streams and uncertain posts. Verify one useful failure
 presentation, no status-triggered agent loops, no duplicate speech and an honest
 fallback without optional capabilities. Compare equivalent UI/API controls and
 reject stale view updates. Check actual outcomes separately from what agents claim.
+Review text, voice and participant views for clear agent identity and nongendered
+references.
 
 ## Interface owners and open choices
 

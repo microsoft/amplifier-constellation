@@ -22,8 +22,8 @@ or certifying every integration.
 
 | Part | What it brings to people |
 | --- | --- |
-| **Agent** | A continuing collaborator with a recognizable identity and accepted responsibilities. |
-| **Instance** | That agent's home: its identity, configuration, connections and responsibilities, with a selected engine inside. |
+| **Agent** | A continuing, clearly artificial collaborator with a recognizable identity and accepted responsibilities. |
+| **Instance** | That agent's persistent installation: its identity, configuration, connections and responsibilities, with a selected engine inside. |
 | **Runtime / engine** | The ability to reason, use tools and continue work. Options include Constellation Runtime, Codex, Claude, GitHub Copilot and Amplifier Agent through compatible ACP implementations. |
 | **Experience** | A place to interact: Companion, Slack, Teams, Minecraft, Amplifier or another application. |
 | **Conversation** | An exchange with participants, an audience and history, hosted by an experience or its supporting service. |
