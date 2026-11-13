@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Persistent agents, shared capabilities, and room to invent. Explore the building blocks of Amplifier Constellation.">
+  <title>Amplifier Constellation · Room to invent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <a class="brand" href="./">Amplifier Constellation</a>
+    <nav aria-label="Project"><a href="#film">Watch</a><a href="#illustrations">Explore</a><a href="https://github.com/microsoft/amplifier-constellation">GitHub</a></nav>
+  </header>
+  <main id="main">
+    <section class="intro" aria-labelledby="intro-title">
+      <h1 id="intro-title">Your agents.<br>Room to invent.</h1>
+      <div><p>Work with a team of persistent agents across the places you already use. Build on shared capabilities, and give each part room to develop in its own way.</p>
+      <p class="intro-links"><a href="https://github.com/microsoft/amplifier-constellation/blob/main/docs/VISION.md">Read the vision</a><a href="downloads/constellation-illustrated.html" download>Take the illustrations with you</a></p></div>
+    </section>
+    <section id="illustrations" aria-labelledby="blocks-title">
+      <h2 id="blocks-title">Five building blocks. Many ways to combine them.</h2>
+      <p class="section-copy">An experience presents a conversation. Agents participate through connections and use shared or private tools. These are boundaries people can build around, with freedom inside each one.</p>
+      <figure>
+        <a class="art" href="assets/art/building-blocks.png" target="_blank" rel="noopener"><img src="assets/art/building-blocks.png" width="1672" height="941" alt="Five building blocks: Experience presents Conversation; Agent Instance participates through Connection and uses Tool. Conversations and tools can be shared."></a>
+        <figcaption>Open any illustration to see it at full size.</figcaption>
+      </figure>
+    </section>
+    <!-- film-start -->
+    <section id="film" class="film" aria-labelledby="film-title">
+      <div class="section-heading"><h2 id="film-title">See how it fits together</h2><span>2 minutes 8 seconds</span></div>
+      <video id="story" controls playsinline preload="metadata" poster="assets/art/building-blocks.png">
+        <source src="assets/media/constellation-introduction.mp4" type="video/mp4">
+        <source src="assets/media/constellation-introduction.webm" type="video/webm">
+        <track kind="captions" src="assets/media/constellation-introduction.vtt" srclang="en" label="English" default>
+        <p><a href="assets/media/constellation-introduction.mp4">Open the video</a>.</p>
+      </video>
+      <nav class="chapters" aria-label="Video chapters">@@CHAPTERS@@</nav>
+      <p class="media-links"><a href="assets/media/constellation-introduction.mp4" download>Download the film</a><a href="assets/media/transcript.txt">Read the transcript</a><a href="assets/media/constellation-introduction.vtt" download>Captions</a></p>
+      <p class="small">An illustrated introduction to the architecture, rather than a demonstration of deployed products.</p>
+    </section>
+    <!-- film-end -->
+    <section aria-labelledby="inside-title">
+      <h2 id="inside-title">Freedom inside an agent</h2>
+      <p class="section-copy">One engine, an inner team, or a different design entirely. A dependable outward boundary lets builders explore how an agent works without making everyone else adopt its internals.</p>
+      <figure><a class="art" href="assets/art/inside-an-agent.png" target="_blank" rel="noopener"><img src="assets/art/inside-an-agent.png" width="1672" height="941" loading="lazy" alt="Inside an Agent: examples show a single engine, an inner team, and an event-driven design. These are examples, not a fixed menu."></a></figure>
+    </section>
+    <section id="improve" aria-labelledby="improve-title">
+      <h2 id="improve-title">Improve every part</h2>
+      <p class="section-copy">An improvement team can work alongside other agents or from a separate environment. People can join the conversation in either arrangement. Both can improve the whole system.</p>
+      <figure><a class="art" href="assets/art/improve-from-within.png" target="_blank" rel="noopener"><img src="assets/art/improve-from-within.png" width="1672" height="941" loading="lazy" alt="An improvement team shares the working environment. Working agents ask for help and unblockers; the team coaches them and can make code and system changes across all five building blocks."></a><figcaption>Work together: ask for help, coach one another, and improve the systems around the work.</figcaption></figure>
+      <figure><a class="art" href="assets/art/improve-from-outside.png" target="_blank" rel="noopener"><img src="assets/art/improve-from-outside.png" width="1672" height="941" loading="lazy" alt="An improvement team has its own environment and joinable conversation. Evidence flows out of the working environment; improvements return through supported interfaces, including repairs to the environment itself."></a><figcaption>Step outside: study the environment, test ideas, and bring improvements back.</figcaption></figure>
+    </section>
+    <section class="next" aria-labelledby="next-title">
+      <h2 id="next-title">Build on what’s here</h2>
+      <p>Start with the intended outcome, find the part that owns the behavior, and build on the work already there.</p>
+      <dl>
+        <div><dt><a href="https://github.com/microsoft/amplifier-constellation/blob/main/docs/VISION.md">Vision</a></dt><dd>The experience we want to make possible.</dd></div>
+        <div><dt><a href="https://github.com/microsoft/amplifier-constellation/tree/main/contracts">Shared promises</a></dt><dd>The agreements between independently developed parts.</dd></div>
+        <div><dt><a href="https://github.com/microsoft/amplifier-constellation#find-the-owning-component">Find a component</a></dt><dd>Repositories, interfaces, and places to contribute.</dd></div>
+      </dl>
+      <p class="small">The vision and contracts in the repository are the canonical documents. These illustrations explain the direction; component documentation defines available interfaces.</p>
+    </section>
+  </main>
+  <footer><span>Part of the <a href="https://github.com/microsoft/amplifier">Amplifier ecosystem</a>.</span><a href="https://github.com/microsoft/amplifier-constellation/blob/main/LICENSE">License</a><a href="https://github.com/microsoft/amplifier-constellation/blob/main/CODE_OF_CONDUCT.md">Code of conduct</a></footer>
+  <script src="site.js" defer></script>
+</body>
+</html>
