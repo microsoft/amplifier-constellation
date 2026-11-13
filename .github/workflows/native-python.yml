@@ -122,7 +122,7 @@ jobs:
       - name: Test Python through the actual driver and library
         run: |
           python - <<'PY'
-          import os, pathlib, subprocess, sys
+          import json, os, pathlib, subprocess, sys, unittest
           suffix = '.exe' if os.name == 'nt' else ''
           target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
           path = (pathlib.Path('crates/native-platform-driver') / target / ('constellation-native-driver' + suffix)).resolve()
@@ -147,7 +147,45 @@ jobs:
               output.write('NATIVE_OPERATION_LIFETIME_FIXTURE='+str(operation)+'\n')
               output.write('NATIVE_REGISTRATION_TESTS='+str(registration)+'\n')
           try:
-              subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
+              # Record the same discovery run, including required new bootstrap
+              # outcomes. A skipped materializer test is not target proof.
+              os.environ.update(env)
+              class RecordedResult(unittest.TextTestResult):
+                  def __init__(self, *args, **kwargs):
+                      super().__init__(*args, **kwargs)
+                      self.passed = []
+                  def addSuccess(self, test):
+                      self.passed.append(test.id())
+                      super().addSuccess(test)
+              result = unittest.TextTestRunner(verbosity=2, resultclass=RecordedResult).run(
+                  unittest.defaultTestLoader.discover('tests/native_python')
+              )
+              required = [
+                  'ActualDriverSetupTests.test_private_driver_materialization_opens_actual_native_session',
+                  'ActualDriverSetupTests.test_existing_private_driver_is_read_only_validation',
+                  'ActualDriverSetupTests.test_driver_materialization_refuses_public_or_nonexecutable_target',
+                  'ActualDriverSetupTests.test_driver_materialization_refuses_private_conflict_without_repair',
+                  'ActualDriverSetupTests.test_wrong_driver_digest_creates_no_target_and_preserves_parent',
+                  'ActualDriverSetupTests.test_driver_materialization_requires_existing_protected_parent',
+              ]
+              if os.name == 'nt':
+                  required.extend([
+                      'ActualDriverSetupTests.test_driver_materialization_owner_and_dacl_on_long_unicode_path',
+                      'ActualDriverSetupTests.test_driver_materialization_refuses_foreign_owner_without_repair',
+                  ])
+              missing = [name for name in required if sum(test.endswith('.'+name) for test in result.passed) != 1]
+              record = {
+                  'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+                  'tests_run': result.testsRun, 'passed': result.passed,
+                  'skipped': [{'test': test.id(), 'reason': reason} for test, reason in result.skipped],
+                  'failures': [test.id() for test, _ in result.failures],
+                  'errors': [test.id() for test, _ in result.errors],
+                  'required_bootstrap': required, 'missing_bootstrap_passes': missing,
+                  'successful': result.wasSuccessful() and not missing,
+              }
+              pathlib.Path('native-python-discovery-result.json').write_text(json.dumps(record, indent=2)+'\n', encoding='utf-8')
+              if not record['successful']:
+                  raise SystemExit('Native Python discovery or required private-driver bootstrap did not pass')
           finally:
               subprocess.run([sys.executable, 'tests/native_python/inspect_library.py', '--library', env['CONSTELLATION_NATIVE_LIBRARY'], '--output', 'native-session-library-inspection.json', '--verify'], check=True)
           PY
@@ -196,11 +234,25 @@ jobs:
         if: runner.os == 'Windows'
         env:
           CONSTELLATION_INSTALLATION_SMOKE: '1'
-        run: >-
-          python tests/native_python/run_packaged_python.py
-          --target ${{ runner.arch == 'ARM64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
-          --output native-packaged-python-result.json
+        run: |
+          python tests/native_python/run_packaged_python.py \
+          --target ${{ runner.arch == 'ARM64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }} \
+          --output native-packaged-python-result.json \
           --log native-packaged-python.log
+          python - <<'PY'
+          import json, pathlib
+          ordinary = json.loads(pathlib.Path('native-python-discovery-result.json').read_text(encoding='utf-8'))
+          packaged = json.loads(pathlib.Path('native-packaged-python-result.json').read_text(encoding='utf-8'))
+          required = ordinary['required_bootstrap']
+          passed = packaged['tests']['passed']
+          missing = [name for name in required if sum(test.endswith('.'+name) for test in passed) != 1]
+          record = {'source': ordinary['source'], 'required_bootstrap': required, 'missing_bootstrap_passes': missing,
+                    'packaged_python_sha256': packaged['tests']['executable_sha256'],
+                    'successful': packaged['outcome'] == 'passed' and not missing}
+          pathlib.Path('native-packaged-bootstrap-result.json').write_text(json.dumps(record, indent=2)+'\n', encoding='utf-8')
+          if not record['successful']:
+              raise SystemExit('Required private-driver bootstrap did not pass under packaged Python')
+          PY
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Windows'
         with:
@@ -208,6 +260,7 @@ jobs:
           path: |
             native-packaged-python-result.json
             native-packaged-python.log
+            native-packaged-bootstrap-result.json
           if-no-files-found: warn
       - name: Qualify one actual 60000-entry regenerable tree
         run: >-
@@ -257,6 +310,7 @@ jobs:
             native-session-library-result.json
             native-session-library-inspection.json
             native-worker-source-result.json
+            native-python-discovery-result.json
             tests/native_python/fixtures/worker_source.json
             ${{ env.CONSTELLATION_INSTANCE_SOURCE }}/ops/updates/worker.py
             ${{ env.CONSTELLATION_NATIVE_DRIVER }}
