@@ -5,6 +5,14 @@ people can choose compatible engines and models without hidden changes to their
 accounts, histories or work. A declared capability has evidence at the actual
 protocol and access boundary.
 
+The SDK, negotiation and exception commitments apply to participating protocol
+integrations. The selection and binding commitments apply to implementations
+that expose configurable engines/models; requirements naming Native Runtime
+apply to that implementation. They are active agreements for those designs, not
+a requirement that every Agent Instance contain one selected engine. Other
+architectures keep their [outward boundary](agent-instance.md) and the protocols
+they advertise without adopting Native's catalog or internal transport.
+
 **Example:** A catalog gains a faster model. Existing work keeps its configured
 model and route. An explicit selection is validated; unsupported history or
 capabilities produce a useful explanation instead of a silent substitute.
@@ -37,11 +45,13 @@ capabilities produce a useful explanation instead of a silent substitute.
    Revisit exceptions at SDK upgrades, capability adoption and releases. Prefer
    upstream fixes; remove wrappers once supported and retain the verification.
 
-4. **Keep model policy with the engine.** Select the engine family at installation
-   creation; changing families uses a separate installation rather than implicit
-   migration of private history or active work. Native Runtime maintains the latest
-   verified useful classes for capability, speed and cost, with separate media
-   and decision classes. Catalog appearance alone is not qualification; every
+4. **Keep model policy with the engine.** In the supplied selected-engine host,
+   choose the family at installation creation; changing families uses a separate
+   installation rather than implicit migration of private history or active work.
+   This host-specific rule does not prescribe how other Agent Instance designs
+   replace their internals while preserving outward promises. Native Runtime
+   maintains the latest verified useful classes for capability, speed and cost,
+   with separate media and decision classes. Catalog appearance alone is not qualification; every
    historical generation need not remain executable. Runtime owns concrete IDs,
    dated capability records and provider adaptations. Configuration clients share
    those choices and validation; adapters neither duplicate catalogs nor infer
@@ -52,9 +62,10 @@ capabilities produce a useful explanation instead of a silent substitute.
    to model ID, provider, endpoint/deployment and account route. Prefer versioned
    IDs. Record moving aliases and returned identities without promising stronger
    reproducibility. Publishing a catalog does not change installed configuration.
-   Never change model or route during an active logical turn. A changed binding
-   creates an explicit execution context while preserving individual identity
-   and history. Transfer public history deliberately; never replay incompatible
+   Never change model or route during an active logical turn of that execution
+   context. Independently bound workers may use different models concurrently.
+   A changed binding creates an explicit execution context while preserving
+   individual identity and history. Transfer public history deliberately; never replay incompatible
    opaque reasoning, signatures or private continuation state.
 
 6. **Fail clearly rather than substitute.** Do not silently downgrade, switch

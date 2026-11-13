@@ -1,9 +1,17 @@
 # Independent installations and connections
 
-For installation owners, domain connectors, update helpers and their clients.
-The promise: people can set up, update, connect and recover an agent without losing
-its identity or work, depending on a central fleet service, or managing every step
-by hand.
+For owners and clients of Constellation's locally managed installations,
+connectors and enrolled update helpers. This is an implementation agreement:
+people can set up, update, connect and recover these installations without losing
+identity or work, depending on a central fleet service, or managing every step
+by hand. A different Agent Instance architecture need not adopt this helper,
+container or selected-engine arrangement; it still keeps the shared
+[composition](composition.md) and [work continuity](work-continuity.md) promises.
+
+The native single-computer target below applies to the locally hosted
+Constellation family. External services and independently supplied engines keep
+their stated requirements. Optional management features must be advertised;
+ordinary ACP participation does not require them.
 
 **Example:** Disconnect an agent from one world while leaving its other conversation
 available. Update supported software, then reconnect to the same saved session.

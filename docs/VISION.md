@@ -1,95 +1,61 @@
 # Your agents, wherever you work
 
-Constellation lets people work with a team of persistent agents across the places
-where life and work happen. Return to a familiar collaborator, bring in a
-specialist, redirect work and receive useful results without relaying every
-exchange yourself.
+Constellation lets people work with persistent agents across the places where
+life and work happen. Return to a familiar collaborator, bring in a specialist,
+redirect work and receive useful results without relaying every exchange yourself.
+A small group should gain the reach of a much larger organization while spending
+its attention on direction, judgment, expertise and taste.
 
-Our ambition is to give a small group the reach of a much larger organization.
-Human attention goes toward direction, judgment, expertise and taste. Agents carry
-preparation, execution, coordination and follow-through within their responsibilities.
+## Five building blocks, room to invent
 
-## A team connected to your conversations
+![Experience presents Conversation; Agent Instance participates through Connection and uses Tool. Conversations and tools can be shared.](../site/assets/art/building-blocks.png)
 
-![Experiences contain conversations connected to independent agent homes, each with an engine inside. Observatory offers a fleet view alongside them; conversation services support shared rooms and quiet huddles.](system-map.svg)
-
-One agent can participate in several conversations; several agents can share a
-conversation. Each conversation keeps its own audience and access rules. The
-picture explains the intended relationships, rather than prescribing a screen
-or certifying every integration.
-
-## What each part means
-
-| Part | What it brings to people |
+| Primitive | What it makes possible |
 | --- | --- |
-| **Agent** | A continuing, clearly artificial collaborator with a recognizable identity and accepted responsibilities. |
-| **Instance** | That agent's persistent installation: its identity, configuration, connections and responsibilities, with a selected engine inside. |
-| **Runtime / engine** | The ability to reason, use tools and continue work. Options include Constellation Runtime, Codex, Claude, GitHub Copilot and Amplifier Agent through compatible ACP implementations. |
-| **Experience** | A place to interact: Companion, Slack, Teams, Minecraft, Amplifier or another application. |
-| **Conversation** | An exchange with participants, an audience and history, hosted by an experience or its supporting service. |
-| **Domain connection** | A bridge carrying requests, responses and permitted actions between an agent and a place where work happens. |
-| **Conversation services** | Reusable rooms, membership, messages and inspectable work huddles. Existing platforms keep their own conversations. |
-| **Observatory** | A fleet view: understand which agents are available, where they are connected, what they are doing and what needs attention; manage them through their exposed controls. |
+| **[Agent Instance](../contracts/agent-instance.md)** | A continuing agent you can address and entrust with work, with a dependable outward identity and freedom inside. |
+| **[Conversation](../contracts/conversation.md)** | An exchange with participants, an audience and history that people and agents can return to through different views. |
+| **[Connection](../contracts/connection.md)** | Authorized participation and supported actions in a place where work happens. |
+| **[Experience](../contracts/experience.md)** | The human-facing way to talk, see, direct, inspect or manage. |
+| **[Tool](../contracts/tool.md)** | A capability an agent can use, from a search to a software factory or media pipeline. |
 
-**Companion brings your agent into your physical world.** Talk naturally, let it
-see what you choose to share, and work through things together in a live call.
-Begin with one person and one agent; grow toward shared calls where several
-people and agents can participate together.
-
-**Amplifier** is one connected experience with its own ecosystem. Its internal
-clients and platforms stay outside this map. **Amplifier Agent** is a separate
-engine option. Likewise, Observatory complements the places where people work;
-it is not a required control center for every interaction.
-
-## What passes between the parts
-
-People give direction through an experience. A connection carries the attributed
-input, relevant permitted context and return destination to the agent's home.
-The home talks to its engine through the Agent Client Protocol (**ACP**); tools
-and context are exposed through the Model Context Protocol (**MCP**) or a supported
-service interface. Results return to the intended conversation. Observatory uses
-installations' management interfaces to observe and manage them without taking
-ownership of their state or permissions.
-
-The [family agreement](../contracts/composition.md#what-crosses-each-connection)
-defines these boundaries; each serving component owns its exact API.
+These are composable roles, not five required services or repositories. Agents can
+share conversations and tools. A product can offer an app, collaborating agents
+and callable capabilities around the same work. Inside an agent, use one engine
+such as Constellation Runtime, Amplifier Agent, Codex, Claude or GitHub Copilot,
+an inner team, or a different architecture. Those are examples, not a fixed menu;
+a machine or container does not define the agent's boundary.
 
 ## What working together should feel like
 
-Ask a coordinator in Slack to prepare a customer briefing. It works with a
-researcher and a specialist in a quiet, observable huddle. You can inspect or join
-without receiving every exchange. A changed deadline reaches the work; useful
-progress survives. The briefing and decisions needing your judgment return to
-the original conversation. Later, discuss them with the same coordinator in
-Companion, within the access allowed there.
+Ask an agent in Slack to prepare a customer briefing. It gathers specialists in
+a quiet, inspectable huddle and uses a research tool. Join, correct the direction
+or let them continue. Meaningful progress, important disagreements and the briefing
+return to the original conversation. Discuss the same work later through another
+authorized experience.
+
+Companion brings an agent into your physical world through a live call: talk,
+share what you choose to let it see, and work together. Grow from one person and
+one agent toward shared calls. Slack, Teams, Minecraft and Amplifier offer other
+ways in. Observatory makes systems and connections visible and manageable. New
+experiences can reuse the same parts; none is a mandatory front door.
 
 ## Principles
 
-- **Value human attention.** Coordinate quietly, remain inspectable and bring back
-  meaningful progress, decisions and results. Make room for lively shared work
-  when people want to participate.
-- **Keep the parts independently useful.** Installations own their setup, state
-  and recovery. Engine choice, machine and release can vary; a central fleet
-  service is optional.
-- **Start on the computer people have.** One personal computer can host a useful
-  constellation through ordinary app setup. Add other machines when useful,
-  without requiring a developer environment or a separate Linux host. The
-  [installation agreement](../contracts/installations.md#native-single-computer-setup)
-  defines the native platform commitment.
-- **Share capabilities, preserve boundaries.** Familiar identity does not merge
-  private conversations or grant permission to act. Services expose dependable
-  interfaces that different experiences can reuse.
-- **Prefer simpler compositions.** Reuse before adding systems, restrictions or
-  repeated context. Persona Workshop, ACP Lab, and reusable context and live-media
-  capabilities support the ecosystem without becoming universal prerequisites.
-- **Judge useful outcomes.** Check actual results, correction and recovery—not
-  just acknowledgments. Count administrator effort alongside end-user effort.
+- **Value human attention.** Coordinate quietly, remain inspectable, and return
+  meaningful progress, decisions and results. Welcome lively shared work when wanted.
+- **Reuse good parts; leave room to invent.** Keep outward promises dependable
+  while owners choose their internals independently.
+- **Preserve continuity and scope.** Familiar identity does not merge audiences
+  or permissions. Correction and recovery preserve useful work.
+- **Keep it approachable.** Start on the computer people have. Measure setup,
+  recovery and administrator effort alongside everyday use.
+- **Prefer simpler compositions.** Reuse before adding systems or restrictions.
+  Judge useful outcomes, including failure and recovery, rather than activity alone.
 
-The bet is that persistent collaborators and reusable services improve useful
-work while reducing human coordination. Test that against real journeys and
-revise the design when it does not. Today's admin panels and previews do not set
-the future product UX.
+Test whether this reduces human coordination and improves what a small team can
+accomplish. Revise what fails to help. Illustrations explain relationships;
+products and agent architectures remain open to invention.
 
-[Contracts](../contracts/README.md) hold the shared promises.
-[Converge](https://github.com/microsoft/amplifier-converge) guides how we develop
-them together; the [repository map](../family.toml) locates their owners.
+[Contracts](../contracts/README.md) define the promises; the
+[component map](../README.md#find-the-owning-component) locates implementations.
+[Converge](https://github.com/microsoft/amplifier-converge) guides their development.
