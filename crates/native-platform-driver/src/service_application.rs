@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use std::{
     fs,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -277,7 +277,12 @@ fn chain_to(child: &Value, ancestor: &Value) -> Result<Vec<Value>> {
 
 /// Preserve native roles. The application field is an additional proved link,
 /// never a renamed TaskScheduler engine/MainPID or a best-effort live PID.
-pub fn augment(enrollment: &Enrollment, name: &str, snapshot: &mut Value) -> Result<()> {
+pub fn augment(
+    enrollment: &Enrollment,
+    driver: &Path,
+    name: &str,
+    snapshot: &mut Value,
+) -> Result<()> {
     let Some(application) = enrollment.config.service_applications.get(name) else {
         return Ok(());
     };
@@ -317,8 +322,7 @@ pub fn augment(enrollment: &Enrollment, name: &str, snapshot: &mut Value) -> Res
             .get(name)
             .context("Service application needs its fixed registered wrapper profile")?;
         ensure!(
-            fs::canonicalize(&registration.executable)?
-                == fs::canonicalize(std::env::current_exe()?)?,
+            fs::canonicalize(&registration.executable)? == fs::canonicalize(driver)?,
             "Service registration does not select this installed native wrapper"
         );
         let args = vec![
@@ -477,7 +481,13 @@ mod tests {
         )
         .unwrap();
         let mut snapshot = json!({"active":false,"transitioning":false,"processes":[]});
-        augment(&enrollment, "controller", &mut snapshot).unwrap();
+        augment(
+            &enrollment,
+            &std::env::current_exe().unwrap(),
+            "controller",
+            &mut snapshot,
+        )
+        .unwrap();
         assert_eq!(snapshot["application"]["status"], "unconfirmed");
         assert!(process::matches(&live).unwrap());
     }

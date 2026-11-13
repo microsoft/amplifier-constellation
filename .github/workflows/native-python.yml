@@ -81,6 +81,23 @@ jobs:
               output.write('NATIVE_OPERATION_LIFETIME_FIXTURE='+str(operation)+'\n')
               output.write('NATIVE_REGISTRATION_TESTS='+str(registration)+'\n')
           PY
+      - name: Load the actual native session library
+        run: |
+          python - <<'PY'
+          import ctypes, hashlib, json, os, pathlib, platform
+          name = {'Windows': 'constellation_native_driver.dll', 'Darwin': 'libconstellation_native_driver.dylib', 'Linux': 'libconstellation_native_driver.so'}[platform.system()]
+          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
+          path = (pathlib.Path('crates/native-platform-driver') / target / name).resolve()
+          before = hashlib.sha256(path.read_bytes()).hexdigest()
+          library = ctypes.CDLL(str(path))
+          library.constellation_native_abi_version.argtypes = []
+          library.constellation_native_abi_version.restype = ctypes.c_uint32
+          assert library.constellation_native_abi_version() == 1
+          assert hashlib.sha256(path.read_bytes()).hexdigest() == before
+          pathlib.Path('native-session-library-result.json').write_text(json.dumps({'schema': 1, 'os': platform.system(), 'architecture': platform.machine(), 'library': str(path), 'sha256': before, 'abi': 1, 'coverage': 'actual hosted Python library loading; Rust session tests run above; packaged Python and connector lifecycle qualification are separate'}, indent=2)+'\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('CONSTELLATION_NATIVE_LIBRARY='+str(path)+'\n')
+          PY
       - name: Prepare disposable Linux user service manager
         if: runner.os == 'Linux'
         run: |
@@ -163,6 +180,8 @@ jobs:
           path: |
             native-installation-result.json
             native-service-fixture-result.json
+            native-session-library-result.json
             ${{ env.CONSTELLATION_NATIVE_DRIVER }}
+            ${{ env.CONSTELLATION_NATIVE_LIBRARY }}
             ${{ env.NATIVE_SERVICE_FIXTURE }}
           if-no-files-found: error
