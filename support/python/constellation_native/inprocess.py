@@ -423,13 +423,38 @@ class NativeSession:
     service_snapshot = Session.service_snapshot
     service_action = Session.service_action
     tree_inspect = Session.tree_inspect
+    tree_observe = Session.tree_observe
     exchange_inspect = Session.exchange_inspect
     exchange_prepare_pointer = Session.exchange_prepare_pointer
     exchange_apply = Session.exchange_apply
     private_write = Session.private_write
+    private_write_data = Session.private_write_data
     private_dir = Session.private_dir
     durable_remove = Session.durable_remove
     launch = Session.launch
+
+    def private_read_data(
+        self, root: str, path: str, *, max_bytes: int = 1048576
+    ) -> bytes | None:
+        """Read a data snapshot without releasing caller ownership on decode loss."""
+        if type(max_bytes) is not int or not 1 <= max_bytes <= 1048576:
+            raise ValueError("max_bytes must be an integer from 1 through 1048576")
+        self._ensure_current()
+        with self._mutex:
+            try:
+                # Reuse the qualified request and bounded snapshot validator.
+                # Its _lost call dispatches to this session's poison behavior;
+                # it cannot close the executable transport or drop native locks.
+                return Session.private_read_data(self, root, path, max_bytes=max_bytes)
+            except DriverError:
+                raise
+            except Exception as error:
+                raise self._lost(
+                    "invalid_response", "Native data read result could not be decoded", False
+                ) from error
+            except BaseException:
+                self._poisoned = True
+                raise
 
     def tree_remove(self, name: str, entry: str, expected: Mapping[str, Any]) -> Any:
         """Synchronous removal; the external action worker owns its deadline."""

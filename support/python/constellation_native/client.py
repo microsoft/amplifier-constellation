@@ -557,6 +557,16 @@ class Session:
         """Observe one child of an explicitly enrolled regenerable directory."""
         return self._call("tree.inspect", name=name, entry=entry)
 
+    def tree_observe(self, name: str, entry: str) -> Any:
+        """Observe root/profile scope even when the child is absent.
+
+        Requires this Session's configured tree lock. Save the complete scope
+        with the original intent before removal; a fresh locked observation of
+        that same name/entry can establish absence only with matching scope.
+        This read does not grant a retry or settle the caller's journal itself.
+        """
+        return self._call("tree.observe", name=name, entry=entry)
+
     def tree_remove(
         self,
         name: str,
@@ -645,6 +655,53 @@ class Session:
             bytes=list(data),
             create_only=create_only,
         )
+
+    def private_write_data(self, root: str, path: str, data: bytes) -> Any:
+        """Publish a protected data snapshot while compatible readers keep the old one.
+
+        Requires advertised private_data_publication:1 / storage.write_data.
+        Windows readers must permit delete sharing. This is for data journals,
+        not executable or directory replacement. Publication/flush uncertainty
+        remains Unknown; never infer that the old file survived or retry.
+        """
+        if not isinstance(data, bytes):
+            raise TypeError("private_write_data expects already serialized bytes")
+        return self._call(
+            "storage.write_data", mutating=True, root=root, path=path, bytes=list(data)
+        )
+
+    def private_read_data(
+        self, root: str, path: str, *, max_bytes: int = 1048576
+    ) -> bytes | None:
+        """Read a bounded protected snapshot; absence is distinct from empty bytes.
+
+        Requires advertised private_data_read:1 / storage.read_data. A read
+        failure grants no retry or mutation authority. Transport or malformed
+        result failure invalidates the Session and every lock it held.
+        """
+        if type(max_bytes) is not int or not 1 <= max_bytes <= 1048576:
+            raise ValueError("max_bytes must be an integer from 1 through 1048576")
+        # Preserve the fork check before taking a possibly inherited mutex, and
+        # keep response validation inside this same serialized invocation.
+        self._ensure_current()
+        with self._mutex:
+            result = self._call(
+                "storage.read_data", root=root, path=path, max_bytes=max_bytes
+            )
+            if isinstance(result, dict):
+                if set(result) == {"present"} and result["present"] is False:
+                    return None
+                if set(result) == {"present", "bytes"} and result["present"] is True:
+                    data = result["bytes"]
+                    if (
+                        isinstance(data, list)
+                        and len(data) <= max_bytes
+                        and all(type(value) is int and 0 <= value <= 255 for value in data)
+                    ):
+                        return bytes(data)
+            raise self._lost(
+                "invalid_response", "Invalid native data read result", False
+            )
 
     def private_dir(self, root: str, path: str) -> Any:
         """Create one private directory under an enrolled, existing parent."""

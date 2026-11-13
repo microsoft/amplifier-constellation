@@ -120,6 +120,16 @@ The receipt separates exact interpreter/library loading from metadata inspection
 and records other OS-specific skips explicitly. Inspection-only metadata fixtures
 are never counted as actual ABI, lock ownership or packaged-interpreter proof.
 
+The combined capability cases in `test_inprocess_capabilities.py` exercise both
+bindings against the same protected journal and tree enrollment. They retain
+caller ownership through malformed or interrupted snapshot decoding, and persist
+an actual cleanup intent before one committed removal whose response is lost.
+Fresh locked reconciliation must match the saved scope; replacing the root
+invalidates that comparison. Packaged Windows qualification also requires the
+actual in-process writer to preserve a held old reader while a new reader sees
+the replacement. These cases qualify composition with ABI 1, without changing
+the external provider/lifecycle deadlines or qualifying a domain's state machine.
+
 `test_tree.py` uses production setup and the actual driver to remove only an
 explicitly enrolled regenerable child. It checks lock contention, stale root and
 child identities, invalid paths, outside sentinels behind links/junctions, ordinary

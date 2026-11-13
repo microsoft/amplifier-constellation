@@ -39,6 +39,11 @@ REQUIRED_INPROCESS_TESTS = (
     "ActualWorkerNativeSessionTests.test_actual_participant_invocation_preserves_worker_before_domain_order",
     "ActualWorkerNativeSessionTests.test_actual_connection_invocation_preserves_worker_before_domain_order",
     "ActualWorkerNativeSessionTests.test_domain_contention_refuses_all_three_actual_worker_invocations",
+    "InprocessCapabilitiesTests.test_both_bindings_advertise_all_combined_capabilities",
+    "InprocessCapabilitiesTests.test_cli_and_native_publish_and_read_the_same_protected_bytes",
+    "InprocessCapabilitiesTests.test_scoped_intent_survives_committed_removal_decode_loss_without_retry",
+    "InprocessCapabilitiesTests.test_snapshot_validation_interrupt_poisons_without_releasing_caller_lock",
+    "InprocessCapabilitiesTests.test_windows_native_data_publication_preserves_held_old_reader",
 )
 
 

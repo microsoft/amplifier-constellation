@@ -86,9 +86,11 @@ means a known rejection before dispatch. An observation/storage failure is an
 | `service.register` | `name` | `{created: boolean}`; configured fresh registration without start |
 | `service.snapshot` | `name` | exact native definition/state and process generation |
 | `tree.inspect` | `name`, `entry` | opaque fixed-root/child filesystem identity, or null if absent |
+| `tree.observe` | `name`, `entry` | `{scope, entry}`; fixed profile/root identity even for absent child; requires the enrolled lock |
 | `tree.remove` | `name`, `entry`, `expected` | remove one owner-selected regenerable child under its required lock; observed absence only |
 | `service.action` | `name`, `action: start\|stop`, `expected` | `{accepted:true}` after compare-before-dispatch |
 | `storage.write` | `root`, `path`, `bytes` (array of octets), optional `create_only` | protected atomic file publication |
+| `storage.write_data` | `root`, `path`, `bytes` (array of octets) | protected data snapshot publication; compatible open readers retain the old snapshot |
 | `storage.remove` | `root`, `path` | durable ordinary-file removal |
 | `storage.mkdir` | `root`, `path` | private child directory under an existing private parent; existing policies are not changed |
 | `process.launch` | `name`, optional `result` | detached supervisor generation identity |
@@ -172,6 +174,63 @@ the next incoming and a fresh retention destination. No deletion, automatic retr
 or whole-state rollback is provided. Domain owners still journal operations,
 verify source fingerprints, close admission and settle services.
 
+## Data snapshot publication
+
+`describe` advertises `private_data_publication:1` and `storage.write_data` when
+the explicit data writer is available. It uses the same protected enrolled-root,
+ordinary-file, owner and path checks as `storage.write`; it adds no path authority.
+The installation chooses this operation only for serialized data snapshots such
+as journals. Existing strict `storage.write`, create-only writes, executable
+replacement and directory exchange retain their original behavior.
+
+On Windows, this reuses the native library's `private_write_data`: compatible
+readers must grant delete sharing. An already-open reader retains the old file;
+a fresh open sees the complete replacement. There is no missing-file fallback,
+automatic retry, permission override or implicit change to consumer readers.
+A reader denying delete sharing or a read-only destination still causes failure.
+Consumer qualification must exercise its actual reader behavior.
+
+`private_data_read:1` and `storage.read_data` advertise the corresponding
+installation-owned reader. Its request is `{root,path,max_bytes}`, with an
+integer limit from 1 through 1,048,576 bytes. It uses the same enrolled-root,
+ordinary-file, owner and path validation. It does not create parents, repair
+permissions, acquire a transaction lock or change the journal. The installation
+retains responsibility for its surrounding transaction and reference checks.
+
+The result is either `{present:true,bytes:[...]}` or `{present:false}`. Only a
+missing final file at the actual open returns absence; an empty file is present
+with an empty byte list. Invalid paths or policies are refused. Read/open errors
+remain errors, and data exceeding the requested limit is refused without
+returning a truncated snapshot. A missing or unsafe parent is not file absence.
+
+On Windows this production reader explicitly grants read, write and delete
+sharing. Its open handle keeps the selected file snapshot while a compatible
+data publication replaces the directory entry. This does not provide snapshot
+isolation from concurrent in-place writes. It rejects non-ordinary files
+and reparse points; the Unix opener also refuses symbolic links and special
+files. There is no retry across replacement and no promise of an atomic check
+against a hostile same-owner writer. Strict writes, executable replacement,
+create-only publication and directory exchange remain unchanged. Existing
+Python `Path.read_text`/`read_bytes` calls are not converted by advertising this
+operation; consumers must select and qualify the production reader explicitly.
+
+The Python method `private_read_data(root, path, max_bytes=1048576)` returns
+`bytes` or `None` for observed absence. Its limit is validated before dispatch.
+A transport failure remains a failed observation and invalidates executable
+`Session` locks; it is not absence or authority to retry a mutation. Invalid
+result shapes also invalidate that transport rather than supplying data or
+absence. `NativeSession` uses the same operations and bounded result validation
+inside the caller process: a malformed or interrupted response poisons dispatch
+while retaining its kernel locks until scope unwind. Neither binding changes
+the domain's recovery decisions.
+
+Rejected preflight remains `refused`. Any publication or flush error is
+`unknown`/`write_unconfirmed`, including a flush failure after the replacement
+may have committed. Persist intent before mutation; after a lost reply, unwind
+the Session-held critical section and reacquire before freshly reading the same
+intent. Cached old reader bytes do not prove publication failed. This operation
+does not settle the domain journal or authorize a second dispatch.
+
 ## Python binding
 
 Import `Session`, `DriverError`, `Busy`, `Refused`, and `Unknown` from
@@ -221,9 +280,12 @@ executables supplied by a request.
 | `service_register(name: str)` | `{"created": bool}`; registers a fresh enrolled definition without starting it. |
 | `service_snapshot(name: str)` | Complete [snapshot](SERVICE-SNAPSHOT.md); an observation failure raises rather than manufacturing stopped state. |
 | `tree_inspect(name: str, entry: str)` | Opaque ordinary-directory identity or null; no recursive scan or mutation. |
+| `tree_observe(name: str, entry: str)` | `{scope, entry}` with stable profile/root evidence and the existing inspection result or null. Requires this Session's configured tree lock; advertised by `regenerable_tree_observation:1`. |
 | `tree_remove(name: str, entry: str, expected: Mapping, *, timeout: float \| None = None)` | `{absent: true}` only after identity-checked removal and observed absence; requires this Session's configured lock. Optional timeout applies only to this call. |
 | `service_action(name: str, action: str, expected: Mapping[str, Any])` | `{"accepted": True}` for `"start"` or `"stop"`; acceptance is not settlement. |
 | `private_write(root: str, path: str, data: bytes, *, create_only: bool = False)` | `{}` after protected publication. Accepts already serialized `bytes` only; other data types raise `TypeError`. |
+| `private_write_data(root: str, path: str, data: bytes)` | `{}` after protected data snapshot publication; accepts serialized bytes only. Requires advertised `private_data_publication:1` and `storage.write_data`. |
+| `private_read_data(root: str, path: str, *, max_bytes: int = 1048576)` | `bytes` from one protected ordinary file, or `None` for observed final-file absence. Requires advertised `private_data_read:1` and `storage.read_data`; limits are 1 through 1,048,576 bytes, with no truncation. |
 | `private_dir(root: str, path: str)` | `{}` after creating or validating one private child directory under an enrolled existing parent. |
 | `durable_remove(root: str, path: str)` | `{"absent": True}` after removal or confirmed prior absence. |
 | `launch(name: str, *, result: str \| None = None)` | Detached supervisor generation identity, not command completion or the endpoint's identity. |
@@ -313,8 +375,29 @@ mount-topology changes. Mount preflight observes the current process namespace,
 including Linux same-device bind mounts. Already-dispatched kernel operations may
 settle after transport loss; invocation termination is not proof of no effects.
 Leave the pruning intent unresolved, unwind lost lock ownership, then open a fresh
-Session/lock for read-only reconciliation. Observed absence may settle that same
-intent; a remaining or replaced tree does not authorize automatic redispatch.
+Session/lock for read-only reconciliation. Bare null from `tree.inspect` cannot
+settle a prior unknown removal: a replaced root can also have no such child.
+Use the optional `tree.observe` operation when advertised. It returns
+`{scope:{schema:1,profile_sha256,root,root_identity},entry:SNAPSHOT_OR_NULL}`.
+The scope binds the protected profile name, storage root name/path, relative tree
+path, lock name/path and the canonical tree root's filesystem identity. The root
+is compared before and after observation. This operation requires the same
+enrolled lock and performs no recursive traversal or mutation.
+The digest covers that selected profile, not the whole configuration document;
+unrelated configuration changes across fresh Sessions may preserve the scope.
+The existing configuration-change guard still refuses changes within a Session.
+
+Persist the complete scope with the original pruning intent before dispatch;
+pass its non-null `entry` snapshot unchanged to the existing `tree.remove`.
+After acknowledgment loss, observe the exact profile name and child entry saved
+in that intent under a fresh lock, then compare the complete scope. The scope is
+shared by a profile's children: an absent different child cannot settle this
+intent. Only an equal scope and null entry for the original child support marking
+that same intent absent. A changed root/profile, an existing or replaced child, a
+legacy intent without saved scope, or an uncertain observation stays unresolved.
+No automatic redispatch follows.
+Existing `tree.inspect` and `tree.remove` results remain unchanged; capability
+`regenerable_tree_removal:1` alone does not advertise this new observation.
 The normal client deadline is unchanged. Python callers may explicitly pass
 `tree_remove(..., timeout=120)` for a cleanup-only response deadline when that
 duration, invocation termination and reconciliation fit within their remaining
