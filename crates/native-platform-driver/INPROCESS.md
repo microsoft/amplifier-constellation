@@ -53,7 +53,9 @@ Unknown outcomes reconcile through the domain's existing journal.
 ## Children and fork
 
 Register the three fork callbacks **once per loaded library image**, using
-Python `os.register_at_fork`. Preparation waits for active ABI calls, including
+Python `os.register_at_fork`. Keep that library loaded for the process lifetime;
+Python cannot unregister the callbacks after its last session closes.
+Preparation waits for active ABI calls, including
 response allocation and buffer freeing, then freezes session changes. The parent
 releases that gate. A child that could return to Python exits with code 125 if
 any native critical section was active, preventing copied caller code from

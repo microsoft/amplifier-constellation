@@ -6,6 +6,8 @@
 /* ABI 1. All text is UTF-8. No function accepts a transport timeout.
  * Buffers are owned by this library; copy their bytes then free exactly once.
  * Keep the library loaded until every session and buffer has been released.
+ * Once fork callbacks are registered, keep it loaded for the process lifetime:
+ * Python cannot unregister those callbacks when the last Session closes.
  * Return 0 means an outcome JSON was written, not that the operation succeeded.
  * Return 1 means invalid ABI arguments; 2 means an outcome could not be encoded.
  * An invalid/unknown result never authorizes retry of a mutating operation.
