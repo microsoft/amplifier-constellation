@@ -323,6 +323,303 @@ pub fn private_write_data(path: &Path, bytes: &[u8]) -> Result<()> {
 pub fn private_create(path: &Path, bytes: &[u8]) -> Result<()> {
     write_atomic(path, bytes, Publication::CreateOnly)
 }
+
+/// A bootstrap executable is bounded independently of the JSON setup frame.
+#[cfg(feature = "installation")]
+pub const MAX_PRIVATE_EXECUTABLE_BYTES: u64 = 128 * 1024 * 1024;
+
+/// Read-only evidence about one private executable, not an immutable lease.
+#[cfg(feature = "installation")]
+#[derive(Debug, PartialEq, Eq)]
+pub struct PrivateExecutableSnapshot {
+    pub sha256: [u8; 32],
+    pub size: u64,
+    pub identity: serde_json::Value,
+}
+
+/// Observe an existing executable without repairing its owner or permissions.
+/// Callers also validate the complete installation path before using this helper.
+#[cfg(feature = "installation")]
+pub fn private_executable_snapshot(path: &Path) -> Result<PrivateExecutableSnapshot> {
+    use crate::installation_exchange::native_identity;
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+
+    validate_private_directory(
+        path.parent()
+            .context("Executable needs an existing parent")?,
+    )?;
+    let before = executable_metadata(path)?;
+    let identity = native_identity(path, &before)?;
+    let mut options = fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NOFOLLOW);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        use windows_sys::Win32::{
+            Foundation::{GENERIC_EXECUTE, GENERIC_READ},
+            Storage::FileSystem::{
+                FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ,
+            },
+        };
+        // Verify that this user can read and execute the existing private image.
+        options
+            .access_mode(GENERIC_READ | GENERIC_EXECUTE)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_DELETE)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    }
+    let mut file = options.open(path)?;
+    ensure!(
+        opened_file_matches_path(&file, path)?,
+        "Executable changed before opening"
+    );
+    let mut hasher = Sha256::new();
+    let mut size = 0u64;
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let count = file.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        size += count as u64;
+        ensure!(
+            size <= MAX_PRIVATE_EXECUTABLE_BYTES,
+            "Executable exceeds size limit"
+        );
+        hasher.update(&buffer[..count]);
+    }
+    let after = executable_metadata(path)?;
+    ensure!(
+        size == before.len()
+            && size == after.len()
+            && before.modified()? == after.modified()?
+            && native_identity(path, &after)? == identity
+            && opened_file_matches_path(&file, path)?,
+        "Executable changed during observation"
+    );
+    Ok(PrivateExecutableSnapshot {
+        sha256: hasher.finalize().into(),
+        size,
+        identity,
+    })
+}
+
+#[cfg(all(feature = "installation", unix))]
+fn opened_file_matches_path(file: &File, path: &Path) -> Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    let opened = file.metadata()?;
+    let current = fs::symlink_metadata(path)?;
+    Ok(opened.dev() == current.dev() && opened.ino() == current.ino())
+}
+
+#[cfg(all(feature = "installation", windows))]
+fn opened_file_matches_path(file: &File, path: &Path) -> Result<bool> {
+    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE,
+        FILE_SHARE_READ, FILE_SHARE_WRITE, GetFileInformationByHandle,
+    };
+    fn identity(file: &File) -> Result<(u32, u32, u32)> {
+        let mut info: BY_HANDLE_FILE_INFORMATION = unsafe { std::mem::zeroed() };
+        ensure!(
+            unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) } != 0,
+            "Cannot inspect executable handle identity: {}",
+            std::io::Error::last_os_error()
+        );
+        Ok((
+            info.dwVolumeSerialNumber,
+            info.nFileIndexHigh,
+            info.nFileIndexLow,
+        ))
+    }
+    // Access 0 permits identity observation even while our CREATE_NEW writer
+    // retains its no-sharing handle. This grants no read/write/delete authority.
+    let current = fs::OpenOptions::new()
+        .access_mode(0)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(path)?;
+    Ok(identity(file)? == identity(&current)?)
+}
+
+#[cfg(feature = "installation")]
+fn executable_metadata(path: &Path) -> Result<fs::Metadata> {
+    let metadata = fs::symlink_metadata(path)?;
+    ensure!(
+        metadata.is_file() && !metadata.file_type().is_symlink(),
+        "Private executable must be an ordinary file"
+    );
+    ensure!(
+        metadata.len() > 0 && metadata.len() <= MAX_PRIVATE_EXECUTABLE_BYTES,
+        "Executable size is invalid"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        ensure!(
+            metadata.uid() == unsafe { libc::geteuid() }
+                && metadata.mode() & 0o7077 == 0
+                && metadata.mode() & 0o500 == 0o500,
+            "Executable must be private current-user readable/executable storage"
+        );
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        ensure!(
+            metadata.file_attributes() & 0x400 == 0,
+            "Executable is a reparse point"
+        );
+        validate_windows_private_access(path)?;
+    }
+    Ok(metadata)
+}
+
+/// Publish one new executable from an already opened, caller-verified image.
+/// The existing private parent is never recreated or repaired. Publication is
+/// no-replace; any error may require read-only reconciliation of the destination.
+/// The setup entrypoint supplies only its own current executable as `source`.
+#[cfg(feature = "installation")]
+pub fn private_create_executable(
+    path: &Path,
+    source: &mut File,
+    sha256: &[u8; 32],
+    size: u64,
+) -> Result<PrivateExecutableSnapshot> {
+    create_executable_with(path, source, sha256, size, || Ok(()), || Ok(()))
+}
+
+#[cfg(feature = "installation")]
+fn create_executable_with(
+    path: &Path,
+    source: &mut File,
+    expected: &[u8; 32],
+    size: u64,
+    before_publish: impl FnOnce() -> Result<()>,
+    after_publish: impl FnOnce() -> Result<()>,
+) -> Result<PrivateExecutableSnapshot> {
+    use crate::installation_exchange::native_identity;
+    use sha2::{Digest, Sha256};
+    use std::io::{Read, Seek};
+
+    let parent = path
+        .parent()
+        .context("Executable needs an existing private parent")?;
+    validate_private_directory(parent)?;
+    let parent_identity = native_identity(parent, &fs::symlink_metadata(parent)?)?;
+    ensure!(
+        size > 0 && size <= MAX_PRIVATE_EXECUTABLE_BYTES,
+        "Executable size is invalid"
+    );
+    match fs::symlink_metadata(path) {
+        Ok(_) => return Err(std::io::Error::from(std::io::ErrorKind::AlreadyExists).into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+        Err(error) => return Err(error.into()),
+    }
+    let source_before = source.metadata()?;
+    ensure!(
+        source_before.is_file() && source_before.len() == size,
+        "Source image changed"
+    );
+    source.rewind()?;
+    let temporary = parent.join(format!(".driver-{}.tmp", uuid::Uuid::new_v4()));
+    let mut output = create_private_executable_file(&temporary)?;
+    let temporary_identity = native_identity(&temporary, &fs::symlink_metadata(&temporary)?)?;
+    ensure!(
+        opened_file_matches_path(&output, &temporary)?,
+        "Executable temporary identity changed"
+    );
+    let result = (|| -> Result<PrivateExecutableSnapshot> {
+        let mut hasher = Sha256::new();
+        let mut copied = 0u64;
+        let mut buffer = [0u8; 64 * 1024];
+        loop {
+            let count = source.read(&mut buffer)?;
+            if count == 0 {
+                break;
+            }
+            copied += count as u64;
+            ensure!(copied <= size, "Source image grew during copying");
+            hasher.update(&buffer[..count]);
+            output.write_all(&buffer[..count])?;
+        }
+        let source_after = source.metadata()?;
+        ensure!(
+            copied == size
+                && source_after.len() == size
+                && source_before.modified()? == source_after.modified()?
+                && <[u8; 32]>::from(hasher.finalize()) == *expected,
+            "Source image changed or differs from expected SHA256"
+        );
+        output.sync_all()?;
+        drop(output);
+        before_publish()?;
+        validate_private_directory(parent)?;
+        ensure!(
+            native_identity(parent, &fs::symlink_metadata(parent)?)? == parent_identity,
+            "Executable parent changed before publication"
+        );
+        ensure!(
+            native_identity(&temporary, &fs::symlink_metadata(&temporary)?)? == temporary_identity,
+            "Executable temporary changed before publication"
+        );
+        let prepared = private_executable_snapshot(&temporary)?;
+        ensure!(
+            prepared.identity == temporary_identity
+                && prepared.sha256 == *expected
+                && prepared.size == size,
+            "Executable temporary changed before publication"
+        );
+        commit(&temporary, path, true)?;
+        #[cfg(unix)]
+        File::open(parent)?.sync_all()?;
+        after_publish()?;
+        validate_private_directory(parent)?;
+        ensure!(
+            native_identity(parent, &fs::symlink_metadata(parent)?)? == parent_identity,
+            "Executable parent changed after publication"
+        );
+        let observed = private_executable_snapshot(path)?;
+        ensure!(
+            observed.identity == temporary_identity
+                && observed.sha256 == *expected
+                && observed.size == size,
+            "Published executable identity or contents changed"
+        );
+        Ok(observed)
+    })();
+    // Only remove our unpublished temporary. Never remove or repair a destination
+    // after uncertain publication, nor a replacement at the temporary name.
+    if fs::symlink_metadata(&temporary)
+        .ok()
+        .is_some_and(|metadata| {
+            native_identity(&temporary, &metadata).ok().as_ref() == Some(&temporary_identity)
+        })
+    {
+        let _ = fs::remove_file(&temporary);
+    }
+    result
+}
+
+#[cfg(all(feature = "installation", unix))]
+fn create_private_executable_file(path: &Path) -> Result<File> {
+    use std::os::unix::fs::OpenOptionsExt;
+    Ok(fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o700)
+        .open(path)?)
+}
+
+#[cfg(all(feature = "installation", windows))]
+fn create_private_executable_file(path: &Path) -> Result<File> {
+    create_private_file(path)
+}
 enum Publication {
     CreateOnly,
     ReplaceClosed,
@@ -860,6 +1157,22 @@ mod creation_tests {
     }
     #[cfg(feature = "installation")]
     #[test]
+    fn executable_temporary_has_current_user_policy_before_contents() {
+        let temp = tempfile::tempdir().unwrap();
+        let before = policy_snapshot(temp.path());
+        let path = temp.path().join("new executable");
+        let file = create_private_executable_file(&path).unwrap();
+        assert_eq!(file.metadata().unwrap().len(), 0);
+        assert!(opened_file_matches_path(&file, &path).unwrap());
+        assert!(
+            crate::installation_exchange::native_identity(&path, &file.metadata().unwrap()).is_ok()
+        );
+        assert_eq!(policy_snapshot(&path).owner, current_user_sid().unwrap());
+        validate_windows_private_access(&path).unwrap();
+        assert_eq!(policy_snapshot(temp.path()), before);
+    }
+    #[cfg(feature = "installation")]
+    #[test]
     fn new_lock_is_user_owned_and_reopening_preserves_existing_policy_and_identity() {
         use crate::locking::InstallationLock;
         let temp = tempfile::tempdir().unwrap();
@@ -885,5 +1198,185 @@ mod creation_tests {
         drop(held);
         assert_eq!(policy_snapshot(&legacy), before);
         assert_eq!(fs::read(&legacy).unwrap(), b"legacy contents");
+    }
+}
+
+#[cfg(all(test, feature = "installation"))]
+mod executable_tests {
+    use super::*;
+    use sha2::{Digest, Sha256};
+
+    fn fixture() -> (tempfile::TempDir, std::path::PathBuf, File, [u8; 32]) {
+        let temporary = tempfile::tempdir().unwrap();
+        let parent = temporary.path().canonicalize().unwrap().join("private");
+        private_create_dir(&parent).unwrap();
+        let source = temporary.path().join("source");
+        fs::write(&source, b"verified running image").unwrap();
+        let digest = Sha256::digest(b"verified running image").into();
+        (
+            temporary,
+            parent.join("driver"),
+            File::open(source).unwrap(),
+            digest,
+        )
+    }
+
+    #[test]
+    fn executable_copy_rechecks_hash_and_never_publishes_changed_source() {
+        let (_temporary, path, mut source, digest) = fixture();
+        let result = private_create_executable(&path, &mut source, &digest, 22);
+        assert!(result.is_ok(), "{result:?}");
+        let observed = result.unwrap();
+        assert_eq!(observed.sha256, digest);
+        assert_eq!(observed.size, 22);
+        assert_eq!(private_executable_snapshot(&path).unwrap(), observed);
+        let other = path.with_file_name("wrong");
+        assert!(private_create_executable(&other, &mut source, &[0; 32], 22).is_err());
+        assert!(!other.exists());
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn executable_copy_uses_verified_open_source_not_its_replaced_path() {
+        let (temporary, path, mut source, digest) = fixture();
+        let source_path = temporary.path().join("source");
+        fs::rename(&source_path, temporary.path().join("original-source")).unwrap();
+        fs::write(&source_path, b"untrusted replacement").unwrap();
+        let observed = private_create_executable(&path, &mut source, &digest, 22).unwrap();
+        assert_eq!(observed.sha256, digest);
+        assert_eq!(fs::read(&path).unwrap(), b"verified running image");
+        assert_eq!(fs::read(&source_path).unwrap(), b"untrusted replacement");
+    }
+
+    #[test]
+    fn executable_source_mutation_after_preflight_never_publishes() {
+        let (temporary, path, mut source, digest) = fixture();
+        fs::write(temporary.path().join("source"), [b'x'; 22]).unwrap();
+        assert!(private_create_executable(&path, &mut source, &digest, 22).is_err());
+        assert!(!path.exists());
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn executable_publication_does_not_replace_a_concurrent_destination() {
+        let (_temporary, path, mut source, digest) = fixture();
+        let result = create_executable_with(
+            &path,
+            &mut source,
+            &digest,
+            22,
+            || {
+                private_create(&path, b"concurrent owner data")?;
+                Ok(())
+            },
+            || Ok(()),
+        );
+        assert!(result.is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"concurrent owner data");
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn executable_prepublication_content_drift_does_not_publish() {
+        let (_temporary, path, mut source, digest) = fixture();
+        let result = create_executable_with(
+            &path,
+            &mut source,
+            &digest,
+            22,
+            || {
+                let temporary = fs::read_dir(path.parent().unwrap())?
+                    .next()
+                    .unwrap()?
+                    .path();
+                fs::write(temporary, [b'x'; 22])?;
+                Ok(())
+            },
+            || Ok(()),
+        );
+        assert!(result.is_err());
+        assert!(!path.exists());
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn executable_prepublication_public_mode_does_not_publish_or_repair() {
+        use std::os::unix::fs::PermissionsExt;
+        let (_temporary, path, mut source, digest) = fixture();
+        let result = create_executable_with(
+            &path,
+            &mut source,
+            &digest,
+            22,
+            || {
+                let temporary = fs::read_dir(path.parent().unwrap())?
+                    .next()
+                    .unwrap()?
+                    .path();
+                fs::set_permissions(temporary, fs::Permissions::from_mode(0o755))?;
+                Ok(())
+            },
+            || Ok(()),
+        );
+        assert!(result.is_err());
+        assert!(!path.exists());
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn executable_parent_loss_does_not_recreate_any_directory() {
+        let (_temporary, path, mut source, digest) = fixture();
+        let parent = path.parent().unwrap();
+        let moved = parent.with_file_name("moved");
+        let result = create_executable_with(
+            &path,
+            &mut source,
+            &digest,
+            22,
+            || {
+                fs::rename(parent, &moved)?;
+                Ok(())
+            },
+            || Ok(()),
+        );
+        assert!(result.is_err());
+        assert!(!parent.exists());
+        assert!(!moved.join("driver").exists());
+    }
+
+    #[test]
+    fn executable_postpublication_drift_preserves_replacement() {
+        let (_temporary, path, mut source, digest) = fixture();
+        let original = path.with_file_name("published-original");
+        let result = create_executable_with(
+            &path,
+            &mut source,
+            &digest,
+            22,
+            || Ok(()),
+            || {
+                fs::rename(&path, &original)?;
+                let mut replacement = create_private_executable_file(&path)?;
+                replacement.write_all(b"verified running image")?;
+                replacement.sync_all()?;
+                Ok(())
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"verified running image");
+        assert_eq!(fs::read(&original).unwrap(), b"verified running image");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn executable_mode_is_private_and_executable_before_any_write() {
+        use std::os::unix::fs::MetadataExt;
+        let (_temporary, path, _source, _digest) = fixture();
+        let file = create_private_executable_file(&path).unwrap();
+        let metadata = file.metadata().unwrap();
+        assert_eq!(metadata.len(), 0);
+        assert_eq!(metadata.mode() & 0o7777, 0o700);
+        assert_eq!(metadata.uid(), unsafe { libc::geteuid() });
     }
 }

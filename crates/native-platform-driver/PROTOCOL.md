@@ -32,6 +32,7 @@ limited to 1 MiB.
 |---|---|---|
 | `setup.root` | `path`: absolute directory | `{path, created}` |
 | `setup.config` | `path`: absolute config file, `config`: existing Config v1 object | `{path, created, sha256}` |
+| `setup.driver` | `path`: absolute destination, `sha256`: expected lowercase SHA-256 of the executing driver | `{path, created, sha256, size, identity}` |
 
 `setup.root` creates one directory with the native private storage policy beneath
 an existing, safe parent. It never recursively creates parents or changes an
@@ -49,6 +50,27 @@ An exact existing configuration is validated and returns `created:false`;
 different contents, ownership, permissions or links refuse without repair.
 The returned SHA-256 binds the published bytes.
 
+`setup.driver` installs only the driver image executing this setup request. It
+accepts no source executable, command, or permission setting. The installer first
+verifies its package and supplies that driver's expected SHA-256. Driver images
+are bounded to 128 MiB; file bytes do not travel in the JSONL request. The destination
+parent must already be protected. Publication creates a private executable from
+the outset (Unix owner-only executable permissions; Windows current-user ownership
+and user/SYSTEM access) and never replaces an existing destination. An existing
+target succeeds only when its bytes and private executable policy already match;
+public, foreign-owned, linked, or conflicting targets refuse without repair.
+On Unix, an existing target must grant its owner read and execute access, with
+no group, other, or special mode bits; owner write access is optional. An identical
+data file with mode `0600` is therefore refused, not converted into an executable.
+Parent permissions remain unchanged. `size` is the exact byte count and `identity`
+is an opaque native file identity for the observed destination; neither is a
+process identity or permission to replace that file later.
+
+This setup operation supplies the private fixed driver required by
+`NativeSession`. It does not change the enrolled driver policy, install a library,
+or launch the copied image. A failure after publication remains `unknown`; the
+destination is preserved for explicit inspection, not removed or retried.
+
 Setup calls do not register or start services, enable startup, copy credentials,
 create sessions, launch configured commands or enroll an updater. The domain
 creates required directories in explicit order, stages its verified package and
@@ -60,8 +82,9 @@ is `unknown`. No automatic retry, cleanup or ACL repair follows. After lost
 acknowledgment, a subsequent explicit setup call may validate an exact existing
 artifact without changing it; a changed artifact is not silently adopted.
 
-The Python helpers are `initialize_root(driver_path, path, *, timeout=30.0)` and
-`initialize_config(driver_path, config_path, config, *, timeout=30.0)`. Both use
+The Python helpers are `initialize_root(driver_path, path, *, timeout=30.0)`,
+`initialize_config(driver_path, config_path, config, *, timeout=30.0)`, and
+`initialize_driver(driver_path, path, sha256, *, timeout=30.0)`. They use
 this one-shot entry point, preserve the existing exception classes and perform no
 Python filesystem or ACL setup. They do not alter `Session` timeout or lock
 semantics. Successful shared initialization is not complete domain installation

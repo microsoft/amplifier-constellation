@@ -22,6 +22,11 @@ use anyhow::{Result, ensure};
 pub use platform::*;
 #[cfg(windows)]
 pub use storage::current_user_sid;
+#[cfg(feature = "installation")]
+pub use storage::{
+    MAX_PRIVATE_EXECUTABLE_BYTES, PrivateExecutableSnapshot, private_create_executable,
+    private_executable_snapshot,
+};
 pub use storage::{
     private_create, private_create_dir, private_dir, private_write, private_write_data,
     protect_file, publish_directory_if_absent, validate_private_directory,

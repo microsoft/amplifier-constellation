@@ -2,7 +2,10 @@
 //! No command/service dispatch is available through this entrypoint.
 
 use crate::{Outcome, config};
-use amplifier_native_platform::{private_create, private_create_dir};
+use amplifier_native_platform::{
+    MAX_PRIVATE_EXECUTABLE_BYTES, PrivateExecutableSnapshot, private_create, private_create_dir,
+    private_create_executable, private_executable_snapshot,
+};
 use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -30,6 +33,13 @@ enum Request {
         id: String,
         path: PathBuf,
         config: Value,
+    },
+    #[serde(rename = "setup.driver")]
+    Driver {
+        version: u32,
+        id: String,
+        path: PathBuf,
+        sha256: String,
     },
 }
 
@@ -76,6 +86,12 @@ fn dispatch(value: Value) -> Value {
             path,
             config,
         }) if valid_request(version, &id) => save_config(&path, &config),
+        Ok(Request::Driver {
+            version,
+            id,
+            path,
+            sha256,
+        }) if valid_request(version, &id) => save_driver(&path, &sha256),
         Ok(_) => Outcome::failure(
             "refused",
             "invalid_request",
@@ -223,6 +239,139 @@ fn config_result(path: &Path, bytes: &[u8], created: bool) -> Value {
     json!({"path":path,"created":created,"sha256":format!("{:x}",Sha256::digest(bytes))})
 }
 
+fn save_driver(path: &Path, expected: &str) -> Outcome {
+    let prepared = (|| -> Result<(fs::File, [u8; 32], u64)> {
+        ensure!(
+            expected.len() == 64
+                && expected
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+            "Expected driver SHA256 must be 64 lowercase hexadecimal characters"
+        );
+        let parent = destination(path)?;
+        config::protected_directory(parent)?;
+        // Only this executing driver can be installed. Keep the verified source
+        // handle open through publication; never hash then reopen a source path.
+        let current = std::env::current_exe()?;
+        let metadata = fs::symlink_metadata(&current)?;
+        ensure!(
+            metadata.is_file() && !metadata.file_type().is_symlink(),
+            "Running driver must be an ordinary file"
+        );
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            ensure!(
+                metadata.file_attributes() & 0x400 == 0,
+                "Running driver is a reparse point"
+            );
+        }
+        let mut options = fs::OpenOptions::new();
+        options.read(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.custom_flags(libc::O_NOFOLLOW);
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            use windows_sys::Win32::Storage::FileSystem::{
+                FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ,
+            };
+            options
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_DELETE)
+                .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+        }
+        let mut source = options.open(current)?;
+        let before = source.metadata()?;
+        ensure!(
+            before.is_file() && before.len() > 0 && before.len() <= MAX_PRIVATE_EXECUTABLE_BYTES,
+            "Running driver size is invalid"
+        );
+        let mut hasher = Sha256::new();
+        let mut size = 0u64;
+        let mut buffer = [0u8; 64 * 1024];
+        loop {
+            let count = source.read(&mut buffer)?;
+            if count == 0 {
+                break;
+            }
+            size += count as u64;
+            ensure!(
+                size <= MAX_PRIVATE_EXECUTABLE_BYTES,
+                "Running driver exceeds size limit"
+            );
+            hasher.update(&buffer[..count]);
+        }
+        let digest: [u8; 32] = hasher.finalize().into();
+        let after = source.metadata()?;
+        ensure!(
+            size == before.len()
+                && size == after.len()
+                && before.modified()? == after.modified()?,
+            "Running driver changed during validation"
+        );
+        let rendered: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+        ensure!(
+            rendered == expected,
+            "Running driver differs from expected SHA256"
+        );
+        Ok((source, digest, size))
+    })();
+    let (mut source, digest, size) = match prepared {
+        Ok(value) => value,
+        Err(error) => return preflight_error(error),
+    };
+    match fs::symlink_metadata(path) {
+        Ok(_) => return existing_driver(path, &digest, size),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+        Err(error) => return preflight_error(error.into()),
+    }
+    match private_create_executable(path, &mut source, &digest, size) {
+        Ok(observed) => match config::protected_file(path) {
+            Ok(()) => Outcome::ok(driver_result(path, &observed, true)),
+            Err(error) => Outcome::failure("unknown", "setup_driver_unconfirmed", error),
+        },
+        Err(error)
+            if error.chain().any(|cause| {
+                cause
+                    .downcast_ref::<io::Error>()
+                    .is_some_and(|e| e.kind() == io::ErrorKind::AlreadyExists)
+            }) =>
+        {
+            existing_driver(path, &digest, size)
+        }
+        Err(error) => Outcome::failure("unknown", "setup_driver_unconfirmed", error),
+    }
+}
+
+fn existing_driver(path: &Path, expected: &[u8; 32], size: u64) -> Outcome {
+    let observed = (|| -> Result<PrivateExecutableSnapshot> {
+        config::protected_file(path)?;
+        let observed = private_executable_snapshot(path)?;
+        ensure!(
+            observed.sha256 == *expected && observed.size == size,
+            "Existing private driver differs"
+        );
+        config::protected_file(path)?;
+        Ok(observed)
+    })();
+    match observed {
+        Ok(observed) => Outcome::ok(driver_result(path, &observed, false)),
+        Err(error) => preflight_error(error),
+    }
+}
+
+fn driver_result(path: &Path, observed: &PrivateExecutableSnapshot, created: bool) -> Value {
+    let sha256: String = observed
+        .sha256
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    json!({"path":path,"created":created,"sha256":sha256,"size":observed.size,"identity":observed.identity})
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,6 +398,120 @@ mod tests {
             path,
             Some(json!({"version":1,"roots":{"state":root}})),
         )
+    }
+
+    fn driver_request(path: &Path, sha256: &str) -> Value {
+        dispatch(
+            json!({"version":1,"id":"driver-fixture","op":"setup.driver","path":path,"sha256":sha256}),
+        )
+    }
+
+    fn running_digest() -> String {
+        format!(
+            "{:x}",
+            Sha256::digest(fs::read(std::env::current_exe().unwrap()).unwrap())
+        )
+    }
+
+    #[test]
+    fn driver_bootstrap_installs_only_running_image_and_repeat_is_read_only() {
+        let temporary = temporary();
+        let parent = temporary.path().canonicalize().unwrap().join("private");
+        assert_eq!(root_request(&parent)["outcome"], "ok");
+        let path = parent.join("driver");
+        let expected = running_digest();
+        let created = driver_request(&path, &expected);
+        assert_eq!(created["outcome"], "ok", "{created}");
+        assert_eq!(created["result"]["created"], true);
+        assert_eq!(created["result"]["sha256"], expected);
+        assert!(created["result"]["identity"].is_object());
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            fs::read(std::env::current_exe().unwrap()).unwrap()
+        );
+        let metadata = fs::metadata(&path).unwrap();
+        let repeated = driver_request(&path, &expected);
+        assert_eq!(repeated["outcome"], "ok", "{repeated}");
+        assert_eq!(repeated["result"]["created"], false);
+        assert_eq!(
+            repeated["result"]["identity"],
+            created["result"]["identity"]
+        );
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            metadata.modified().unwrap()
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(metadata.permissions().mode() & 0o7777, 0o700);
+        }
+    }
+
+    #[test]
+    fn driver_bootstrap_wrong_digest_unknown_source_and_conflict_do_not_replace() {
+        let temporary = temporary();
+        let parent = temporary.path().canonicalize().unwrap().join("private");
+        assert_eq!(root_request(&parent)["outcome"], "ok");
+        let path = parent.join("driver");
+        for digest in ["0".repeat(64), "A".repeat(64), "short".into()] {
+            assert_eq!(driver_request(&path, &digest)["outcome"], "refused");
+            assert!(!path.exists());
+        }
+        let expected = running_digest();
+        let request = json!({"version":1,"id":"fixture","op":"setup.driver","path":path,"sha256":expected,"source":std::env::current_exe().unwrap()});
+        assert_eq!(dispatch(request)["outcome"], "refused");
+        assert!(!path.exists());
+        private_create(&path, b"preserve conflicting owner file").unwrap();
+        let before = fs::metadata(&path).unwrap();
+        assert_eq!(driver_request(&path, &expected)["outcome"], "refused");
+        assert_eq!(fs::read(&path).unwrap(), b"preserve conflicting owner file");
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            before.modified().unwrap()
+        );
+        let absent_parent = parent.join("missing");
+        assert_eq!(
+            driver_request(&absent_parent.join("driver"), &expected)["outcome"],
+            "refused"
+        );
+        assert!(!absent_parent.exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn driver_bootstrap_equal_public_or_nonexecutable_files_are_not_repaired() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt, symlink};
+        let temporary = temporary();
+        let parent = temporary.path().canonicalize().unwrap().join("private");
+        assert_eq!(root_request(&parent)["outcome"], "ok");
+        let path = parent.join("driver");
+        let expected = running_digest();
+        assert_eq!(driver_request(&path, &expected)["outcome"], "ok");
+        for mode in [0o755, 0o600, 0o4700] {
+            fs::set_permissions(&path, fs::Permissions::from_mode(mode)).unwrap();
+            let before = fs::metadata(&path).unwrap();
+            assert_eq!(driver_request(&path, &expected)["outcome"], "refused");
+            let after = fs::metadata(&path).unwrap();
+            assert_eq!(after.mode(), before.mode());
+            assert_eq!(after.ino(), before.ino());
+            assert_eq!(after.modified().unwrap(), before.modified().unwrap());
+        }
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
+        assert_eq!(driver_request(&path, &expected)["result"]["created"], false);
+        assert_eq!(fs::metadata(&path).unwrap().mode() & 0o7777, 0o500);
+        let link = parent.join("link");
+        symlink(&path, &link).unwrap();
+        assert_eq!(driver_request(&link, &expected)["outcome"], "refused");
+        assert_eq!(fs::read_link(&link).unwrap(), path);
+        let public_parent = parent.join("public");
+        fs::create_dir(&public_parent).unwrap();
+        fs::set_permissions(&public_parent, fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(
+            driver_request(&public_parent.join("driver"), &expected)["outcome"],
+            "refused"
+        );
+        assert_eq!(fs::metadata(&public_parent).unwrap().mode() & 0o7777, 0o755);
     }
 
     #[test]
