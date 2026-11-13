@@ -1,0 +1,13 @@
+Constellation: room to invent
+
+Five building blocks
+Imagine bringing a new idea into a team of people and agents, and building on what everyone else has already made. Constellation gives that collaboration five useful building blocks. An experience is where people interact. A conversation brings participants and history together. A connection lets an agent participate. The Agent Instance provides a continuing identity and a dependable boundary. Tools supply useful capabilities. Conversations and tools can be shared across many agents.
+
+Inside an Agent
+Inside that agent, there is room to invent. You might choose one engine, such as Constellation Runtime, Codex, Claude, Copilot or Amplifier Agent. You might assemble an inner team that explores, builds and reviews. Or design a different arrangement around events, planning and parallel work. These are examples. Agreeing on the outward promises gives each builder freedom to improve what happens inside.
+
+Improve from within
+The same building blocks also support improving the system itself. An improvement team can work alongside everyone else. Working agents ask for technical help and unblockers; the improvement team coaches and guides them. It can also make code and system changes across experiences, conversations, connections, agents and tools.
+
+Improve from a separate environment
+Or that team can work in a separate environment, with its own conversation people can join. It studies evidence, tests ideas and brings changes back through supported interfaces—even when the working environment needs repair. Either arrangement can improve every level. Their location and usual approach differ. That is the opportunity: dependable connections, reusable capabilities, and room for people and agents to build something we have not imagined yet.

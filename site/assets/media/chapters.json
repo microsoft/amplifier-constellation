@@ -1,0 +1,201 @@
+{
+  "title": "Constellation: room to invent",
+  "duration": 127.83333333333333,
+  "chapters": [
+    {
+      "id": "building-blocks",
+      "title": "Five building blocks",
+      "start": 0,
+      "end": 37.166666666666664,
+      "narration": "Imagine bringing a new idea into a team of people and agents, and building on what everyone else has already made. Constellation gives that collaboration five useful building blocks. An experience is where people interact. A conversation brings participants and history together. A connection lets an agent participate. The Agent Instance provides a continuing identity and a dependable boundary. Tools supply useful capabilities. Conversations and tools can be shared across many agents."
+    },
+    {
+      "id": "inside-an-agent",
+      "title": "Inside an Agent",
+      "start": 37.166666666666664,
+      "end": 69.33333333333333,
+      "narration": "Inside that agent, there is room to invent. You might choose one engine, such as Constellation Runtime, Codex, Claude, Copilot or Amplifier Agent. You might assemble an inner team that explores, builds and reviews. Or design a different arrangement around events, planning and parallel work. These are examples. Agreeing on the outward promises gives each builder freedom to improve what happens inside."
+    },
+    {
+      "id": "improve-within",
+      "title": "Improve from within",
+      "start": 69.33333333333333,
+      "end": 94.13333333333333,
+      "narration": "The same building blocks also support improving the system itself. An improvement team can work alongside everyone else. Working agents ask for technical help and unblockers; the improvement team coaches and guides them. It can also make code and system changes across experiences, conversations, connections, agents and tools."
+    },
+    {
+      "id": "improve-separately",
+      "title": "Improve from a separate environment",
+      "start": 94.13333333333333,
+      "end": 127.83333333333333,
+      "narration": "Or that team can work in a separate environment, with its own conversation people can join. It studies evidence, tests ideas and brings changes back through supported interfaces\u2014even when the working environment needs repair. Either arrangement can improve every level. Their location and usual approach differ. That is the opportunity: dependable connections, reusable capabilities, and room for people and agents to build something we have not imagined yet."
+    }
+  ],
+  "captions": [
+    {
+      "start": 0.78,
+      "end": 4.4,
+      "text": "Imagine bringing a new idea into a team of people and"
+    },
+    {
+      "start": 4.4,
+      "end": 7.9,
+      "text": "agents, and building on what everyone else has already made."
+    },
+    {
+      "start": 9.02,
+      "end": 13.06,
+      "text": "Constellation gives that collaboration five useful building blocks."
+    },
+    {
+      "start": 13.7,
+      "end": 15.86,
+      "text": "An experience is where people interact."
+    },
+    {
+      "start": 16.58,
+      "end": 19.96,
+      "text": "A conversation brings participants and history together."
+    },
+    {
+      "start": 20.52,
+      "end": 22.64,
+      "text": "A connection lets an agent participate."
+    },
+    {
+      "start": 23.54,
+      "end": 25.88,
+      "text": "The Agent Instance provides a continuing"
+    },
+    {
+      "start": 25.88,
+      "end": 27.96,
+      "text": "identity and a dependable boundary."
+    },
+    {
+      "start": 28.82,
+      "end": 30.84,
+      "text": "Tools supply useful capabilities."
+    },
+    {
+      "start": 31.8,
+      "end": 35.08,
+      "text": "Conversations and tools can be shared across many agents."
+    },
+    {
+      "start": 37.947,
+      "end": 41.027,
+      "text": "Inside that agent, there is room to invent."
+    },
+    {
+      "start": 41.907,
+      "end": 44.507,
+      "text": "You might choose one engine, such as Constellation"
+    },
+    {
+      "start": 44.507,
+      "end": 49.067,
+      "text": "Runtime, Codex, Claude, Copilot or Amplifier Agent."
+    },
+    {
+      "start": 50.167,
+      "end": 54.207,
+      "text": "You might assemble an inner team that explores, builds and reviews."
+    },
+    {
+      "start": 55.027,
+      "end": 56.927,
+      "text": "Or design a different arrangement around"
+    },
+    {
+      "start": 56.927,
+      "end": 59.247,
+      "text": "events, planning and parallel work."
+    },
+    {
+      "start": 60.307,
+      "end": 61.027,
+      "text": "These are examples."
+    },
+    {
+      "start": 62.007,
+      "end": 64.727,
+      "text": "Agreeing on the outward promises gives each"
+    },
+    {
+      "start": 64.887,
+      "end": 67.147,
+      "text": "builder freedom to improve what happens inside."
+    },
+    {
+      "start": 69.714,
+      "end": 73.534,
+      "text": "The same building blocks also support improving the system itself."
+    },
+    {
+      "start": 74.294,
+      "end": 77.234,
+      "text": "An improvement team can work alongside everyone else."
+    },
+    {
+      "start": 78.234,
+      "end": 81.554,
+      "text": "Working agents ask for technical help and unblockers;"
+    },
+    {
+      "start": 81.874,
+      "end": 84.234,
+      "text": "the improvement team coaches and guides them."
+    },
+    {
+      "start": 85.154,
+      "end": 87.714,
+      "text": "It can also make code and system changes across"
+    },
+    {
+      "start": 87.714,
+      "end": 92.374,
+      "text": "experiences, conversations, connections, agents and tools."
+    },
+    {
+      "start": 94.594,
+      "end": 97.364,
+      "text": "Or that team can work in a separate environment,"
+    },
+    {
+      "start": 97.814,
+      "end": 99.734,
+      "text": "with its own conversation people can join."
+    },
+    {
+      "start": 100.574,
+      "end": 104.994,
+      "text": "It studies evidence, tests ideas and brings changes back through"
+    },
+    {
+      "start": 104.994,
+      "end": 108.814,
+      "text": "supported interfaces\u2014even when the working environment needs repair."
+    },
+    {
+      "start": 109.934,
+      "end": 112.214,
+      "text": "Either arrangement can improve every level."
+    },
+    {
+      "start": 112.934,
+      "end": 115.214,
+      "text": "Their location and usual approach differ."
+    },
+    {
+      "start": 116.274,
+      "end": 122.154,
+      "text": "That is the opportunity: dependable connections, reusable capabilities, and room for"
+    },
+    {
+      "start": 122.334,
+      "end": 126.134,
+      "text": "people and agents to build something we have not imagined yet."
+    }
+  ]
+}

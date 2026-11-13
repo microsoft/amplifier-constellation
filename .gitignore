@@ -12,3 +12,6 @@ private/
 *.sqlite3
 *.db
 target/
+
+# Generated project page
+/_site/

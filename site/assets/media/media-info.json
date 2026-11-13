@@ -1,0 +1,43 @@
+{
+  "title": "Constellation: room to invent",
+  "duration_seconds": 127.83333333333333,
+  "resolution": "1920x1080",
+  "frames_per_second": 30,
+  "chapters": 4,
+  "caption_cues": 33,
+  "description": "An illustrated introduction to five composable boundaries and two ways to improve a collaborative environment.",
+  "illustrative": true,
+  "narration": "Synthetic narration using the stock Charon voice.",
+  "files": [
+    {
+      "name": "constellation-introduction.mp4",
+      "bytes": 12404778,
+      "sha256": "696a481f4d4d6e702e342bffa3a9b1b12c9db52845f16879bd86f33e0872dada"
+    },
+    {
+      "name": "constellation-introduction.webm",
+      "bytes": 7435517,
+      "sha256": "d732dc93b472d261f282f88dc26a90a307f9499fe6ca7f5c97e2e21b7fd12e52"
+    },
+    {
+      "name": "constellation-introduction.vtt",
+      "bytes": 2713,
+      "sha256": "e558b0619fd3ef449b4b47f052e3627acc023422a778c46f89454b392ccd9431"
+    },
+    {
+      "name": "constellation-introduction.srt",
+      "bytes": 2795,
+      "sha256": "07f73d170961a0d4cbd2471a3957f0549f4d34a2400a3d434de984ceb1665695"
+    },
+    {
+      "name": "transcript.txt",
+      "bytes": 1810,
+      "sha256": "37d69503735344878d13e38bf9e34612dc96f78de7d789d4e420b0988aa6d522"
+    },
+    {
+      "name": "chapters.json",
+      "bytes": 6562,
+      "sha256": "c8c44382a7f7a4fd8df9e1a049c7d57d6555ce0394484395202254a4bf09e80c"
+    }
+  ]
+}

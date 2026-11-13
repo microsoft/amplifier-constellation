@@ -4,7 +4,10 @@ Persistent agents, reusable services and connections to the places people work.
 Each part can develop independently while people collaborate with the same agents
 across experiences.
 
-[![Agents, experiences and an optional Observatory fleet view](docs/system-map.svg)](docs/VISION.md)
+[![Experience, Conversation, Connection, Agent Instance and Tool](site/assets/art/building-blocks.png)](https://microsoft.github.io/amplifier-constellation/)
+
+[Explore the illustrated introduction](https://microsoft.github.io/amplifier-constellation/):
+four architecture illustrations, a short film, and a downloadable image collection.
 
 Start with the [vision](docs/VISION.md): what the parts mean, how they connect and
 why they matter. Read the [contract map](contracts/README.md) for promises relevant
