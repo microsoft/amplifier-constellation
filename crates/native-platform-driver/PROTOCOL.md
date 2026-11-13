@@ -116,7 +116,9 @@ Only an entire argument equal to `{result}` is substituted, from the selected
 root and caller's validated relative result path. No shell expansion occurs.
 
 The detached supervisor owns one fixed command and its endpoint descendants;
-it inherits no invocation lock handles. `exec --command NAME` is a raw-stdio
+it inherits no invocation lock handles. On Windows, its per-spawn handle list
+contains only its NUL standard streams, excluding the caller's capture pipes and
+unrelated inheritable handles. `exec --command NAME` is a raw-stdio
 wrapper for an enrolled ACP endpoint, not JSONL; it monitors its launching
 process generation and cleans up the endpoint on parent loss or the configured
 deadline. The probe may outlive the short launching command. The domain records

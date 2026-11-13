@@ -31,6 +31,8 @@ if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 NATIVE_SESSION_ABI = 1
 REQUIRED_INPROCESS_TESTS = (
+    "DetachedHandleTests.test_captured_caller_eof_precedes_detached_endpoint_release",
+    "DetachedHandleTests.test_unrelated_inheritable_event_does_not_reach_detached_processes",
     "NativeSessionTests.test_actual_library_abi_and_named_operations",
     "NativeSessionTests.test_helper_death_does_not_release_python_owned_lock",
     "ActualWorkerNativeSessionTests.test_actual_worker_lock_blocks_native_then_releases_same_file",
