@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/microsoft/amplifier-constellation-instance",
+  "commit": "39807674755dff153de372b3311e08a006ba7174",
+  "path": "ops/updates/worker.py",
+  "sha256": "0cf607145339af51cc049f1dc2be04a860d7ce9cac7001f0d75bb4b925e53ed7",
+  "environment": "CONSTELLATION_INSTANCE_SOURCE",
+  "scope": "Actual single_worker and provider/participant/connection subprocess invocation methods; no full Worker API or connector state-machine qualification"
+}

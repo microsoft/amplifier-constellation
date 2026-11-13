@@ -22,6 +22,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Check out the frozen actual Instance caller
+        uses: actions/checkout@v4
+        env:
+          # Compare exact Git blobs on every OS, independent of runner settings.
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+        with:
+          repository: microsoft/amplifier-constellation-instance
+          ref: 39807674755dff153de372b3311e08a006ba7174
+          path: _qualification/instance
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -55,7 +68,58 @@ jobs:
           cargo +1.93.0 build --manifest-path crates/native-platform-driver/Cargo.toml --locked
           cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
           cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example operation_lifetime_fixture
-      - name: Test Python through the actual driver
+      - name: Inspect the library and bind the exact Instance caller before Python tests
+        run: |
+          python - <<'PY'
+          import ctypes, hashlib, json, os, pathlib, platform, subprocess, sys
+          pin_path = pathlib.Path('tests/native_python/fixtures/worker_source.json')
+          pin = json.loads(pin_path.read_text(encoding='utf-8'))
+          expected = {
+              'repository': 'https://github.com/microsoft/amplifier-constellation-instance',
+              'commit': '39807674755dff153de372b3311e08a006ba7174',
+              'path': 'ops/updates/worker.py',
+              'sha256': '0cf607145339af51cc049f1dc2be04a860d7ce9cac7001f0d75bb4b925e53ed7',
+              'environment': 'CONSTELLATION_INSTANCE_SOURCE',
+          }
+          if any(pin.get(key) != value for key, value in expected.items()):
+              raise SystemExit('Instance fixture pin and reviewed workflow checkout differ')
+          instance = (pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '_qualification/instance').resolve(strict=True)
+          observed = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=instance, text=True).strip()
+          tracked_changes = subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=no'], cwd=instance, text=True)
+          worker = instance / expected['path']
+          if observed != expected['commit'] or tracked_changes or hashlib.sha256(worker.read_bytes()).hexdigest() != expected['sha256']:
+              raise SystemExit('Actual Instance checkout differs from its immutable qualification pin')
+          pathlib.Path('native-worker-source-result.json').write_text(json.dumps({
+              'schema': 1, 'instance_source': str(instance), 'pin': pin,
+              'pin_sha256': hashlib.sha256(pin_path.read_bytes()).hexdigest(),
+              'observed_commit': observed, 'worker_sha256': expected['sha256'],
+              'production_operations': False,
+          }, indent=2)+'\n', encoding='utf-8')
+          name = {'Windows': 'constellation_native_driver.dll', 'Darwin': 'libconstellation_native_driver.dylib', 'Linux': 'libconstellation_native_driver.so'}[platform.system()]
+          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
+          library_path = (pathlib.Path('crates/native-platform-driver') / target / name).resolve(strict=True)
+          digest = hashlib.sha256(library_path.read_bytes()).hexdigest()
+          # Retain the actual artifact even if metadata inspection or loading
+          # fails; exporting its path does not qualify it or bypass any check.
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
+              output.write('CONSTELLATION_NATIVE_LIBRARY='+str(library_path)+'\n')
+              output.write('CONSTELLATION_NATIVE_LIBRARY_SHA256='+digest+'\n')
+              output.write('CONSTELLATION_INSTANCE_SOURCE='+str(instance)+'\n')
+          subprocess.run([sys.executable, 'tests/native_python/inspect_library.py', '--library', str(library_path), '--output', 'native-session-library-inspection.json'], check=True)
+          library = ctypes.CDLL(str(library_path))
+          library.constellation_native_abi_version.argtypes = []
+          library.constellation_native_abi_version.restype = ctypes.c_uint32
+          if library.constellation_native_abi_version() != 1:
+              raise SystemExit('Actual loaded native library does not implement ABI 1')
+          if hashlib.sha256(library_path.read_bytes()).hexdigest() != digest:
+              raise SystemExit('Native library changed during loading')
+          pathlib.Path('native-session-library-result.json').write_text(json.dumps({
+              'schema': 1, 'os': platform.system(), 'architecture': platform.machine(),
+              'library': str(library_path), 'sha256': digest, 'abi': 1,
+              'coverage': 'actual hosted Python ABI-1 library loading; actual lock/Worker tests follow; packaged Python and connector lifecycle qualification are separate',
+          }, indent=2)+'\n', encoding='utf-8')
+          PY
+      - name: Test Python through the actual driver and library
         run: |
           python - <<'PY'
           import os, pathlib, subprocess, sys
@@ -73,30 +137,19 @@ jobs:
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(operation), '--output', 'native-operation-fixture-result.json'], check=True)
           subprocess.run([sys.executable, 'tests/native_python/inspect_driver.py', '--driver', str(registration), '--output', 'native-registration-test-result.json'], check=True)
           env = dict(os.environ, CONSTELLATION_NATIVE_DRIVER=str(path), NATIVE_TEST_PYTHON=sys.executable, NATIVE_SERVICE_FIXTURE=str(fixture))
-          subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
+          for required in ('CONSTELLATION_NATIVE_LIBRARY', 'CONSTELLATION_NATIVE_LIBRARY_SHA256', 'CONSTELLATION_INSTANCE_SOURCE'):
+              if not env.get(required):
+                  raise SystemExit('Missing actual in-process qualification input: '+required)
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('CONSTELLATION_NATIVE_DRIVER='+str(path)+'\n')
               output.write('PYTHON='+sys.executable+'\n')
               output.write('NATIVE_SERVICE_FIXTURE='+str(fixture)+'\n')
               output.write('NATIVE_OPERATION_LIFETIME_FIXTURE='+str(operation)+'\n')
               output.write('NATIVE_REGISTRATION_TESTS='+str(registration)+'\n')
-          PY
-      - name: Load the actual native session library
-        run: |
-          python - <<'PY'
-          import ctypes, hashlib, json, os, pathlib, platform
-          name = {'Windows': 'constellation_native_driver.dll', 'Darwin': 'libconstellation_native_driver.dylib', 'Linux': 'libconstellation_native_driver.so'}[platform.system()]
-          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
-          path = (pathlib.Path('crates/native-platform-driver') / target / name).resolve()
-          before = hashlib.sha256(path.read_bytes()).hexdigest()
-          library = ctypes.CDLL(str(path))
-          library.constellation_native_abi_version.argtypes = []
-          library.constellation_native_abi_version.restype = ctypes.c_uint32
-          assert library.constellation_native_abi_version() == 1
-          assert hashlib.sha256(path.read_bytes()).hexdigest() == before
-          pathlib.Path('native-session-library-result.json').write_text(json.dumps({'schema': 1, 'os': platform.system(), 'architecture': platform.machine(), 'library': str(path), 'sha256': before, 'abi': 1, 'coverage': 'actual hosted Python library loading; Rust session tests run above; packaged Python and connector lifecycle qualification are separate'}, indent=2)+'\n')
-          with open(os.environ['GITHUB_ENV'], 'a') as output:
-              output.write('CONSTELLATION_NATIVE_LIBRARY='+str(path)+'\n')
+          try:
+              subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/native_python', '-v'], env=env, check=True)
+          finally:
+              subprocess.run([sys.executable, 'tests/native_python/inspect_library.py', '--library', env['CONSTELLATION_NATIVE_LIBRARY'], '--output', 'native-session-library-inspection.json', '--verify'], check=True)
           PY
       - name: Prepare disposable Linux user service manager
         if: runner.os == 'Linux'
@@ -170,17 +223,42 @@ jobs:
             native-tree-scale-result.json
             native-tree-scale.log
           if-no-files-found: warn
-      - name: Verify both executed native artifacts and targets
+      - name: Verify executed native artifacts and the frozen Instance caller
+        if: always() && env.CONSTELLATION_NATIVE_DRIVER != '' && env.CONSTELLATION_NATIVE_LIBRARY != ''
         run: |
           python tests/native_python/inspect_driver.py --driver "$CONSTELLATION_NATIVE_DRIVER" --output native-installation-result.json --verify
           python tests/native_python/inspect_driver.py --driver "$NATIVE_SERVICE_FIXTURE" --output native-service-fixture-result.json --verify
+          python tests/native_python/inspect_library.py --library "$CONSTELLATION_NATIVE_LIBRARY" --output native-session-library-inspection.json --verify
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          record = json.loads(pathlib.Path('native-worker-source-result.json').read_text(encoding='utf-8'))
+          pin_path = pathlib.Path('tests/native_python/fixtures/worker_source.json')
+          pin = json.loads(pin_path.read_text(encoding='utf-8'))
+          instance = pathlib.Path(os.environ['CONSTELLATION_INSTANCE_SOURCE']).resolve(strict=True)
+          observed = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=instance, text=True).strip()
+          tracked_changes = subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=no'], cwd=instance, text=True)
+          worker_sha256 = hashlib.sha256((instance / 'ops/updates/worker.py').read_bytes()).hexdigest()
+          if (pin != record['pin'] or hashlib.sha256(pin_path.read_bytes()).hexdigest() != record['pin_sha256']
+                  or str(instance) != record['instance_source'] or observed != record['observed_commit']
+                  or tracked_changes or worker_sha256 != record['worker_sha256']):
+              raise SystemExit('Frozen Instance source or fixture manifest changed during qualification')
+          record['observed_commit_after'] = observed
+          record['worker_sha256_after'] = worker_sha256
+          record['verified_after_qualification'] = True
+          pathlib.Path('native-worker-source-result.json').write_text(json.dumps(record, indent=2)+'\n', encoding='utf-8')
+          PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: native-installation-${{ matrix.runner }}
           path: |
             native-installation-result.json
             native-service-fixture-result.json
             native-session-library-result.json
+            native-session-library-inspection.json
+            native-worker-source-result.json
+            tests/native_python/fixtures/worker_source.json
+            ${{ env.CONSTELLATION_INSTANCE_SOURCE }}/ops/updates/worker.py
             ${{ env.CONSTELLATION_NATIVE_DRIVER }}
             ${{ env.CONSTELLATION_NATIVE_LIBRARY }}
             ${{ env.NATIVE_SERVICE_FIXTURE }}

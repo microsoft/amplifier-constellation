@@ -1,9 +1,17 @@
 # Local native binding
 
-`Session` connects installation-owned Python code to its bundled native driver.
-It uses one local process and has no network listener or third-party Python
-dependency. The installation supplies both absolute setup paths. Callers select
-named services, locks, commands and storage roots from that protected configuration.
+`NativeSession` runs the installation's enrolled native operations in the Python
+process, so that process owns the actual kernel locks while its critical section
+also performs direct Python work. The installation supplies its verified private
+library, matching fixed driver and protected configuration as absolute paths.
+Callers select named services, locks, commands and storage roots from that
+configuration. There is no network listener or third-party Python dependency.
+
+The existing `Session(driver, config, timeout=...)` executable transport remains
+available. Its locks belong to the helper process: helper death can release them
+before the Python caller detects the loss. It does **not** provide caller-owned
+exclusion for arbitrary Python effects. Keep existing in-process domain locks
+until the replacement library boundary is qualified for that installation.
 
 For first installation, `initialize_root(driver_path, path)` creates one private
 directory beneath an existing safe parent, and
@@ -17,24 +25,52 @@ are copied. The [driver protocol](../../../crates/native-platform-driver/PROTOCO
 owns the exact setup behavior and uncertainty rules.
 
 ```python
-from constellation_native import Session, Busy, Unknown
+from constellation_native import NativeSession, Busy, Unknown
 
-with Session(installed_driver, owner_config) as native:
+with NativeSession(installed_library, installed_driver, owner_config) as native:
     with native.lock("installation"):
         before = native.service_snapshot("body")
         accepted = native.service_action("body", "stop", before)
         # Observe settlement through a fresh snapshot before exchanging source.
 ```
 
-The native process keeps the lock for the entire Python critical section. A
-competing kernel owner raises `Busy`; inaccessible storage raises `DriverError`.
-Closing or crashing the invocation releases its locks. Create a fresh `Session`
-after a Python process fork; the child cannot reuse or retain its parent's pipes.
+`NativeSession` keeps a reentrant mutex over the entire caller scope. Another
+thread's close waits; close from inside the scope refuses without unlocking.
+Same-name nesting refuses. A competing kernel owner raises `Busy`; inaccessible
+storage raises `DriverError`. The native lock uses the existing file and kernel
+namespace, including Python flock and Windows msvcrt peers.
+
+Calls are synchronous. `NativeSession` and its `tree_remove` do not accept a
+transport timeout; unsupported arguments reject before dispatch. The external
+action worker retains its existing lifecycle/provider deadline and possible-effect
+semantics. This ABI does not introduce background work that can keep mutating
+after a caller timeout releases ownership. Explicit detached `process.launch`
+probes retain their separate lifetime, generation identity and journal.
+
+A panic or malformed response may poison dispatch, but retains native locks until
+scope exit. An unknown or interrupted acquisition is released once during unwind,
+without entering the body or retrying acquisition. Release remains available
+after configuration drift or poison. If release itself cannot be confirmed, the
+original exception remains primary and ownership remains unresolved; close never
+silently drops a retained native lock beneath active caller work.
+
+Fork hooks are registered once per loaded library image, including path aliases.
+A Python-returning child exits 125 if any native lock was held. Otherwise copied
+sessions reject before acquiring inherited Python mutexes; open a fresh session
+in the child. Interrupted or overlapping fork preparation also fails closed in
+the affected child; the parent retains its locks and unwinds only that attempt's
+preparation. Loading another library during preparation refuses. Ordinary
+subprocess exec is supported without inheriting locks. Do
+not use `preexec_fn` in a native critical section; foreign uncoordinated forks
+that continue Python execution are outside this boundary. The wrapper keeps the
+library loaded for the process lifetime. The [ABI guide](../../../crates/native-platform-driver/INPROCESS.md)
+defines native buffer, ownership and fork behavior.
 
 `Refused` confirms a pre-dispatch rejection. `Unknown` means an effect may already
 have happened, including a launch whose acknowledgment was lost. Reconcile the
-existing domain journal and result; do not repeat the request. A broken transport
-closes permanently and never reconnects or retries automatically. Accepted service
+existing domain journal and result; do not repeat the request. Neither binding
+retries automatically. A broken executable `Session` transport closes permanently;
+the in-process binding instead retains its locks through unwind. Accepted service
 requests are not completed service transitions.
 
 `private_dir` creates one private directory beneath an already prepared, enrolled
@@ -50,7 +86,7 @@ directories. The owner retains reference selection and pruning intent; the same
 Session must hold the required lock through inspection and removal. The
 [driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#regenerable-trees)
 owns the link, mount, identity and unknown-outcome rules.
-`tree_remove(..., timeout=120)` explicitly sets only that cleanup call's response
+For the executable `Session` only, `tree_remove(..., timeout=120)` sets that call's response
 deadline. Its default `None` retains the Session timeout, normally 30 seconds;
 other calls are unchanged. Choose a positive finite duration within Python's
 `threading.TIMEOUT_MAX` that leaves room
@@ -58,7 +94,7 @@ for invocation termination and reconciliation within the caller's remaining
 provider budget. Timeout still raises `Unknown`, closes the invocation and
 invalidates its locks; it never authorizes a retry.
 Background commands own their lifetime
-separately from the short invocation; `Session.close()` does not cancel them.
+separately from the short invocation; neither binding's close cancels them.
 
 The [serving driver](../../../crates/native-platform-driver/PROTOCOL.md) defines
 the protocol and configuration. Tests
