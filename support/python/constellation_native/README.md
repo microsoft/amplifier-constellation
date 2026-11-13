@@ -78,6 +78,15 @@ parent. An existing path must already be an ordinary private directory; it never
 repairs an unrelated path's permissions or recursively invents parents.
 `private_write` accepts the caller's already serialized bytes. The binding does
 not rewrite receipts, choose restoration plans, unmask services or renew authority.
+Both bindings expose explicit `private_write_data` and `private_read_data` for
+protected data snapshots. Require the advertised `private_data_publication:1`
+and `private_data_read:1` capabilities. The reader returns bytes or `None` for an
+absent final file, with a maximum of 1 MiB and no truncation; an empty file is
+`b""`. Policy and I/O failures stay distinct from absence. Windows production
+readers allow delete sharing so writers can publish while an existing reader
+retains its old snapshot. Strict `private_write`, create-only, executable and
+directory replacement rules are unchanged. A malformed or interrupted native
+snapshot response poisons dispatch while retaining caller locks through unwind.
 Its [directory/pointer exchange operations](../../../crates/native-platform-driver/PROTOCOL.md)
 use two native renames with an observable gap, not an atomic app/venv swap. The
 domain owns the transaction journal, verification and explicit rollback.
@@ -86,6 +95,12 @@ directories. The owner retains reference selection and pruning intent; the same
 Session must hold the required lock through inspection and removal. The
 [driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#regenerable-trees)
 owns the link, mount, identity and unknown-outcome rules.
+For recovery after a lost removal result, use `tree_observe` under the same
+enrolled lock and persist its scope with the exact profile and entry in the
+original pruning intent. A fresh locked observation can establish absence for
+that intent only when its scope matches. Changed scope, a remaining entry or a
+legacy intent without scope grants no retry or automatic cleanup. Both bindings
+advertise `regenerable_tree_observation:1`; the domain still owns reconciliation.
 For the executable `Session` only, `tree_remove(..., timeout=120)` sets that call's response
 deadline. Its default `None` retains the Session timeout, normally 30 seconds;
 other calls are unchanged. Choose a positive finite duration within Python's

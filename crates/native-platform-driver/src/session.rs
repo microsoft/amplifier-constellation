@@ -1,6 +1,6 @@
 use crate::{
     config::{self, Enrollment},
-    service_application, setup, supervision,
+    data_read, service_application, setup, supervision,
 };
 use amplifier_native_platform::{
     installation::{self, ActionOutcome, ServiceAction},
@@ -22,6 +22,25 @@ use std::{
 };
 
 const MAX_FRAME: usize = 16 * 1024 * 1024;
+
+fn tree_profile_digest(
+    name: &str,
+    profile: &config::EnrolledTree,
+    storage_root: &Path,
+    lock_path: &Path,
+) -> Result<String> {
+    // Only protected enrollment contributes; caller-selected entry names do not
+    // change the scope of a retained intent. Keep this tuple order stable.
+    let bytes = serde_json::to_vec(&(
+        name,
+        &profile.root,
+        storage_root,
+        &profile.path,
+        &profile.lock,
+        lock_path,
+    ))?;
+    Ok(format!("{:x}", Sha256::digest(bytes)))
+}
 
 #[derive(Deserialize)]
 struct Request {
@@ -68,6 +87,8 @@ enum Operation {
     },
     #[serde(rename = "tree.inspect")]
     TreeInspect { name: String, entry: String },
+    #[serde(rename = "tree.observe")]
+    TreeObserve { name: String, entry: String },
     #[serde(rename = "tree.remove")]
     TreeRemove {
         name: String,
@@ -89,6 +110,18 @@ enum Operation {
         bytes: Vec<u8>,
         #[serde(default)]
         create_only: bool,
+    },
+    #[serde(rename = "storage.write_data")]
+    StorageWriteData {
+        root: String,
+        path: String,
+        bytes: Vec<u8>,
+    },
+    #[serde(rename = "storage.read_data")]
+    StorageReadData {
+        root: String,
+        path: String,
+        max_bytes: Value,
     },
     #[serde(rename = "storage.remove")]
     StorageRemove { root: String, path: String },
@@ -252,7 +285,7 @@ impl Session {
         let cfg = &self.enrollment.config;
         match op {
             Operation::Describe => Ok(Outcome::ok(
-                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.remove","storage.write","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1}),
+                json!({"protocol":1,"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"operations":["describe","lock.acquire","lock.release","process.identity","process.matches","process.status","service.snapshot","service.action","service.register","exchange.inspect","exchange.prepare_pointer","exchange.apply","tree.inspect","tree.observe","tree.remove","storage.write","storage.write_data","storage.read_data","storage.remove","storage.mkdir","process.launch"],"source_pointer_exchange":1,"service_application_identity":1,"regenerable_tree_removal":1,"regenerable_tree_observation":1,"private_data_publication":1,"private_data_read":1}),
             )),
             Operation::LockAcquire { name } => {
                 let path = cfg.locks.get(&name).context("Unenrolled lock")?;
@@ -370,6 +403,36 @@ impl Session {
                 }
                 let root = self.enrollment.tree_directory(&name)?;
                 Ok(Outcome::ok(installation_tree::inspect(&root, &entry)?))
+            }
+            Operation::TreeObserve { name, entry } => {
+                let profile = cfg
+                    .regenerable_trees
+                    .get(&name)
+                    .context("Unenrolled regenerable tree")?;
+                if !self.locks.contains_key(&profile.lock) {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "lock_not_held",
+                        "Hold the configured tree lock across intent reconciliation",
+                    ));
+                }
+                if let Err(error) = installation_tree::validate_entry(&entry) {
+                    return Ok(Outcome::failure("refused", "invalid_tree_entry", error));
+                }
+                let root = self.enrollment.tree_directory(&name)?;
+                let digest = tree_profile_digest(
+                    &name,
+                    profile,
+                    cfg.roots
+                        .get(&profile.root)
+                        .context("Unenrolled tree root")?,
+                    cfg.locks
+                        .get(&profile.lock)
+                        .context("Unenrolled tree lock")?,
+                )?;
+                Ok(Outcome::ok(installation_tree::observe(
+                    &root, &entry, &digest,
+                )?))
             }
             Operation::TreeRemove {
                 name,
@@ -506,6 +569,54 @@ impl Session {
                     Err(e) => Outcome::failure("unknown", "write_unconfirmed", e),
                 })
             }
+            Operation::StorageWriteData { root, path, bytes } => {
+                let path = match self.enrollment.receipt(&root, &path) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        return Ok(Outcome::failure("refused", "invalid_receipt", error));
+                    }
+                };
+                // Explicit data publication only. Strict writes and executable
+                // replacement retain their existing lifecycle and share rules.
+                Ok(
+                    match amplifier_native_platform::private_write_data(&path, &bytes) {
+                        Ok(()) => Outcome::ok(json!({})),
+                        Err(error) => Outcome::failure("unknown", "write_unconfirmed", error),
+                    },
+                )
+            }
+            Operation::StorageReadData {
+                root,
+                path,
+                max_bytes,
+            } => {
+                let Some(limit) = data_read::limit(&max_bytes) else {
+                    return Ok(Outcome::failure(
+                        "refused",
+                        "invalid_read_limit",
+                        "max_bytes must be an integer from 1 through 1048576",
+                    ));
+                };
+                let resolved = match self.enrollment.receipt(&root, &path) {
+                    Ok(path) => path,
+                    Err(error) => return Ok(Outcome::failure("refused", "invalid_receipt", error)),
+                };
+                Ok(match data_read::read(&resolved, limit) {
+                    Ok(None) => match self.enrollment.receipt(&root, &path) {
+                        Ok(_) => Outcome::ok(json!({"present":false})),
+                        Err(error) => Outcome::failure("refused", "invalid_receipt", error),
+                    },
+                    Ok(Some(bytes)) => Outcome::ok(json!({"present":true,"bytes":bytes})),
+                    Err(data_read::ReadError::TooLarge) => Outcome::failure(
+                        "refused",
+                        "data_too_large",
+                        "Data snapshot exceeds max_bytes",
+                    ),
+                    Err(data_read::ReadError::Io(error)) => {
+                        Outcome::failure("error", "data_read_failed", error)
+                    }
+                })
+            }
             Operation::StorageMkdir { root, path } => {
                 let path = match self.enrollment.directory(&root, &path) {
                     Ok(path) => path,
@@ -610,7 +721,7 @@ fn parse_request(frame: &[u8]) -> std::result::Result<Request, (String, String)>
         Some("process.identity") => &["version", "id", "op", "pid"],
         Some("process.matches" | "process.status") => &["version", "id", "op", "identity"],
         Some("exchange.inspect") => &["version", "id", "op", "name", "entry"],
-        Some("tree.inspect") => &["version", "id", "op", "name", "entry"],
+        Some("tree.inspect" | "tree.observe") => &["version", "id", "op", "name", "entry"],
         Some("tree.remove") => &["version", "id", "op", "name", "entry", "expected"],
         Some("exchange.prepare_pointer") => &[
             "version",
@@ -641,6 +752,8 @@ fn parse_request(frame: &[u8]) -> std::result::Result<Request, (String, String)>
             "bytes",
             "create_only",
         ],
+        Some("storage.write_data") => &["version", "id", "op", "root", "path", "bytes"],
+        Some("storage.read_data") => &["version", "id", "op", "root", "path", "max_bytes"],
         Some("storage.remove" | "storage.mkdir") => &["version", "id", "op", "root", "path"],
         Some("process.launch") => &["version", "id", "op", "name", "result"],
         _ => &[],
@@ -767,5 +880,60 @@ pub fn main_entry() {
             eprintln!("Native installation driver: {error:#}");
             std::process::exit(1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tree_scope_digest_binds_every_enrolled_profile_field() {
+        let fields = [
+            "stages",
+            "state",
+            "owner-state",
+            "stages-dir",
+            "installation",
+            "owner.lock",
+        ];
+        let digest = |values: [&str; 6]| {
+            tree_profile_digest(
+                values[0],
+                &config::EnrolledTree {
+                    root: values[1].into(),
+                    path: values[3].into(),
+                    lock: values[4].into(),
+                },
+                Path::new(values[2]),
+                Path::new(values[5]),
+            )
+            .unwrap()
+        };
+        let expected = digest(fields);
+        assert_eq!(expected.len(), 64);
+        assert_eq!(digest(fields), expected);
+        for index in 0..fields.len() {
+            let mut changed = fields;
+            changed[index] = "other";
+            assert_ne!(digest(changed), expected, "Field {index} was not bound");
+        }
+    }
+
+    #[test]
+    fn tree_observation_accepts_only_its_fixed_request_fields() {
+        assert!(matches!(
+            serde_json::from_value::<Operation>(json!({
+                "op":"tree.observe","name":"stages","entry":"candidate"
+            }))
+            .unwrap(),
+            Operation::TreeObserve { .. }
+        ));
+        assert!(
+            serde_json::from_value::<Operation>(json!({
+                "op":"tree.observe","name":"stages","entry":"candidate","expected":null
+            }))
+            .is_err()
+        );
     }
 }

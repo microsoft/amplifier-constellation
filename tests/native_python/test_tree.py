@@ -456,6 +456,67 @@ class ActualTreeTests(unittest.TestCase):
         finally:
             restore()  # Disposable-fixture cleanup only, after preservation checks.
 
+    def test_scoped_observation_requires_enrolled_lock_and_strict_fields(self):
+        fixture = self.fixture
+        with fixture.session() as session:
+            description = session.describe()
+            self.assertEqual(description["regenerable_tree_observation"], 1)
+            self.assertIn("tree.observe", description["operations"])
+            with self.assertRaises(Refused) as refused:
+                session.tree_observe("stages", "candidate")
+            self.assertEqual(refused.exception.code, "lock_not_held")
+            with session.lock("installation"):
+                observed = session.tree_observe("stages", "candidate")
+                self.assertIsNone(observed["entry"])
+                self.assertEqual(observed["scope"]["schema"], 1)
+                self.assert_preflight_error(lambda: session._call(
+                    "tree.observe", name="stages", entry="candidate", extra=True))
+                self.assert_preflight_error(lambda: session.tree_observe("stages", ".."))
+        fixture.assert_outside()
+
+    def test_absence_under_replaced_root_keeps_prior_pruning_unresolved(self):
+        fixture = self.fixture
+        child = fixture.entry()
+        (child / "keep").write_bytes(b"original uncertain stage")
+        with fixture.session() as session, session.lock("installation"):
+            saved = session.tree_observe("stages", "candidate")
+            self.assertEqual(saved["entry"], session.tree_inspect("stages", "candidate"))
+        # Keep the old object alive: no assumption about inode reuse. Replacement
+        # happens between invocations and has no candidate leaf at all.
+        retained = fixture.stages.with_name("retained-original-root")
+        fixture.stages.rename(retained)
+        initialize_root(fixture.driver, fixture.stages)
+        with fixture.session() as recovery, recovery.lock("installation"):
+            current = recovery.tree_observe("stages", "candidate")
+            self.assertIsNone(current["entry"])
+            self.assertEqual(current["scope"]["profile_sha256"],
+                             saved["scope"]["profile_sha256"])
+            self.assertNotEqual(current["scope"], saved["scope"])
+            self.assertIsNone(recovery.tree_inspect("stages", "candidate"))
+        self.assertEqual((retained / "candidate" / "keep").read_bytes(),
+                         b"original uncertain stage")
+        fixture.assert_outside()
+
+    def test_changed_profile_same_root_keeps_prior_pruning_unresolved(self):
+        fixture = self.fixture
+        fixture.entry()
+        with fixture.session() as session, session.lock("installation"):
+            saved = session.tree_observe("stages", "candidate")
+            session.tree_remove("stages", "candidate", saved["entry"])
+        changed = json.loads(fixture.config.read_bytes())
+        changed["locks"]["other_owner"] = changed["locks"]["installation"]
+        changed["regenerable_trees"]["stages"]["lock"] = "other_owner"
+        config = fixture.root / "changed-profile.json"
+        initialize_config(fixture.driver, config, changed)
+        with Session(fixture.driver, config) as recovery, recovery.lock("other_owner"):
+            current = recovery.tree_observe("stages", "candidate")
+            self.assertIsNone(current["entry"])
+            self.assertEqual(current["scope"]["root_identity"],
+                             saved["scope"]["root_identity"])
+            self.assertNotEqual(current["scope"]["profile_sha256"],
+                                saved["scope"]["profile_sha256"])
+        fixture.assert_outside()
+
     def test_two_real_invocations_cannot_share_removal_ownership(self):
         fixture = self.fixture
         child = fixture.entry()
@@ -496,8 +557,9 @@ class ActualTreeTests(unittest.TestCase):
         with patch("constellation_native.client.subprocess.Popen", side_effect=start_proxy):
             session = fixture.session()
         self.addCleanup(session.close)
-        expected = session.tree_inspect("stages", "candidate")
         with self.assertRaises(Unknown), session.lock("installation"):
+            observed = session.tree_observe("stages", "candidate")
+            expected = observed["entry"]
             session.tree_remove("stages", "candidate", expected)
         self.assertIsNotNone(session._process.poll())
         with self.assertRaises(DriverError):
@@ -507,12 +569,22 @@ class ActualTreeTests(unittest.TestCase):
         self.assertEqual(len(removes), 1)
         self.assertEqual(removes[0]["reply"]["result"], {"absent": True})
         with fixture.session() as recovery, recovery.lock("installation"):
-            # This read settles the already committed operation. A replacement
-            # is later observed as a new identity, never removed by recovery.
-            self.assertIsNone(recovery.tree_inspect("stages", "candidate"))
+            # Same saved scope plus absence supports settling the SAME intent.
+            # Bare None would not distinguish a replacement root.
+            current = recovery.tree_observe("stages", "candidate")
+            self.assertEqual(current["scope"], observed["scope"])
+            self.assertIsNone(current["entry"])
             replacement.rename(child)
             self.assertNotEqual(recovery.tree_inspect("stages", "candidate"), expected)
             self.assertEqual((child / "keep").read_bytes(), b"new allocation")
+        retained = fixture.stages.with_name("root-after-lost-ack")
+        fixture.stages.rename(retained)
+        initialize_root(fixture.driver, fixture.stages)
+        with fixture.session() as recovery, recovery.lock("installation"):
+            changed = recovery.tree_observe("stages", "candidate")
+            self.assertIsNone(changed["entry"])
+            self.assertNotEqual(changed["scope"], observed["scope"])
+        self.assertEqual((retained / "candidate" / "keep").read_bytes(), b"new allocation")
         self.assertEqual(len([line for line in capture.read_text().splitlines()
                               if json.loads(line)["request"]["op"] == "tree.remove"]), 1)
         fixture.assert_outside()

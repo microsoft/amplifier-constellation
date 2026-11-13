@@ -35,6 +35,39 @@ pub fn inspect(root: &Path, entry: &str) -> Result<Value> {
     }))
 }
 
+/// Observe a selected child together with its protected profile and root scope.
+/// Unlike `inspect`, an absent child still carries the root identity needed to
+/// compare a persisted pruning intent after a fresh invocation. The caller owns
+/// the profile digest and holds the configured lock; this is not filesystem CAS.
+pub fn observe(root: &Path, entry: &str, profile_sha256: &str) -> Result<Value> {
+    observe_with(root, entry, profile_sha256, inspect)
+}
+
+fn observe_with(
+    root: &Path,
+    entry: &str,
+    profile_sha256: &str,
+    inspect_child: impl FnOnce(&Path, &str) -> Result<Value>,
+) -> Result<Value> {
+    let path = child_path(root, entry)?;
+    let root = path.parent().context("Missing tree root")?;
+    let before = native_identity(root, &fs::symlink_metadata(root)?)?;
+    let child = inspect_child(root, entry)?;
+    ordinary_chain(root)?;
+    ensure!(
+        native_identity(root, &fs::symlink_metadata(root)?)? == before,
+        "Tree root changed during observation"
+    );
+    ensure!(
+        child.is_null() || (child["root"] == json!(root) && child["root_identity"] == before),
+        "Tree child was observed under another root"
+    );
+    Ok(json!({
+        "scope": {"schema":1,"profile_sha256":profile_sha256,"root":root,"root_identity":before},
+        "entry":child
+    }))
+}
+
 /// Identity-check and preflight the whole tree, then remove it without following
 /// links. Once standard-library traversal starts, every error is Unknown. There
 /// is no retry or detached user-space traversal. An interrupted native operation
@@ -400,6 +433,54 @@ fn refuse_mounts(_: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scoped_observation_preserves_scope_when_the_selected_child_is_removed() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap().join("stages");
+        fs::create_dir_all(root.join("candidate")).unwrap();
+        let before = observe(&root, "candidate", "profile").unwrap();
+        assert_eq!(before["entry"], inspect(&root, "candidate").unwrap());
+        assert!(matches!(
+            remove(&root, "candidate", &before["entry"], &[]).unwrap(),
+            MutationOutcome::Applied { .. }
+        ));
+        let absent = observe(&root, "candidate", "profile").unwrap();
+        assert_eq!(before["scope"], absent["scope"]);
+        assert!(absent["entry"].is_null());
+        assert!(inspect(&root, "candidate").unwrap().is_null());
+    }
+
+    #[test]
+    fn absent_child_in_replaced_root_has_a_different_scope() {
+        let temporary = tempfile::tempdir().unwrap();
+        let home = temporary.path().canonicalize().unwrap();
+        let root = home.join("stages");
+        fs::create_dir(&root).unwrap();
+        let before = observe(&root, "candidate", "profile").unwrap();
+        // Preserve the old directory so a new allocation cannot reuse its ID.
+        fs::rename(&root, home.join("old-stages")).unwrap();
+        fs::create_dir(&root).unwrap();
+        let after = observe(&root, "candidate", "profile").unwrap();
+        assert!(before["entry"].is_null() && after["entry"].is_null());
+        assert_ne!(before["scope"], after["scope"]);
+        assert_eq!(before["scope"]["root"], after["scope"]["root"]);
+    }
+
+    #[test]
+    fn root_replacement_during_absent_observation_is_not_success() {
+        let temporary = tempfile::tempdir().unwrap();
+        let home = temporary.path().canonicalize().unwrap();
+        let root = home.join("stages");
+        fs::create_dir(&root).unwrap();
+        let result = observe_with(&root, "candidate", "profile", |root, entry| {
+            fs::rename(root, home.join("old-stages"))?;
+            fs::create_dir(root)?;
+            inspect(root, entry)
+        });
+        assert!(result.is_err());
+        assert!(root.is_dir() && home.join("old-stages").is_dir());
+    }
 
     #[test]
     fn failure_after_partial_deletion_is_unknown_and_does_not_retry() {

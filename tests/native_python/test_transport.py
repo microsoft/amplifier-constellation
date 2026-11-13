@@ -36,7 +36,7 @@ for line in sys.stdin.buffer:
         subprocess.Popen([sys.executable, "-c", "import time; time.sleep(1.5)"],
                          stdin=subprocess.DEVNULL, stdout=sys.stdout,
                          stderr=subprocess.DEVNULL)
-    if mode in ("locked_no_read", "locked_echo") and request["op"] == "lock.acquire":
+    if mode in ("locked_no_read", "locked_echo", "locked_data_lost") and request["op"] == "lock.acquire":
         held = open(Path(capture).with_suffix(".lock"), "a+b", buffering=0)
         held.write(b"x")
         held.seek(0)
@@ -50,6 +50,8 @@ for line in sys.stdin.buffer:
         held.close()
         held = None
     if mode == "lost" and request["op"] == "process.launch":
+        sys.exit(0)
+    if mode == "locked_data_lost" and request["op"] == "storage.write_data":
         sys.exit(0)
     if mode == "timeout" and request["op"] != "describe":
         time.sleep(30)
@@ -388,6 +390,45 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(bytes(result["bytes"]), data)
         self.assertIs(result["create_only"], True)
         self.assertNotIn("argv", result)
+
+    def test_data_publication_sends_exact_bytes_without_create_or_command_fields(self):
+        session = self.session()
+        data = b'{"authority":"original"}\x00\xff'
+        with session.lock("installation"):
+            result = session.private_write_data("state", "journal.json", data)
+        self.assertEqual(bytes(result["bytes"]), data)
+        self.assertEqual(set(result), {"version", "id", "op", "root", "path", "bytes"})
+        self.assertEqual([r["op"] for r in self.requests()],
+                         ["lock.acquire", "storage.write_data", "lock.release"])
+
+    def test_data_publication_rejects_nonbytes_before_dispatch(self):
+        session = self.session()
+        for data in ("text", bytearray(b"bytes"), memoryview(b"bytes"), [1], None):
+            with self.subTest(data=repr(data)), self.assertRaises(TypeError):
+                session.private_write_data("state", "journal.json", data)
+        self.assertEqual(self.requests(), [])
+
+    def test_lost_data_reply_is_unknown_unwinds_lock_and_never_repeats(self):
+        session = self.session("locked_data_lost")
+        with session.lock("installation"):
+            with self.assertRaises(Unknown):
+                session.private_write_data("state", "journal.json", b"original intent")
+        self.assertIsNotNone(session._process.poll())
+        self.assertEqual(session._locks, set())
+        with self.assertRaises(DriverError) as closed:
+            session.private_write_data("state", "journal.json", b"must not repeat")
+        self.assertEqual(closed.exception.code, "closed_session")
+        self.assertEqual([r["op"] for r in self.requests()],
+                         ["lock.acquire", "storage.write_data"])
+        with self.capture.with_suffix(".lock").open("r+b", buffering=0) as lock:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
     def test_invalid_timeout_and_relative_setup_paths_refuse_before_spawn(self):
         invalid = (

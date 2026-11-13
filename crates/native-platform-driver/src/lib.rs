@@ -1,6 +1,7 @@
 //! Installation-owned operations usable from the fixed CLI or in its caller's process.
 
 mod config;
+mod data_read;
 pub mod ffi;
 mod service_application;
 mod session;
