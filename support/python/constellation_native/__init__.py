@@ -9,12 +9,14 @@ from .client import (
     initialize_config,
     initialize_root,
 )
+from .inprocess import NativeSession
 
 __all__ = [
     "Busy",
     "DriverError",
     "Refused",
     "Session",
+    "NativeSession",
     "Unknown",
     "initialize_config",
     "initialize_root",

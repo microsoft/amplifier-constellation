@@ -88,6 +88,13 @@ unchanged executable inspector. Metadata inspection is not actual library loadin
 or ABI proof. Linux's glibc system-library list does not establish a universal
 glibc version floor, and hosted tests do not establish a fresh consumer OS.
 
+`test_inprocess_lock.py` loads the real library and checks caller-owned exclusion,
+helper and caller death, poison/unwind, thread close, and the fixed detached probe.
+The Unix fork checks also cover interrupted preparation and competing attempts;
+signals and malformed replies are explicitly injected at the Python boundary.
+These tests retain actual kernel locks but do not claim arbitrary foreign-fork
+support or a kernel-wide cancellation deadline.
+
 Both Windows jobs additionally run this suite, including the actual service
 fixture, through Minecraft's exact Python Build Standalone 3.12.16 interpreters.
 `run_packaged_python.py` uses the test-only `packaged-python-lock.json`, verifies
