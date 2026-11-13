@@ -9,8 +9,11 @@ This document owns the local wire interface and its Python binding. The linked
 `service.snapshot`; it is part of this protocol, not another service or API.
 
 `constellation-native-driver --config ABSOLUTE_CONFIG serve` exchanges one JSON
-object per line on stdin/stdout. Keep that process alive for the entire Python
-critical section. EOF releases its kernel locks. A lost reply never authorizes a
+object per line on stdin/stdout. That process owns its kernel locks; EOF or its
+death releases them. Use the [in-process native session](INPROCESS.md) when a
+Python critical section must retain ownership across arbitrary caller-side work:
+a helper-owned lock cannot protect Python code that continues after helper death.
+Both boundaries use the same enrollment and operations. A lost reply never authorizes a
 second dispatch. Requests are correlated, not deduplicated by the driver: the
 existing domain transaction remains the durable source of operation identity.
 

@@ -8,6 +8,7 @@ use serde_json::json;
 use std::io::BufRead;
 use std::{
     io::{self, Read, Write},
+    path::Path,
     process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
@@ -28,11 +29,12 @@ pub(crate) fn reap_bounded(child: &mut Child) -> Result<()> {
 
 fn invocation(
     enrollment: &Enrollment,
+    driver: &Path,
     mode: &str,
     name: &str,
     result: Option<&str>,
 ) -> Result<Command> {
-    let mut c = Command::new(std::env::current_exe()?);
+    let mut c = Command::new(driver);
     c.arg("--config")
         .arg(&enrollment.path)
         .arg(mode)
@@ -67,8 +69,13 @@ fn detach(command: &mut Command) {
 }
 
 /// Launching does not interpret a domain terminal. Missing acknowledgment is unknown.
-pub fn launch(enrollment: &Enrollment, name: &str, result: Option<&str>) -> Result<Value> {
-    let mut c = invocation(enrollment, "internal-detached", name, result)?;
+pub fn launch(
+    enrollment: &Enrollment,
+    driver: &Path,
+    name: &str,
+    result: Option<&str>,
+) -> Result<Value> {
+    let mut c = invocation(enrollment, driver, "internal-detached", name, result)?;
     c.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -98,7 +105,13 @@ pub fn run(
     };
     #[cfg(windows)]
     install_job()?;
-    let mut command = invocation(enrollment, "internal-execute", name, result)?;
+    let mut command = invocation(
+        enrollment,
+        &std::env::current_exe()?,
+        "internal-execute",
+        name,
+        result,
+    )?;
     command
         .stdin(Stdio::piped())
         .stdout(Stdio::inherit())

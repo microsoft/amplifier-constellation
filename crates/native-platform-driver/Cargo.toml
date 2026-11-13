@@ -8,6 +8,9 @@ publish = false
 description = "Installation-owned local native lifecycle primitives"
 repository = "https://github.com/microsoft/amplifier-constellation"
 
+[lib]
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
 amplifier-native-platform = { path = "../native-platform", features = ["installation"] }
 anyhow = "1"
