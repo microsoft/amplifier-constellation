@@ -24,14 +24,17 @@ sys.path.insert(0, str(SUPPORT))
 from constellation_native import (  # noqa: E402
     Busy,
     DriverError,
+    NativeSession,
     Refused,
     Session,
     Unknown,
     initialize_config,
+    initialize_driver,
     initialize_root,
 )
 
 DRIVER = os.environ.get("CONSTELLATION_NATIVE_DRIVER")
+LIBRARY = os.environ.get("CONSTELLATION_NATIVE_LIBRARY")
 
 PEER = r"""
 import json, sys, time
@@ -49,6 +52,8 @@ if mode == "timeout":
 result = {"path": request["path"], "created": True}
 if request["op"] == "setup.config":
     result["sha256"] = "a" * 64
+if request["op"] == "setup.driver":
+    result.update(sha256=request["sha256"], size=123, identity={"fixture": "opaque"})
 reply = {"version": 1, "id": request["id"], "outcome": "ok", "result": result}
 if mode == "wrong_id":
     reply["id"] = "another-request"
@@ -63,6 +68,22 @@ if mode == "bad_path":
     result["path"] = str(Path(request["path"]).with_name("other"))
 if mode == "bad_digest":
     result["sha256"] = "not-a-digest"
+if mode == "different_digest":
+    result["sha256"] = "b" * 64
+if mode == "missing_digest":
+    result.pop("sha256")
+bad_sizes = {"zero_size": 0, "negative_size": -1, "boolean_size": True,
+             "float_size": 123.0, "string_size": "123", "oversize": 134217729}
+if mode in bad_sizes:
+    result["size"] = bad_sizes[mode]
+if mode == "missing_size":
+    result.pop("size")
+bad_identities = {"empty_identity": {}, "list_identity": ["opaque"],
+                  "string_identity": "opaque", "null_identity": None}
+if mode in bad_identities:
+    result["identity"] = bad_identities[mode]
+if mode == "missing_identity":
+    result.pop("identity")
 if mode in ("busy", "refused", "unknown", "error"):
     reply.pop("result")
     reply.update(outcome=mode, error={"code": "fixture_" + mode, "message": mode})
@@ -81,7 +102,8 @@ class SetupTransportTests(unittest.TestCase):
         self.target = self.root / "owner"
         self.children = []
 
-    def invoke(self, operation, mode="ok", *, config=None, timeout=2, serialized_pipe=False):
+    def invoke(self, operation, mode="ok", *, config=None, sha256="a" * 64,
+               timeout=2, serialized_pipe=False):
         real_popen = subprocess.Popen
 
         def spawn(argv, **kwargs):
@@ -101,6 +123,8 @@ class SetupTransportTests(unittest.TestCase):
         with patch("constellation_native.client.subprocess.Popen", side_effect=spawn):
             if operation == "setup.root":
                 return initialize_root(sys.executable, self.target, timeout=timeout)
+            if operation == "setup.driver":
+                return initialize_driver(sys.executable, self.target, sha256, timeout=timeout)
             return initialize_config(
                 sys.executable, self.target, config or {"version": 1}, timeout=timeout
             )
@@ -145,6 +169,57 @@ class SetupTransportTests(unittest.TestCase):
             self.invoke("setup.root", "lost")
         self.assertEqual(caught.exception.code, "transport_closed")
         self.assertEqual(len(self.requests()), 1)
+
+    def test_driver_setup_has_fixed_request_and_no_enrolled_capability(self):
+        from constellation_native import __all__
+
+        result = self.invoke("setup.driver")
+        self.assertEqual(result, {"path": str(self.target), "created": True,
+                                  "sha256": "a" * 64, "size": 123,
+                                  "identity": {"fixture": "opaque"}})
+        request, = self.requests()
+        self.assertEqual(set(request), {"version", "id", "op", "path", "sha256"})
+        self.assertEqual(request["version"], 1)
+        self.assertIsInstance(request["id"], str)
+        self.assertTrue(request["id"])
+        self.assertEqual(request["op"], "setup.driver")
+        self.assertEqual(request["path"], str(self.target))
+        self.assertEqual(request["sha256"], "a" * 64)
+        self.assertIn("initialize_driver", __all__)
+        self.assertFalse(hasattr(Session, "initialize_driver"))
+        self.assertFalse(hasattr(NativeSession, "initialize_driver"))
+        self.assert_children_reaped()
+
+    def test_driver_setup_lost_ack_and_timeout_do_not_redispatch(self):
+        for mode, code in (("lost", "transport_closed"), ("timeout", "transport_timeout")):
+            before = len(self.requests())
+            with self.subTest(mode=mode), self.assertRaises(Unknown) as caught:
+                self.invoke("setup.driver", mode, timeout=0.2)
+            self.assertEqual(caught.exception.code, code)
+            self.assertEqual(len(self.requests()), before + 1)
+        self.assert_children_reaped()
+
+    def test_driver_setup_rejects_uncorrelated_or_incomplete_success(self):
+        modes = ("wrong_id", "malformed", "bad_version", "bad_result", "bad_path",
+                 "bad_digest", "different_digest", "missing_digest", "zero_size",
+                 "negative_size", "boolean_size", "float_size", "string_size",
+                 "oversize", "missing_size", "empty_identity", "list_identity",
+                 "string_identity", "null_identity", "missing_identity")
+        for mode in modes:
+            before = len(self.requests())
+            with self.subTest(mode=mode), self.assertRaises(Unknown) as caught:
+                self.invoke("setup.driver", mode)
+            self.assertEqual(caught.exception.code, "protocol_response")
+            self.assertEqual(len(self.requests()), before + 1)
+        self.assert_children_reaped()
+
+    def test_driver_setup_preserves_typed_outcomes(self):
+        for outcome, expected in (("busy", Busy), ("refused", Refused),
+                                  ("unknown", Unknown), ("error", DriverError)):
+            with self.subTest(outcome=outcome), self.assertRaises(expected) as caught:
+                self.invoke("setup.driver", outcome)
+            self.assertEqual(caught.exception.code, "fixture_" + outcome)
+        self.assertEqual(len(self.requests()), 4)
 
     def test_uncorrelated_or_malformed_setup_reply_stays_unknown(self):
         for mode in ("wrong_id", "malformed", "bad_version", "bad_result", "bad_path", "bad_digest"):
@@ -224,7 +299,7 @@ class SetupTransportTests(unittest.TestCase):
                 threading.TIMEOUT_MAX * 2,
             )
             for timeout in invalid:
-                for operation in ("root", "config"):
+                for operation in ("root", "config", "driver"):
                     with (
                         self.subTest(timeout=repr(timeout), operation=operation),
                         self.assertRaises(ValueError),
@@ -233,13 +308,16 @@ class SetupTransportTests(unittest.TestCase):
                             initialize_root(
                                 sys.executable, self.target, timeout=timeout
                             )
-                        else:
+                        elif operation == "config":
                             initialize_config(
                                 sys.executable,
                                 self.target,
                                 {"version": 1},
                                 timeout=timeout,
                             )
+                        else:
+                            initialize_driver(sys.executable, self.target, "a" * 64,
+                                              timeout=timeout)
             with self.assertRaises(ValueError):
                 initialize_root("relative-driver", self.target)
             with self.assertRaises(ValueError):
@@ -254,6 +332,14 @@ class SetupTransportTests(unittest.TestCase):
                 initialize_config(
                     sys.executable, self.target, {"padding": "x" * (2 * 1024 * 1024)}
                 )
+            for digest in (None, True, 1, b"a" * 64, "", "a" * 63, "a" * 65,
+                           "A" * 64, "g" * 64, "a" * 63 + "\n", " a" * 32):
+                with self.subTest(digest=repr(digest)), self.assertRaises(ValueError):
+                    initialize_driver(sys.executable, self.target, digest)
+            with self.assertRaises(ValueError):
+                initialize_driver("relative-driver", self.target, "a" * 64)
+            with self.assertRaises(ValueError):
+                initialize_driver(sys.executable, "relative-target", "a" * 64)
             spawn.assert_not_called()
 
 
@@ -337,6 +423,180 @@ class ActualDriverSetupTests(unittest.TestCase):
             "services": {},
             "commands": {},
         }
+
+    def driver_digest(self):
+        return hashlib.sha256(Path(DRIVER).read_bytes()).hexdigest()
+
+    def assert_private_executable(self, path):
+        observed = path.stat()
+        self.assertTrue(stat.S_ISREG(observed.st_mode))
+        if os.name == "nt":
+            from test_driver import windows_owner_sid, windows_user_sid
+            user = windows_user_sid()
+            self.assertEqual(windows_owner_sid(path), user)
+            policy = policy_snapshot(path)
+            self.assertTrue(policy.startswith("D:P"), policy)
+            self.assertEqual(policy.count("(A;"), 2, policy)
+            self.assertIn(";;;SY)", policy)
+            self.assertIn(";;;" + user + ")", policy)
+            self.assertNotIn(";;;WD)", policy)
+        else:
+            self.assertEqual(observed.st_uid, os.getuid())
+            self.assertEqual(stat.S_IMODE(observed.st_mode), 0o700)
+
+    def test_private_driver_materialization_opens_actual_native_session(self):
+        if not LIBRARY:
+            if os.environ.get("CI", "").lower() == "true":
+                self.fail("CI must supply the exact native library for setup.driver")
+            self.skipTest("Set CONSTELLATION_NATIVE_LIBRARY for copied-driver ABI use")
+        destination = self.root / ("private-driver.exe" if os.name == "nt" else "private-driver")
+        parents = {path: identity_and_policy(path)
+                   for path in (self.parent, self.root, self.state)}
+        result = initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assertEqual(result["path"], str(destination))
+        self.assertTrue(result["created"])
+        self.assertEqual(result["sha256"], self.driver_digest())
+        self.assertEqual(result["size"], Path(DRIVER).stat().st_size)
+        self.assertEqual(hashlib.sha256(destination.read_bytes()).hexdigest(), result["sha256"])
+        self.assertIsInstance(result["identity"], dict)
+        self.assertTrue(result["identity"])
+        self.assert_private_executable(destination)
+        initialize_config(destination, self.config, self.data)
+        with NativeSession(LIBRARY, destination, self.config) as native, \
+                Session(destination, self.config) as contender:
+            self.assertNotIn("setup.driver", native.describe()["operations"])
+            with native.lock("installation"):
+                with self.assertRaises(Busy):
+                    with contender.lock("installation"):
+                        self.fail("Copied driver's caller-owned lock was not exclusive")
+                native.private_write("state", "copied-driver.json", b'{"same_owner":true}')
+            with contender.lock("installation"):
+                self.assertEqual(contender.private_read_data("state", "copied-driver.json"),
+                                 b'{"same_owner":true}')
+        self.assertEqual((self.state / "copied-driver.json").read_bytes(), b'{"same_owner":true}')
+        for path, before in parents.items():
+            self.assertEqual(identity_and_policy(path), before)
+
+    def test_existing_private_driver_is_read_only_validation(self):
+        destination = self.root / ("repeat.exe" if os.name == "nt" else "repeat")
+        first = initialize_driver(DRIVER, destination, self.driver_digest())
+        before = (identity_and_policy(destination), destination.read_bytes(),
+                  destination.stat().st_mtime_ns)
+        parents = {path: identity_and_policy(path) for path in (self.parent, self.root)}
+        repeated = initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assertFalse(repeated["created"])
+        self.assertEqual({k: v for k, v in repeated.items() if k != "created"},
+                         {k: v for k, v in first.items() if k != "created"})
+        self.assertEqual((identity_and_policy(destination), destination.read_bytes(),
+                          destination.stat().st_mtime_ns), before)
+        for path, policy in parents.items():
+            self.assertEqual(identity_and_policy(path), policy)
+
+    def test_driver_materialization_refuses_public_or_nonexecutable_target(self):
+        # Fault injection only. The successful private artifact is created by
+        # setup.driver; Python never supplies its positive-case owner/ACL/mode.
+        variants = ("public",) if os.name == "nt" else ("public", "not-executable")
+        parents = {path: identity_and_policy(path) for path in (self.parent, self.root)}
+        for variant in variants:
+            destination = self.root / (variant + (".exe" if os.name == "nt" else ""))
+            initialize_driver(DRIVER, destination, self.driver_digest())
+            if os.name == "nt":
+                from test_driver import windows_policy
+                windows_policy(destination, world_read=True)
+            else:
+                destination.chmod(0o755 if variant == "public" else 0o600)
+            before = (identity_and_policy(destination), destination.read_bytes())
+            with self.subTest(variant=variant), self.assertRaises(Refused):
+                initialize_driver(DRIVER, destination, self.driver_digest())
+            self.assertEqual((identity_and_policy(destination), destination.read_bytes()), before)
+        for path, policy in parents.items():
+            self.assertEqual(identity_and_policy(path), policy)
+
+    def test_driver_materialization_refuses_private_conflict_without_repair(self):
+        destination = self.root / ("conflict.exe" if os.name == "nt" else "conflict")
+        initialize_driver(DRIVER, destination, self.driver_digest())
+        destination.write_bytes(b"a different private executable artifact")
+        before = (identity_and_policy(destination), destination.read_bytes())
+        parent = identity_and_policy(self.root)
+        with self.assertRaises(Refused):
+            initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assertEqual((identity_and_policy(destination), destination.read_bytes()), before)
+        self.assertEqual(identity_and_policy(self.root), parent)
+
+    def test_wrong_driver_digest_creates_no_target_and_preserves_parent(self):
+        destination = self.root / ("wrong.exe" if os.name == "nt" else "wrong")
+        before = (identity_and_policy(self.root), sorted(path.name for path in self.root.iterdir()))
+        wrong = "0" * 64 if self.driver_digest() != "0" * 64 else "1" * 64
+        with self.assertRaises(Refused):
+            initialize_driver(DRIVER, destination, wrong)
+        self.assertFalse(destination.exists())
+        self.assertEqual((identity_and_policy(self.root),
+                          sorted(path.name for path in self.root.iterdir())), before)
+        self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
+
+    def test_driver_materialization_requires_existing_protected_parent(self):
+        missing = self.root / "missing" / "driver"
+        with self.assertRaises(Refused):
+            initialize_driver(DRIVER, missing, self.driver_digest())
+        self.assertFalse(missing.parent.exists())
+        exposed = self.root / "public-parent"
+        initialize_root(DRIVER, exposed)
+        if os.name == "nt":
+            from test_driver import windows_policy
+            windows_policy(exposed, world_read=True)
+        else:
+            exposed.chmod(0o755)
+        before = identity_and_policy(exposed)
+        with self.assertRaises(Refused):
+            initialize_driver(DRIVER, exposed / "driver", self.driver_digest())
+        self.assertEqual(identity_and_policy(exposed), before)
+        self.assertEqual(list(exposed.iterdir()), [])
+        self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
+
+    @unittest.skipUnless(os.name == "nt", "Windows existing executable-owner preservation")
+    def test_driver_materialization_refuses_foreign_owner_without_repair(self):
+        from test_fixture_owner import require_elevated_owner_fixture
+        require_elevated_owner_fixture(self)
+        from test_driver import windows_owner_sid, windows_policy
+        destination = self.root / "foreign-owner.exe"
+        initialize_driver(DRIVER, destination, self.driver_digest())
+        windows_policy(destination, owner_sid="S-1-5-32-544")
+        self.assertEqual(windows_owner_sid(destination), "S-1-5-32-544")
+        before = (identity_and_policy(destination), destination.read_bytes())
+        parent = identity_and_policy(self.root)
+        with self.assertRaises(Refused):
+            initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assertEqual((identity_and_policy(destination), destination.read_bytes()), before)
+        self.assertEqual(identity_and_policy(self.root), parent)
+
+    @unittest.skipUnless(os.name == "nt", "Windows private executable long Unicode path")
+    def test_driver_materialization_owner_and_dacl_on_long_unicode_path(self):
+        ordinary = str(self.root)
+        if ordinary.startswith("\\\\?\\UNC\\"):
+            ordinary = "\\\\" + ordinary[8:]
+        elif ordinary.startswith("\\\\?\\"):
+            ordinary = ordinary[4:]
+        parent = Path(ordinary)
+        while len(str(parent).encode("utf-16-le")) // 2 <= 362:
+            parent /= "driver-café-雪-🧭-0123456789"
+            initialize_root(DRIVER, parent)
+        destination = parent / "driver-雪-🧭.exe"
+        parent_before = identity_and_policy(parent)
+        self.assertFalse(str(destination).startswith("\\\\?\\"))
+        self.assertGreater(len(str(destination).encode("utf-16-le")) // 2, 362)
+        first = initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assert_private_executable(destination)
+        self.assertEqual(hashlib.sha256(destination.read_bytes()).hexdigest(), self.driver_digest())
+        before = (identity_and_policy(destination), destination.read_bytes())
+        repeated = initialize_driver(DRIVER, destination, self.driver_digest())
+        self.assertFalse(repeated["created"])
+        self.assertEqual(repeated["identity"], first["identity"])
+        self.assertEqual((identity_and_policy(destination), destination.read_bytes()), before)
+        self.assertEqual(identity_and_policy(parent), parent_before)
+        self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
+        print(json.dumps({"setup_driver_utf16_units": len(str(destination).encode("utf-16-le")) // 2,
+                          "private_executable_owner_dacl": "passed",
+                          "production_setup": True}), flush=True)
 
     def test_fresh_root_config_session_lock_and_write_without_permission_helpers(self):
         root_policy = policy_snapshot(self.root)

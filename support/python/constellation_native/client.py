@@ -43,6 +43,7 @@ class Unknown(DriverError):
 _OUTCOMES = {"ok", "busy", "refused", "unknown", "error"}
 _MAX_FRAME = 16 * 1024 * 1024
 _MAX_SETUP_FRAME = 2 * 1024 * 1024
+_MAX_DRIVER_BYTES = 128 * 1024 * 1024
 _SESSIONS: weakref.WeakSet[Session] = weakref.WeakSet()
 
 
@@ -114,6 +115,7 @@ def _initialize(
     *,
     timeout: float,
     config: dict[str, Any] | None = None,
+    sha256: str | None = None,
 ) -> dict[str, Any]:
     """One installation-owned setup request, without a Session or retries."""
     duration = _duration(timeout)
@@ -130,6 +132,8 @@ def _initialize(
     }
     if config is not None:
         request["config"] = config
+    if sha256 is not None:
+        request["sha256"] = sha256
     encoded = (
         json.dumps(
             request, allow_nan=False, ensure_ascii=False, separators=(",", ":")
@@ -234,6 +238,15 @@ def _initialize(
                         or any(c not in "0123456789abcdef" for c in digest)
                     ):
                         raise ValueError("Invalid setup configuration digest")
+                if op == "setup.driver":
+                    if (
+                        result.get("sha256") != sha256
+                        or type(result.get("size")) is not int
+                        or not 0 < result["size"] <= _MAX_DRIVER_BYTES
+                        or not isinstance(result.get("identity"), dict)
+                        or not result["identity"]
+                    ):
+                        raise ValueError("Invalid setup driver result")
                 return result
             detail = response.get("error")
             if (
@@ -304,6 +317,29 @@ def initialize_config(
     return _initialize(
         driver_path, config_path, "setup.config", timeout=timeout, config=config
     )
+
+
+def initialize_driver(
+    driver_path: os.PathLike[str] | str,
+    path: os.PathLike[str] | str,
+    sha256: str,
+    *,
+    timeout: float = 30.0,
+) -> dict[str, Any]:
+    """Publish the verified executing driver as a private, fixed executable.
+
+    The destination parent must already be protected. An exact existing private
+    executable is validated without changing its bytes or policy. The installer
+    must verify the input package before executing this driver; the requested
+    digest binds the copied image, not pre-execution trust. No library is copied.
+    """
+    if (
+        not isinstance(sha256, str)
+        or len(sha256) != 64
+        or any(c not in "0123456789abcdef" for c in sha256)
+    ):
+        raise ValueError("Native driver digest must be a lowercase SHA-256")
+    return _initialize(driver_path, path, "setup.driver", timeout=timeout, sha256=sha256)
 
 
 class Session:

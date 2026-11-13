@@ -7,6 +7,7 @@ from .client import (
     Session,
     Unknown,
     initialize_config,
+    initialize_driver,
     initialize_root,
 )
 from .inprocess import NativeSession
@@ -19,5 +20,6 @@ __all__ = [
     "NativeSession",
     "Unknown",
     "initialize_config",
+    "initialize_driver",
     "initialize_root",
 ]

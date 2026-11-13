@@ -14,15 +14,32 @@ exclusion for arbitrary Python effects. Keep existing in-process domain locks
 until the replacement library boundary is qualified for that installation.
 
 For first installation, `initialize_root(driver_path, path)` creates one private
-directory beneath an existing safe parent, and
+directory beneath an existing safe parent.
+`initialize_driver(driver_path, path, sha256, *, timeout=30.0)` copies only that
+verified executing driver into an existing protected parent, using private
+executable creation and no-replace publication. Supply the package's expected
+lowercase SHA-256 after verifying the input driver before execution. The returned
+`path`, `created`, `sha256`, `size` and nonempty opaque `identity` describe the
+published or validated file; identity is not authority for a later replacement.
+An exact already-private executable returns `created:false` without changing
+bytes or policy. Public, foreign-owned, linked or conflicting targets refuse.
+The helper does not copy the library or change its package-trust requirements.
+
 `initialize_config(driver_path, config_path, config)` validates and publishes the
-reviewed Config v1 without replacing an existing file. Both use the driver's
+reviewed Config v1 without replacing an existing file. These helpers use the driver's
 separate local `initialize` entry point, not a Session operation. Existing paths
 are validated without changing permissions; a different configuration refuses.
 Create directories in explicit order, stage the verified package and connection
 prerequisites, then publish the configuration. No service starts or credentials
 are copied. The [driver protocol](../../../crates/native-platform-driver/PROTOCOL.md#initial-local-setup)
 owns the exact setup behavior and uncertainty rules.
+
+Python path, digest and wait-budget validation happens before dispatch. Lost or
+malformed acknowledgments remain `Unknown`; no automatic retry, rollback or
+permission repair follows. A later explicit same-intent call may validate an
+existing exact artifact. `created:false` does not establish an unused home or
+authorize domain adoption. The initializer's one-shot timeout does not change
+the synchronous `NativeSession` contract.
 
 ```python
 from constellation_native import NativeSession, Busy, Unknown
