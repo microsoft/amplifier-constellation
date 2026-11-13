@@ -302,6 +302,16 @@ def policy_snapshot(path):
     return (observed.st_uid, observed.st_gid, stat.S_IMODE(observed.st_mode))
 
 
+def identity_and_policy(path):
+    observed = path.stat()
+    if os.name == "nt":
+        from test_driver import windows_owner_sid
+        owner = windows_owner_sid(path)
+    else:
+        owner = observed.st_uid
+    return (observed.st_dev, observed.st_ino, owner, policy_snapshot(path))
+
+
 @unittest.skipUnless(DRIVER, "Set CONSTELLATION_NATIVE_DRIVER to test native setup")
 class ActualDriverSetupTests(unittest.TestCase):
     def setUp(self):
@@ -368,8 +378,8 @@ class ActualDriverSetupTests(unittest.TestCase):
     def test_nested_storage_directory_then_write_uses_production_setup(self):
         initialize_config(DRIVER, self.config, self.data)
         preserved = {path: (path.read_bytes() if path.is_file() else None,
-                            policy_snapshot(path), path.stat().st_ino)
-                     for path in (self.root, self.state, self.config)}
+                            identity_and_policy(path))
+                     for path in (self.parent, self.root, self.state, self.config)}
         with Session(DRIVER, self.config) as native:
             with native.lock("installation"):
                 self.assertEqual(native.private_dir("state", "transactions"), {})
@@ -378,12 +388,10 @@ class ActualDriverSetupTests(unittest.TestCase):
                 content = b'{"task":"original","phase":"prepared","unknowns":[]}'
                 native.private_write("state", relative, content, create_only=True)
                 paths = [self.state / "transactions", self.state / "transactions/original"]
-                identities = [(path.stat().st_dev, path.stat().st_ino,
-                               policy_snapshot(path)) for path in paths]
+                identities = [identity_and_policy(path) for path in paths]
                 for name in ("transactions", "transactions/original"):
                     self.assertEqual(native.private_dir("state", name), {})
-                self.assertEqual([(path.stat().st_dev, path.stat().st_ino,
-                                   policy_snapshot(path)) for path in paths], identities)
+                self.assertEqual([identity_and_policy(path) for path in paths], identities)
                 self.assertEqual((self.state / relative).read_bytes(), content)
                 if os.name == "nt":
                     from test_driver import windows_owner_sid, windows_user_sid
@@ -392,9 +400,21 @@ class ActualDriverSetupTests(unittest.TestCase):
                         self.assertEqual(windows_owner_sid(path), user)
                     print(json.dumps({"nested_storage_owner": "passed",
                                       "owner": user, "production_setup": True}))
-        for path, (content, policy, inode) in preserved.items():
-            self.assertEqual(path.stat().st_ino, inode)
-            self.assertEqual(policy_snapshot(path), policy)
+                replacement = b'{"task":"original","phase":"restored","unknowns":[]}'
+                native.private_write("state", relative, replacement)
+                self.assertEqual((self.state / relative).read_bytes(), replacement)
+                if os.name == "nt":
+                    self.assertEqual(windows_owner_sid(self.state / relative), user)
+                with self.assertRaises(Refused):
+                    native.private_write("state", relative, b"must-not-replace", create_only=True)
+                self.assertEqual((self.state / relative).read_bytes(), replacement)
+                native.durable_remove("state", relative)
+                self.assertFalse((self.state / relative).exists())
+                self.assertEqual([identity_and_policy(path) for path in paths], identities)
+                print(json.dumps({"nested_storage_create_rewrite_remove": "passed",
+                                  "production_setup": True}), flush=True)
+        for path, (content, identity) in preserved.items():
+            self.assertEqual(identity_and_policy(path), identity)
             if content is not None:
                 self.assertEqual(path.read_bytes(), content)
         self.assertEqual(policy_snapshot(self.parent), self.parent_policy)
@@ -442,6 +462,7 @@ finally:
 suite=unittest.defaultTestLoader.loadTestsFromNames([
     "ActualDriverSetupTests.test_nested_storage_directory_then_write_uses_production_setup",
     "ActualDriverSetupTests.test_nested_storage_refuses_foreign_owner_without_repair",
+    "ActualDriverSetupTests.test_nested_storage_refuses_foreign_file_owner_without_repair",
 ],test_setup)
 sys.exit(0 if unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful() else 1)
 '''
@@ -471,6 +492,29 @@ sys.exit(0 if unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful() el
                     native.private_dir("state", relative)
             self.assertEqual((windows_owner_sid(path), policy_snapshot(path), path.stat().st_ino), before)
             self.assertEqual(list(path.iterdir()), [])
+
+    @unittest.skipUnless(os.name == "nt", "Windows existing file-owner preservation")
+    def test_nested_storage_refuses_foreign_file_owner_without_repair(self):
+        from test_fixture_owner import require_elevated_owner_fixture
+        require_elevated_owner_fixture(self)
+        from test_driver import windows_owner_sid, windows_policy
+        initialize_config(DRIVER, self.config, self.data)
+        with Session(DRIVER, self.config) as native:
+            with native.lock("installation"):
+                native.private_dir("state", "retained")
+                relative = "retained/participant.json"
+                content = b'{"task":"original","unknowns":["retained"]}'
+                native.private_write("state", relative, content, create_only=True)
+                path = self.state / relative
+                windows_policy(path, owner_sid="S-1-5-32-544")
+                before = (identity_and_policy(path), path.read_bytes())
+                self.assertEqual(windows_owner_sid(path), "S-1-5-32-544")
+                with self.assertRaises(Refused):
+                    native.private_write("state", relative, b"must-not-replace")
+                self.assertEqual((identity_and_policy(path), path.read_bytes()), before)
+                with self.assertRaises(Refused):
+                    native.durable_remove("state", relative)
+                self.assertEqual((identity_and_policy(path), path.read_bytes()), before)
 
     def test_nested_storage_creation_race_preserves_one_directory(self):
         from concurrent.futures import ThreadPoolExecutor
