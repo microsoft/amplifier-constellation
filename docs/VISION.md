@@ -18,6 +18,10 @@ its attention on direction, judgment, expertise and taste.
 | **[Experience](../contracts/experience.md)** | The human-facing way to talk, see, direct, inspect or manage. |
 | **[Tool](../contracts/tool.md)** | A capability an agent can use, from a search to a software factory or media pipeline. |
 
+People meet agents through Conversations presented by Experiences. Connections
+bring agents into those exchanges and environments; agents use Tools to accomplish
+work. Management and observation can also use service controls directly.
+
 These are composable roles, not five required services or repositories. Agents can
 share conversations and tools. A product can offer an app, collaborating agents
 and callable capabilities around the same work. Inside an agent, use one engine

@@ -22,7 +22,7 @@ not a required repository or deployment layout.
 
 | Capability | Repository |
 | --- | --- |
-| Installed identity, configuration, context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
+| Installed identity, configuration, context, responsibilities and lifecycle | [Constellation Instance](https://github.com/microsoft/amplifier-constellation-instance) |
 | Native reasoning, providers, tools and durable execution | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
 | Rooms, membership, messages and observable coordination | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
 | Live talk, seeing what you share and a shared visual surface | [Companion](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/companion-vision.md), currently developed in Conversations |
@@ -45,10 +45,17 @@ is a distinct engine choice.
 
 ## Join the work
 
-Invited collaborators work within their agreed repository access and scope. Find
-the owning component above, then use [Working together](docs/working-together.md)
-to frame the outcome with that owner. General public contribution intake is
-described below.
+Invited collaborators work within their agreed repository access and scope.
+
+- **Improve an existing part:** find its repository above, then read its vision
+  and local interfaces.
+- **Build a new experience, tool or agent implementation:** start with the relevant
+  [boundary contract](contracts/README.md) and reuse provided parts where useful.
+  The repository list is not a fixed product blueprint.
+- **Change a shared promise:** work in its umbrella contract with the affected owners.
+
+Use [Working together](docs/working-together.md) to frame the outcome and combined
+check. General public contribution intake is described below.
 
 Constellation is part of the broader [Amplifier ecosystem](https://github.com/microsoft/amplifier).
 

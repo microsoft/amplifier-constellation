@@ -1,6 +1,7 @@
 # Composition
 
 The current agreement is [Composition](composition.md).
+For self-contained setup and lifecycle, see [Managed installations](installations.md).
 
 This path preserves existing links; it contains no separate promises.
 
