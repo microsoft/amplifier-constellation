@@ -64,6 +64,30 @@ use the same source-pinned binary inspector before testing and verify unchanged
 bytes afterward, including architecture and ordinary/delayed Windows CRT imports.
 Consumer qualification can reuse these tested binaries without rebuilding.
 
+## In-process library qualification
+
+The [native session ABI](../../crates/native-platform-driver/INPROCESS.md) is
+qualified against the exact library built with the driver. Set
+`CONSTELLATION_NATIVE_LIBRARY` to its absolute native path (`.so`, `.dylib`, or
+`.dll`) alongside `CONSTELLATION_NATIVE_DRIVER`. The library inspector does not
+load code:
+
+```sh
+python tests/native_python/inspect_library.py \
+  --library "$CONSTELLATION_NATIVE_LIBRARY" --output native-library-result.json
+# Run actual in-process tests on this OS/architecture, then verify unchanged bytes.
+python tests/native_python/inspect_library.py \
+  --library "$CONSTELLATION_NATIVE_LIBRARY" --output native-library-result.json --verify
+```
+
+`inspect_library.py` retains architecture, file hash and dynamic dependencies.
+It requires an ELF shared object without an interpreter/PIE or extra search path,
+an actual macOS `MH_DYLIB` with deployment metadata and system dependencies, or a
+PE DLL passing the same ordinary/delayed external Visual C++ runtime guard as the
+unchanged executable inspector. Metadata inspection is not actual library loading
+or ABI proof. Linux's glibc system-library list does not establish a universal
+glibc version floor, and hosted tests do not establish a fresh consumer OS.
+
 Both Windows jobs additionally run this suite, including the actual service
 fixture, through Minecraft's exact Python Build Standalone 3.12.16 interpreters.
 `run_packaged_python.py` uses the test-only `packaged-python-lock.json`, verifies
@@ -74,6 +98,20 @@ and fixture ownership diagnostics in `native-packaged-python-result.json` and it
 log. The regular Python 3.13 pass remains; the production packaging lock and global
 PATH are unchanged. This qualifies the local driver/Python boundary, not the full
 Minecraft dependency graph, game lifecycle, or fresh consumer desktop experience.
+
+For this pass `CONSTELLATION_NATIVE_LIBRARY` and the immutable Microsoft Instance
+checkout at `CONSTELLATION_INSTANCE_SOURCE` are required. The parent binds the library's
+exact SHA256 into the isolated child, which loads that file, observes ABI 1,
+executes the actual in-process tests and verifies unchanged library bytes afterward.
+`NativeSessionTests.test_actual_library_abi_and_named_operations` and
+`NativeSessionTests.test_helper_death_does_not_release_python_owned_lock` must both
+pass, as must all six `ActualWorkerNativeSessionTests` cases using the exact
+`fixtures/worker_source.json` pin. Missing, skipped or expected-failure results
+cannot qualify this boundary. Worker-source and library hashes are checked before
+and after the run; the existing 300-second packaged qualification bound is unchanged.
+The receipt separates exact interpreter/library loading from metadata inspection
+and records other OS-specific skips explicitly. Inspection-only metadata fixtures
+are never counted as actual ABI, lock ownership or packaged-interpreter proof.
 
 `test_tree.py` uses production setup and the actual driver to remove only an
 explicitly enrolled regenerable child. It checks lock contention, stale root and
