@@ -292,7 +292,8 @@ fn read_record(path: &Path) -> Value {
 }
 
 // The same test executable is the fixed disposable probe. Its cwd, command and
-// lifetime bound come from the protected enrollment; no environment mutation.
+// lifetime bound come from the protected enrollment; no process-wide environment
+// mutation. A post-close acknowledgment proves continued work before finish.
 #[test]
 fn detached_probe_fixture() {
     let home = std::env::current_dir().unwrap();
@@ -306,19 +307,109 @@ fn detached_probe_fixture() {
     )
     .unwrap();
     let deadline = Instant::now() + Duration::from_secs(10);
-    while !home.join("probe-finish.json").exists() {
-        assert!(
-            Instant::now() < deadline,
-            "Fixture owner did not finish probe"
-        );
+    let mut acknowledged = false;
+    loop {
+        if !acknowledged && let Ok(request) = fs::read(home.join("probe-after-close.json")) {
+            let request: Value = serde_json::from_slice(&request).unwrap();
+            assert_eq!(request["phase"], "session_closed");
+            private_write(
+                &home.join("probe-after-close-ack.json"),
+                &serde_json::to_vec(&json!({"identity":identity,"phase":"session_closed"}))
+                    .unwrap(),
+            )
+            .unwrap();
+            acknowledged = true;
+        }
+        if home.join("probe-finish.json").exists() {
+            assert!(
+                acknowledged,
+                "Finish must follow the post-close acknowledgment"
+            );
+            private_write(&home.join("probe-terminal.json"), br#"{"settled":true}"#).unwrap();
+            return;
+        }
+        if Instant::now() >= deadline {
+            private_write(
+                &home.join("probe-terminal.json"),
+                &serde_json::to_vec(&json!({"settled":false,"reason":"fixture_deadline","after_close_acknowledged":acknowledged})).unwrap(),
+            )
+            .unwrap();
+            panic!("Fixture owner did not finish probe before its own 10s deadline");
+        }
         thread::sleep(Duration::from_millis(10));
     }
-    private_write(&home.join("probe-terminal.json"), br#"{"settled":true}"#).unwrap();
 }
 
 #[test]
 fn detached_probe_survives_session_close_without_inheriting_lock() {
+    const ISOLATED: &str = "CONSTELLATION_NATIVE_PROBE_ISOLATED";
+    if std::env::var_os(ISOLATED).is_none() {
+        // Other tests intentionally hash driver bytes while holding this
+        // process's ABI registry gate. On slow CI, that unrelated contention
+        // can consume the probe's entire 10s lifetime. A separate executable
+        // gives this lifetime scenario its own registry without changing any
+        // production timeout, native ownership or lock behavior.
+        let mut child = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "detached_probe_survives_session_close_without_inheriting_lock",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env(ISOLATED, "1")
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(60);
+        let mut timed_out = false;
+        while child.try_wait().unwrap().is_none() {
+            if Instant::now() >= deadline {
+                timed_out = true;
+                let _ = child.kill();
+                break;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        let output = child.wait_with_output().unwrap();
+        assert!(
+            !timed_out && output.status.success(),
+            "Isolated probe scenario failed (parent deadline: {timed_out}):\n{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
     let fixture = Fixture::new();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        detached_probe_case(&fixture);
+    }));
+    if let Err(error) = result {
+        // Emit the small receipts into the CI log and retain the files. The
+        // fixed native launcher intentionally sends child stdio to null.
+        for name in [
+            "probe-live.json",
+            "probe-after-close.json",
+            "probe-after-close-ack.json",
+            "probe-finish.json",
+            "probe-terminal.json",
+        ] {
+            match fs::read(fixture.home.join(name)) {
+                Ok(bytes) => eprintln!("{name}: {}", String::from_utf8_lossy(&bytes)),
+                Err(error) => eprintln!("{name}: unavailable ({error})"),
+            }
+        }
+        let retained = fixture._directory.keep();
+        eprintln!(
+            "Detached probe failure evidence retained at {}",
+            retained.display()
+        );
+        std::panic::resume_unwind(error);
+    }
+}
+
+fn detached_probe_case(fixture: &Fixture) {
     private_write(&fixture.home.join("probe-intent.json"), b"{}").unwrap();
     let abi = fixture.open();
     assert_eq!(abi.call(frame("lock.acquire"))["outcome"], "ok");
@@ -341,9 +432,17 @@ fn detached_probe_survives_session_close_without_inheriting_lock() {
     }
     assert_eq!(abi.call(frame("lock.release"))["outcome"], "ok");
     assert_eq!(close(abi.handle)["outcome"], "ok");
+    private_write(
+        &fixture.home.join("probe-after-close.json"),
+        br#"{"phase":"session_closed"}"#,
+    )
+    .unwrap();
+    let acknowledged = read_record(&fixture.home.join("probe-after-close-ack.json"));
+    assert_eq!(acknowledged["identity"], probe);
+    assert_eq!(acknowledged["phase"], "session_closed");
     assert!(
         process::matches(&probe).unwrap(),
-        "Closing the short action killed durable work"
+        "Probe exited before explicit finish; inspect retained terminal"
     );
     assert_eq!(fixture.cli_lock()["outcome"], "ok");
     private_write(&fixture.home.join("probe-finish.json"), b"{}").unwrap();
