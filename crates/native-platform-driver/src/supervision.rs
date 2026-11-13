@@ -46,8 +46,8 @@ fn invocation(
     Ok(c)
 }
 
+#[cfg(unix)]
 fn detach(command: &mut Command) {
-    #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
         unsafe {
@@ -60,12 +60,6 @@ fn detach(command: &mut Command) {
             });
         }
     }
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        use windows_sys::Win32::System::Threading::{CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS};
-        command.creation_flags(CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
-    }
 }
 
 /// Launching does not interpret a domain terminal. Missing acknowledgment is unknown.
@@ -75,19 +69,31 @@ pub fn launch(
     name: &str,
     result: Option<&str>,
 ) -> Result<Value> {
-    let mut c = invocation(enrollment, driver, "internal-detached", name, result)?;
-    c.stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    detach(&mut c);
-    let mut child = c.spawn()?;
-    let identity = process::identity(child.id())?
-        .context("Launched supervisor exited before its generation was observed")?;
-    // Reap while this short invocation is still alive; exit must not wait for the job.
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    Ok(identity)
+    let c = invocation(enrollment, driver, "internal-detached", name, result)?;
+    #[cfg(windows)]
+    {
+        let (handle, pid) = crate::windows_detached::spawn(&c)?;
+        let identity = process::identity(pid)?
+            .context("Launched supervisor exited before its generation was observed")?;
+        drop(handle);
+        Ok(identity)
+    }
+    #[cfg(unix)]
+    {
+        let mut c = c;
+        c.stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        detach(&mut c);
+        let mut child = c.spawn()?;
+        let identity = process::identity(child.id())?
+            .context("Launched supervisor exited before its generation was observed")?;
+        // Reap while this short invocation is still alive; exit must not wait for the job.
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
+        Ok(identity)
+    }
 }
 
 /// Own the fixed child, independently of the JSONL invocation and its locks.

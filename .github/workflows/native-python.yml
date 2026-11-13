@@ -49,7 +49,7 @@ jobs:
           if host != expected:
               raise SystemExit(f'Unexpected Windows Rust host: {host}; expected {expected}')
           # Explicit host target keeps these flags off build scripts/proc macros.
-          # This remains the debug build executed by all qualification below.
+          # Qualify the optimized support artifacts, including every runtime fixture below.
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('CARGO_BUILD_TARGET='+host+'\n')
               output.write('RUSTFLAGS=-C target-feature=+crt-static\n')
@@ -62,12 +62,12 @@ jobs:
           cargo +1.93.0 clippy --manifest-path crates/native-platform-driver/Cargo.toml --locked --all-targets -- -D warnings
       - name: Build and exercise native locks, process generations and owned endpoints
         run: |
-          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation
-          cargo +1.93.0 test --manifest-path crates/native-platform-driver/Cargo.toml --locked
-          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
-          cargo +1.93.0 build --manifest-path crates/native-platform-driver/Cargo.toml --locked
-          cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
-          cargo +1.93.0 build --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example operation_lifetime_fixture
+          cargo +1.93.0 test --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation
+          cargo +1.93.0 test --release --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 test --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
+          cargo +1.93.0 build --release --manifest-path crates/native-platform-driver/Cargo.toml --locked
+          cargo +1.93.0 build --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example windows_service_fixture
+          cargo +1.93.0 build --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --example operation_lifetime_fixture
       - name: Inspect the library and bind the exact Instance caller before Python tests
         run: |
           python - <<'PY'
@@ -96,9 +96,23 @@ jobs:
               'production_operations': False,
           }, indent=2)+'\n', encoding='utf-8')
           name = {'Windows': 'constellation_native_driver.dll', 'Darwin': 'libconstellation_native_driver.dylib', 'Linux': 'libconstellation_native_driver.so'}[platform.system()]
-          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
+          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'release'
           library_path = (pathlib.Path('crates/native-platform-driver') / target / name).resolve(strict=True)
           digest = hashlib.sha256(library_path.read_bytes()).hexdigest()
+          rustc = subprocess.check_output(['rustc', '+1.93.0', '-vV'], text=True)
+          rust_host = next(line.removeprefix('host: ') for line in rustc.splitlines() if line.startswith('host: '))
+          native_target = os.environ.get('CARGO_BUILD_TARGET') or rust_host
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          driver_name = 'constellation-native-driver' + ('.exe' if os.name == 'nt' else '')
+          driver_path = library_path.parent / driver_name
+          pathlib.Path('native-build-result.json').write_text(json.dumps({
+              'schema': 1, 'source': source, 'profile': 'release', 'rustc': rustc,
+              'target': native_target, 'rustflags': os.environ.get('RUSTFLAGS', ''),
+              'workflow_sha256': hashlib.sha256(subprocess.check_output(['git', 'show', 'HEAD:.github/workflows/native-python.yml'])).hexdigest(),
+              'workflow_worktree_sha256': hashlib.sha256(pathlib.Path('.github/workflows/native-python.yml').read_bytes()).hexdigest(),
+              'driver_sha256': hashlib.sha256(driver_path.read_bytes()).hexdigest(),
+              'library_sha256': digest,
+          }, indent=2)+'\n', encoding='utf-8')
           # Retain the actual artifact even if metadata inspection or loading
           # fails; exporting its path does not qualify it or bypass any check.
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
@@ -124,7 +138,7 @@ jobs:
           python - <<'PY'
           import os, pathlib, subprocess, sys
           suffix = '.exe' if os.name == 'nt' else ''
-          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'debug'
+          target = pathlib.Path('target') / os.environ.get('CARGO_BUILD_TARGET', '') / 'release'
           path = (pathlib.Path('crates/native-platform-driver') / target / ('constellation-native-driver' + suffix)).resolve()
           fixture = (pathlib.Path('crates/native-platform') / target / 'examples' / ('windows_service_fixture' + suffix)).resolve()
           operation = (pathlib.Path('crates/native-platform') / target / 'examples' / ('operation_lifetime_fixture' + suffix)).resolve()
@@ -162,8 +176,8 @@ jobs:
         env:
           CONSTELLATION_INSTALLATION_SMOKE: '1'
         run: |
-          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_installation -- --ignored --nocapture
-          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_registration -- --ignored --nocapture --test-threads=1
+          cargo +1.93.0 test --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_installation -- --ignored --nocapture
+          cargo +1.93.0 test --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test native_registration -- --ignored --nocapture --test-threads=1
       - name: Actual operation worker survives parent and retires without stopping replacement
         env:
           CONSTELLATION_INSTALLATION_SMOKE: '1'
@@ -172,7 +186,7 @@ jobs:
           export NATIVE_OPERATION_LIFETIME_RESULT="$GITHUB_WORKSPACE/native-operation-lifetime-result.json"
           mkdir "$GITHUB_WORKSPACE/native-operation-evidence"
           export NATIVE_OPERATION_TEST_ROOT="$GITHUB_WORKSPACE/native-operation-evidence"
-          cargo +1.93.0 test --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test operation_lifetime -- --ignored --nocapture 2>&1 | tee native-operation-lifetime.log
+          cargo +1.93.0 test --release --manifest-path crates/native-platform/Cargo.toml --locked --features installation --test operation_lifetime -- --ignored --nocapture 2>&1 | tee native-operation-lifetime.log
           python tests/native_python/inspect_driver.py --driver "$NATIVE_OPERATION_LIFETIME_FIXTURE" --output native-operation-fixture-result.json --verify
           python tests/native_python/inspect_driver.py --driver "$NATIVE_REGISTRATION_TESTS" --output native-registration-test-result.json --verify
       - uses: actions/upload-artifact@v4
@@ -242,6 +256,14 @@ jobs:
                   or str(instance) != record['instance_source'] or observed != record['observed_commit']
                   or tracked_changes or worker_sha256 != record['worker_sha256']):
               raise SystemExit('Frozen Instance source or fixture manifest changed during qualification')
+          build = json.loads(pathlib.Path('native-build-result.json').read_text(encoding='utf-8'))
+          if (build['profile'] != 'release'
+                  or build['source'] != subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+                  or build['driver_sha256'] != hashlib.sha256(pathlib.Path(os.environ['CONSTELLATION_NATIVE_DRIVER']).read_bytes()).hexdigest()
+                  or build['library_sha256'] != hashlib.sha256(pathlib.Path(os.environ['CONSTELLATION_NATIVE_LIBRARY']).read_bytes()).hexdigest()):
+              raise SystemExit('Optimized support artifacts changed during qualification')
+          build['verified_after_qualification'] = True
+          pathlib.Path('native-build-result.json').write_text(json.dumps(build, indent=2)+'\n', encoding='utf-8')
           record['observed_commit_after'] = observed
           record['worker_sha256_after'] = worker_sha256
           record['verified_after_qualification'] = True
@@ -252,6 +274,7 @@ jobs:
         with:
           name: native-installation-${{ matrix.runner }}
           path: |
+            native-build-result.json
             native-installation-result.json
             native-service-fixture-result.json
             native-session-library-result.json
