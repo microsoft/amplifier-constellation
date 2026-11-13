@@ -305,6 +305,23 @@ class NativeSession:
         }[response["outcome"]]
         raise error_type(detail["code"], detail["message"])
 
+    def _guarded_decode(self, raw: bytes, request_id: str, *, mutating: bool) -> Any:
+        try:
+            return self._decode(raw, request_id, mutating=mutating)
+        except DriverError:
+            # Correlated native outcomes keep their classification. Malformed
+            # envelopes already poison dispatch inside _decode.
+            raise
+        except Exception as error:
+            raise self._lost(
+                "protocol_response", "Native response could not be decoded", mutating
+            ) from error
+        except BaseException:
+            # The effect may have completed before decoding was interrupted.
+            # Preserve the original interrupt and ownership through unwind.
+            self._poisoned = True
+            raise
+
     def _call(self, op: str, *, mutating: bool = False, **fields: Any) -> Any:
         self._ensure_current()
         if "_timeout" in fields or "timeout" in fields:
@@ -320,6 +337,9 @@ class NativeSession:
                 raw = self._library.invoke(
                     self._library.request, self._handle.value, encoded, len(encoded)
                 )
+                return self._guarded_decode(raw, request_id, mutating=mutating)
+            except DriverError:
+                raise
             except Exception as error:
                 raise self._lost(
                     "abi_response", "Native call outcome is unavailable", mutating
@@ -327,7 +347,6 @@ class NativeSession:
             except BaseException:
                 self._poisoned = True
                 raise
-            return self._decode(raw, request_id, mutating=mutating)
 
     @contextlib.contextmanager
     def lock(self, name: str) -> Iterator[None]:
@@ -382,12 +401,17 @@ class NativeSession:
                 raise Busy("locks_held", "Cannot close inside a native critical section")
             try:
                 raw = self._library.invoke(self._library.close, self._handle.value)
+                self._guarded_decode(raw, "native.close", mutating=True)
+                self._closed = True
+                self._attempted.clear()
+                self._handle.value = 0
+            except DriverError:
+                raise
             except Exception as error:
                 raise self._lost("abi_close", "Native close outcome is unavailable", True) from error
-            self._decode(raw, "native.close", mutating=True)
-            self._closed = True
-            self._attempted.clear()
-            self._handle.value = 0
+            except BaseException:
+                self._poisoned = True
+                raise
 
     # Reuse only pure named request builders. The executable transport's process,
     # shutdown, timeout and lost-reply behavior are deliberately not inherited.

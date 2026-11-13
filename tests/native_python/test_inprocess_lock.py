@@ -249,6 +249,72 @@ class NativeSessionTests(unittest.TestCase):
         self.assertEqual(operations, ["lock.acquire", "lock.release"])
         self.assert_available()
 
+    def test_decode_interrupt_after_write_retains_lock_and_poisons_dispatch(self):
+        import inspect
+        source, first_line = inspect.getsourcelines(NativeSession._call)
+        call_line = first_line + next(
+            index for index, line in enumerate(source) if "return self._guarded_decode(" in line
+        )
+        for phase in ("during_decode", "before_decode"):
+            with self.subTest(phase=phase):
+                session = self.first if phase == "during_decode" else self.session()
+                interruption = KeyboardInterrupt("completed write " + phase)
+                library = session._library
+                invoke, decode = library.invoke, session._decode
+                writes, decoded_writes, trace_hits = [], [], []
+
+                def observed(function, *args):
+                    raw = invoke(function, *args)
+                    if function is library.request and args[0] == session._handle.value:
+                        request = json.loads(args[1])
+                        if request["op"] == "storage.write":
+                            writes.append(request["id"])
+                    return raw
+
+                def interrupted(raw, request_id, *, mutating):
+                    if request_id in writes:
+                        decoded_writes.append(request_id)
+                        if phase == "during_decode":
+                            raise interruption
+                    return decode(raw, request_id, mutating=mutating)
+
+                def trace(frame, event, _arg):
+                    if (event == "line" and frame.f_code is NativeSession._call.__code__
+                            and frame.f_lineno == call_line
+                            and frame.f_locals.get("op") == "storage.write"):
+                        trace_hits.append(True)
+                        raise interruption
+                    return trace
+
+                committed, forbidden = phase + ".json", phase + "-forbidden.json"
+                with mock.patch.object(library, "invoke", side_effect=observed), \
+                     mock.patch.object(session, "_decode", side_effect=interrupted):
+                    with session.lock("installation"):
+                        with self.assertRaises(KeyboardInterrupt) as caught:
+                            previous_trace = sys.gettrace()
+                            try:
+                                if phase == "before_decode":
+                                    sys.settrace(trace)
+                                session.private_write("state", committed, b'{"committed":true}')
+                            finally:
+                                sys.settrace(previous_trace)
+                        self.assertIs(caught.exception, interruption)
+                        self.assertEqual((self.state / committed).read_bytes(), b'{"committed":true}')
+                        self.assert_contended()
+                        for operation in (
+                            session.describe,
+                            lambda: session.private_write("state", forbidden, b"{}"),
+                        ):
+                            with self.assertRaises(Unknown) as refused:
+                                operation()
+                            self.assertEqual(refused.exception.code, "session_poisoned")
+                            self.assert_contended()
+                        self.assertFalse((self.state / forbidden).exists())
+                self.assertEqual(len(writes), 1)
+                self.assertEqual(len(decoded_writes), 1 if phase == "during_decode" else 0)
+                self.assertEqual(len(trace_hits), 1 if phase == "before_decode" else 0)
+                self.assert_available()
+
     def test_interrupt_after_native_acquisition_frees_buffers_and_releases_once(self):
         library = self.first._library
         native_request = library.request
