@@ -1,7 +1,7 @@
 # Focused specifications
 
 Follow these references when you need an exact format or convention.
-Start with the [six agreements](../contracts/README.md) for cross-component promises.
+Start with the [boundary and shared agreements](../contracts/README.md) for cross-component promises.
 
 | Specification | Authoritative home |
 | --- | --- |

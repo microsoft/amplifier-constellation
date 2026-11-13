@@ -1,95 +1,56 @@
 # Accepting and changing work
 
-For experiences taking requests, agents accepting responsibilities, and services
-that enforce actions. The promise: people can authorize, redirect and stop useful
-work in conversation, with honest acceptance and limits that survive delegation
-and recovery. This is a behavioral agreement, not a new permission API.
+For agents and services that accept requests or enforce actions. People can authorize,
+redirect and stop work with limits that survive delegation and recovery. This defines
+behavior, not a new permission API or mandatory task schema.
 
-**Example:** A person asks a coordinator to prepare a briefing with two helpers.
-The helpers accept within the person's scope. Reducing the allowance preserves
-work already spent; a lost acknowledgment does not create another assignment.
+Assignment acceptance and amendment apply when taking ongoing responsibility.
+An ordinary tool call can use existing authority and its declared operation contract
+without creating another assignment; resource access and effect checks still apply.
+
+**Example:** A coordinator delegates a briefing. Reducing its allowance preserves work
+already spent; a lost acknowledgment creates neither another assignment nor allowance.
 
 ## Commitments
 
-1. **Make the effective policy understandable.** Each installation owns intake,
-   defaults and ceilings. Expose acceptance/amendment/delegation availability,
-   chat-only versus temporary capacity, applicable limits and usage, separate
-   provider/tool constraints, and a useful reason/remedy when unavailable through
-   its supported UI, programmatic controls and agent context. Tool names alone
-   prove no authority. Waiting cannot turn chat-only policy into execution.
+- **Expose effective authority.** Show supported intake, amendment and delegation,
+  chat-only versus work capacity, limits and consumption, separate provider/tool
+  constraints, and useful reasons/remedies. Waiting or a tool name creates no authority.
+  Authenticate the source; quotations, copied records and peer assertions are not human
+  grants. Honor configured policy, including open human participation without silently
+  imposing owner-DM or allowlist gates. Reply admission does not grant effect authority;
+  ambient quotas do not block eligible intake.
+- **Accept once.** Reasoning may interpret requests without an extra classifier.
+  Validate and durably bind assignment identity, goal, source, limits and deduplication
+  before claiming acceptance. Questions and suggestions are not assignments. Clarify
+  consequential gaps only. Retain supported pending requests, but admit them under
+  current policy and valid unretracted sources; do not promote old history to new work.
+- **Amend without renewal.** Limits are finite or explicitly unbounded; unknown,
+  omitted or unavailable is not unlimited. Completion-bound work still has scope,
+  owner, identity, Stop and effect evidence. Defaults affect new work, not expired,
+  stopped or uncertain work. No sentinel caps, rolling deadlines or refreshed allowances
+  may simulate unbounded authority. Amend the existing responsibility against its
+  expected revision, retaining source, consumption, effects and unknowns. A cumulative
+  cap is not a fresh balance. Reconcile conflicting changes; retries recover the same
+  outcome. An exhausted lower cap closes new effects while started operations settle.
+  Only authorized amendments may remove or extend limits, within policy and ceilings.
+- **Honor Stop.** Stop precedes continuations and peers. Ordinary messages or mode
+  changes do not resume work. Expiry, retraction, changed scope or ambiguous effects
+  can require fresh confirmation. Revocation still applies after execution loads.
+  Preserve progress and follow [continuity](work-continuity.md).
+- **Delegate within the grant.** Permission to recruit avoids redundant human fan-out.
+  Recipients accept independently; the sender remains responsible until acceptance.
+  Handoffs identify verified original authorization, subtask, recipient, audience,
+  bounds and further delegation rights. Allocate aggregate allowances without
+  multiplying them; separate authorized allowances remain distinct.
+- **Enforce at the resource.** Work records, exports and advice do not transfer
+  execution authority. The resource owner enforces current grants. Unsupported intake
+  or delegation is an honest limitation. Domain mechanisms need no new engine, ACP
+  method or fleet service; optional helpers follow their [profile](profiles/acp-hosting.md).
 
-2. **Trust the source, not a claimed identity.** Authenticate actor kind, source,
-   revision, original time and audience through the connected service. If policy
-   permits any authenticated human participant, do not silently narrow it to an
-   owner-only DM or allowlist. A quotation, bot assertion or peer copying a human
-   request cannot create human authority. Narrower installation policies remain
-   possible. Reply admission permits effects only under separately valid work
-   authority; ambient quotas must not silently block eligible human intake.
+**Check:** Distinguish questions, requests and forged grants. Lose an acknowledgment,
+restart, amend concurrently, reduce limits below consumption, Stop and delegate.
+Inspect effects, identity, consumed limits and unknowns, not just replies.
 
-3. **Accept once, durably.** Ordinary agent reasoning interprets the request; no
-   obligatory extra model or keyword classifier is required. The resource owner
-   validates admission, then commits assignment identity, goal, source, limits
-   and deduplication together before reporting acceptance. Questions and peer
-   suggestions are not assignments. Distinguish queued, running, delivered and
-   verified results. Acknowledge briefly; clarify only consequential missing
-   information. Retain supported pending requests rather than asking people to
-   repeat them because setup lacked a transition. Later admission still requires
-   current policy and a valid, unretracted source; uncertain admission is not
-   retried blindly and old history is not silently promoted to work.
-
-4. **Represent limits truthfully.** Each dimension is finite or explicitly has no
-   configured bound. Unknown, omitted and unavailable never mean unlimited. A
-   completion-bound goal still has scope, owner, identity, Stop and actual effect
-   receipts; independent installation/provider/tool limits remain effective.
-   Changing defaults applies to new work, never converts finite or revives
-   expired, stopped or uncertain work. Do not use sentinel numbers, rolling
-   deadlines or refreshed allowances to simulate unbounded authority.
-
-5. **Amend the existing responsibility.** Bind a change to the assignment and
-   expected revision, retaining source, old/new limits, consumed work, completed
-   effects and unknowns. A cumulative cap is not a new unused balance. Reject or
-   constrain requests honestly within policy and ceilings. Removing or extending
-   limits requires authorized amendment; smaller already-exhausted limits close
-   new effect admission while running operations settle under their cancellation
-   contract. Concurrent amendments fail or reconcile visibly. Retries recover
-   the same outcome, not another allowance.
-
-6. **Honor Stop and recovery boundaries.** Stop precedes continuations and peer
-   requests. Later ordinary messages and mode changes do not implicitly resume
-   work. Source expiry, retraction, materially changed scope or ambiguous effects
-   can require fresh confirmation. Preserve useful completed work and inspect
-   uncertain effects before further related action; follow
-   [work continuity](work-continuity.md).
-
-7. **Delegate without inventing permission.** Explicit human authorization to
-   choose a lead or recruit helpers avoids redundant human fan-out. Each recipient
-   accepts independently under its policy, tools and limits. Handoffs identify
-   original authorization, subtask, recipient, audience, bounds and further
-   delegation rights. Verify the service-owned original or a supported authenticated
-   cross-experience delivery; a peer assertion or copied JSON is insufficient.
-   Aggregate allowances require accountable allocation, not multiplication.
-   Separately authorized per-agent allowances remain distinct. Delivery,
-   acceptance, incorporation and completion have separate evidence; private
-   material retains its audience. Unsupported delegation is an honest limitation.
-
-8. **Keep enforcement with its owner.** Instance may expose responsibilities;
-   domain services enforce their resources and action leases. A work ledger or
-   export/import records material, not transferred execution authority. Stronger
-   behavior needs an explicit supported interface. Local adapters may implement
-   intake without changing engines, adding an ACP method or requiring a fleet
-   service. Optional [watch](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/watches.md)
-   and [continuation](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/continuation.md)
-   helpers require compatible bound discovery; watches retain finite TTL, identity,
-   delivered evidence and accounting. Advice never substitutes for effect checks.
-
-**Check:** Exercise a question versus an eligible request, an open human policy
-versus a forged peer claim, duplicate/lost-ack/restart admission, chat-only versus
-capacity, and amendment races. Reduce an allowance below consumption and issue
-Stop during execution. Delegate under aggregate and separate budgets. Verify
-actual effects, unchanged identity/counts/unknowns and truthful acceptance,
-progress and return to the original conversation.
-
-**Left open:** Domain task schemas, supported operations, scheduling and local
-intake implementation. Releases and installation configuration establish actual
-support; adopting this agreement does not grant execution authority. Keep bounded
-private diagnostic identifiers and reasons, not task contents or credentials.
+**Left open:** Intake, task schemas, scheduling and domain operations. No universal
+permission service or routine confirmation gate is required.

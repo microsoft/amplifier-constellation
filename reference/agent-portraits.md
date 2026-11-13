@@ -1,7 +1,9 @@
-# Agent appearance — v1 candidate
+# Portable agent portraits
 
 Accepted convention for portable agent portraits. This does not prescribe the
-layout or interaction design of future products.
+layout or interaction design of future products. The runtime-color scheme below
+applies to the supplied selected-engine installations. Other agent architectures
+can use the neutral background; a portrait does not require one engine per agent.
 
 An agent's character, face, clothing and accessories identify the individual.
 Its portrait background identifies the installed runtime family. Model or

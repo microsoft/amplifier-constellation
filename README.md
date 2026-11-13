@@ -16,6 +16,10 @@ to your work, and [Working together](docs/working-together.md) for applying
 
 ## Find the owning component
 
+These are provided implementations and supporting capabilities. The
+[five primitive roles](contracts/README.md) describe their outward boundaries,
+not a required repository or deployment layout.
+
 | Capability | Repository |
 | --- | --- |
 | Installed identity, configuration, context, responsibilities and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
