@@ -14,6 +14,12 @@ why they matter. Read the [contract map](contracts/README.md) for promises relev
 to your work, and [Working together](docs/working-together.md) for applying
 [Converge](https://github.com/microsoft/amplifier-converge) here.
 
+For a runnable example, follow the [request-to-result journey](https://github.com/microsoft/amplifier-acp-lab/tree/main/examples/five_primitives).
+It connects real component APIs with Native or Unified as the engine, recovers lost
+submission replies, and checks the returned artifact in a disposable environment.
+Its controlled provider tests composition;
+it does not establish natural-model quality or production readiness.
+
 ## Find the owning component
 
 These are provided implementations and supporting capabilities. The
