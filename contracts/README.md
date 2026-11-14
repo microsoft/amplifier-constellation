@@ -3,6 +3,10 @@
 The [vision](../docs/VISION.md) explains the outcome. Start with
 [composition](composition.md), then the boundary your work provides or consumes.
 These roles can be combined in one product without becoming five separate services.
+Each boundary includes its minimal interface, what it reuses and the semantic
+agreement Constellation adds. Read them under the
+[interface interpretation](composition.md#reading-the-minimal-interfaces); exact
+wire formats remain with their serving owners.
 
 | Primitive | What another builder can rely on |
 | --- | --- |

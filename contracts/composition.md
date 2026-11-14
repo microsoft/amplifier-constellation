@@ -31,6 +31,20 @@ as the same job. Another product can use the tool alone.
 [continuity](work-continuity.md) each own their shared promises once. Boundary and
 component contracts link to them; products choose their internal composition.
 
+## Reading the minimal interfaces
+
+Each primitive names logical operations and the information callers can rely on,
+not mandatory method names, routes, processes or a common internal schema. Reuse
+references qualified by their source or provider, rather than creating another
+identity or record for the same thing. References identify; they do not grant access.
+
+The boundary contracts distinguish **reuse** from the **Constellation addition**:
+the semantic agreement needed across implementations. Serving owners map that
+agreement onto existing APIs first, then document and negotiate any missing wire
+profile. A proposed mapping is not a standard protocol method or proof of deployed
+support. Advertise supported operations and their limits; use the shared agreements
+above for authority, revisions, outcomes and recovery instead of duplicating them.
+
 ## What crosses each connection
 
 Experiences present Conversations for human-agent communication, including private
