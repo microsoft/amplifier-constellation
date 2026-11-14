@@ -1,5 +1,7 @@
 # Working in the Constellation umbrella
 
+This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it.
+
 Use [Amplifier Converge](https://github.com/microsoft/amplifier-converge) as the
 collaboration method. Read `docs/VISION.md` and the contracts for the next outcome.
 Derive the gap by inspecting current source, capabilities and relevant behavior;
