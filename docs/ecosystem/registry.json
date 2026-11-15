@@ -761,7 +761,11 @@
       "audience": "People exploring persistent AI teammates and builders composing them",
       "page_kind": "family index",
       "purpose": "Connect persistent agents, conversations and useful capabilities across the places people work.",
-      "visibility": "public"
+      "visibility": "public",
+      "product_site": {
+        "url": "https://microsoft.github.io/amplifier-constellation/",
+        "label": "Visit product website"
+      }
     },
     {
       "repository": "microsoft/amplifier-constellation-conversations",
@@ -976,7 +980,7 @@
       },
       "audience": "People installing an independent agent; administrators",
       "page_kind": "agent installation",
-      "purpose": "Keep an agent\u2019s identity, configuration and private work available across connected experiences.",
+      "purpose": "Keep an agent’s identity, configuration and private work available across connected experiences.",
       "visibility": "public"
     },
     {
@@ -1183,7 +1187,7 @@
       },
       "audience": "Agent builders and people connecting an ACP client",
       "page_kind": "engine infrastructure",
-      "purpose": "Run an agent\u2019s reasoning and tools with configured model providers and saved sessions.",
+      "purpose": "Run an agent’s reasoning and tools with configured model providers and saved sessions.",
       "visibility": "public"
     },
     {
@@ -1285,7 +1289,11 @@
       "audience": "People and agents coordinating larger bodies of work",
       "page_kind": "method and documentation",
       "purpose": "Agree on outcomes, divide responsibility and keep connected work dependable as plans change.",
-      "visibility": "public"
+      "visibility": "public",
+      "product_site": {
+        "url": "https://microsoft.github.io/amplifier-converge/",
+        "label": "Visit product website"
+      }
     },
     {
       "repository": "microsoft/amplifier-persona-workshop",
@@ -1382,7 +1390,7 @@
         "url": "https://github.com/microsoft/amplifier-persona-workshop/releases",
         "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
       },
-      "audience": "People tailoring an agent\u2019s communication and working style",
+      "audience": "People tailoring an agent’s communication and working style",
       "page_kind": "user-facing app",
       "purpose": "Turn selected evidence into reviewed, portable communication and working-style profiles.",
       "visibility": "public"
@@ -1613,6 +1621,10 @@
         "label": "Install Amplifier Unified",
         "url": "https://github.com/microsoft/amplifier-unified#install",
         "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "product_site": {
+        "url": "https://unified.amplifier.ms/",
+        "label": "Visit product website"
       }
     },
     {

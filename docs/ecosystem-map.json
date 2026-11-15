@@ -112,6 +112,10 @@
     "The role map is a contract vocabulary, not a required service stack."
   ],
   "page_kind": "family index",
+  "product_site": {
+    "label": "Visit product website",
+    "url": "https://microsoft.github.io/amplifier-constellation/"
+  },
   "purpose": "Connect persistent agents, conversations and useful capabilities across the places people work.",
   "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
   "repository": "microsoft/amplifier-constellation",
