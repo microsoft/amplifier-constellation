@@ -39,6 +39,13 @@ available interfaces and observed state. Being reachable or ready to supply
 context does not establish permission for effects. Consumers need no knowledge of
 the agent's engine, execution sessions or routing arrangement.
 
+**Turn facts:** Each turn carries its facts as data, not only as prose: the place
+and any thread, whether the audience is private or shared, who is speaking and what
+kind of participant they are, who else is present, and whether the turn is addressed,
+ambient or continuing accepted work. An engine new to a Connection can tell where it
+is, who is speaking and who can hear without reading the prompt's wording. Serving
+owners keep the keys and schema.
+
 **Check:** Connect to a workspace or game server, exchange input, return a result,
 lose an acknowledgment, and revoke access. Can both sides establish what crossed
 and what remains unavailable or uncertain without inspecting private files?
