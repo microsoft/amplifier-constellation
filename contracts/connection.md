@@ -24,6 +24,12 @@ Follow [continuity](work-continuity.md) for delivery and uncertainty and
 [interaction](interaction.md) for shared participation. Optional shared attention
 uses the single-decision responsibility in [ACP hosting](profiles/acp-hosting.md).
 
+A Connection may offer a **requested return**: an agent asks for a later turn in
+the same conversation, after a delay or at a time, for a stated purpose. The
+Connection states its limits, people in the conversation can see and cancel a
+pending return, and the agent learns what became of it. [Work authority](work-authority.md)
+applies when it comes due, as for any turn.
+
 ## Reuse and addition
 
 **Reuse:** Native platform authorization and APIs, existing Conversation/Tool

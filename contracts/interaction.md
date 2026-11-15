@@ -24,7 +24,8 @@ correct them; one useful answer returns with important disagreements and decisio
   reporting responsibility and retains the expected result, objections and reporting
   state in concise source-linked records. Return meaningful progress, changes,
   results and decisions to the original authorized destination. That duty needs no
-  repeated permission and is not optional ambient news. Others add material
+  repeated permission and is not optional ambient news. A later promise can use a
+  Connection's [requested return](connection.md). Others add material
   corrections, not duplicate recaps. Use [observed outcomes](work-continuity.md#outcomes).
 - **Separate activity, drafts and speech.** Indicators are temporary and scoped to
   destination and operation; one completion cannot clear another. Show a useful public
