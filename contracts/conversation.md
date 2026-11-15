@@ -36,16 +36,11 @@ and submission outcomes, coverage and supported capabilities. Map it to the sour
 existing records, including weaker recovery guarantees. An external platform can
 remain authoritative; no central conversation store or new ACP method is required.
 
-**Participant kind:** A participant's kind (person, agent or unknown) comes from
-the source (its account kind, membership record or bot flag) or from the
-participant's own declaration that it is an agent. A declaration never makes a
-participant a person, and unknown is a valid kind. Connections carry the fact; none
-requires each participant to keep a roster of the others. Kind alone confers no
-authority: under [work authority](work-authority.md) only a source-attested person
-can give a human grant. An unknown participant receives the courtesy due anyone
-present and confers none. This is the minimal awareness the family needs, for
-authority and [human attention](interaction.md); beyond it, address people and
-agents alike.
+**Participant kind:** Whether a participant is a person, an agent or unknown comes
+from the source, or from the participant's own statement that it is an agent; such a
+statement never makes anyone a person. A new participant is recognised without any
+other participant being reconfigured. [Work authority](work-authority.md) governs
+what a participant may authorize.
 
 **Check:** Show a project thread in its original application and a focused studio.
 Reply from each, then change source access. Can participants identify the same
