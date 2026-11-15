@@ -12,7 +12,10 @@ correct them; one useful answer returns with important disagreements and decisio
   ambient conversation may merit silence, with no public “nothing to add” or working
   indicator. Fresh attributed human input is not charged or suppressed by ambient
   quotas. Another addressee may warrant silence; actual service/access limits apply.
-  Explain relevant blockers honestly.
+  Explain relevant blockers honestly. What an agent has taken on or is waiting for
+  in a conversation is evidence for attention: input that settles it merits
+  consideration even when it needs no reply. The installation supplies that from
+  the agent's own record; an experience is not expected to know it.
 - **Coordinate quietly and openly.** Reuse authorized conversations before creating
   huddles. People can inspect without prompting and join when useful. Access,
   participation, notification and work authority remain distinct. Support lively
