@@ -39,15 +39,12 @@ available interfaces and observed state. Being reachable or ready to supply
 context does not establish permission for effects. Consumers need no knowledge of
 the agent's engine, execution sessions or routing arrangement.
 
-**Turn facts:** Alongside any instructions, state each turn's facts in a common
-structured form on the prompt (ACP `_meta`; serving owners keep the exact keys and
-schema): the place's stable source reference and a readable label; any thread; a
-private or shared audience; the speaker's source reference, display name and kind
-(person, agent or unknown); a bounded list of others present; and whether the turn
-is explicitly addressed, ambient or continuing accepted work. An agent can then
-serve any Connection without parsing its prose. Where a reply is optional, a turn
-that completes with an empty final answer means the agent has nothing to say;
-connectors may keep accepting their existing conventions.
+**Turn facts:** Each turn carries its facts as data, not only as prose: the place
+and any thread, whether the audience is private or shared, who is speaking and what
+kind of participant they are, who else is present, and whether the turn is addressed,
+ambient or continuing accepted work. An engine new to a Connection can tell where it
+is, who is speaking and who can hear without reading the prompt's wording. Serving
+owners keep the keys and schema.
 
 **Check:** Connect to a workspace or game server, exchange input, return a result,
 lose an acknowledgment, and revoke access. Can both sides establish what crossed
