@@ -1,0 +1,49 @@
+name: Ecosystem maps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/ecosystem/**'
+      - 'docs/ecosystem-map.json'
+      - 'docs/ecosystem-map.svg'
+      - 'docs/ecosystem-maps.md'
+      - 'scripts/render_ecosystem_maps.py'
+      - 'tests/test_ecosystem_maps.py'
+      - 'tests/test_site_build.py'
+      - 'site/build.py'
+      - 'site/projects/**'
+      - 'site/assets/art/**'
+      - 'family.toml'
+      - 'AGENTS.md'
+      - '.github/workflows/ecosystem-maps.yml'
+  pull_request:
+    paths:
+      - 'docs/ecosystem/**'
+      - 'docs/ecosystem-map.json'
+      - 'docs/ecosystem-map.svg'
+      - 'docs/ecosystem-maps.md'
+      - 'scripts/render_ecosystem_maps.py'
+      - 'tests/test_ecosystem_maps.py'
+      - 'tests/test_site_build.py'
+      - 'site/build.py'
+      - 'site/projects/**'
+      - 'site/assets/art/**'
+      - 'family.toml'
+      - 'AGENTS.md'
+      - '.github/workflows/ecosystem-maps.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Check generated maps and product pages
+        run: python3 scripts/render_ecosystem_maps.py --root . --check
+      - name: Check map relationships and nested site references
+        run: |
+          python3 -m unittest discover -s tests -p 'test_ecosystem_maps.py' -v
+          python3 -m unittest discover -s tests -p 'test_site_build.py' -v
