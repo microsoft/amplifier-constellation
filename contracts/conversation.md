@@ -36,6 +36,12 @@ and submission outcomes, coverage and supported capabilities. Map it to the sour
 existing records, including weaker recovery guarantees. An external platform can
 remain authoritative; no central conversation store or new ACP method is required.
 
+**Participant kind:** Whether a participant is a person, an agent or unknown comes
+from the source, or from the participant's own statement that it is an agent; such a
+statement never makes anyone a person. A new participant is recognised without any
+other participant being reconfigured. [Work authority](work-authority.md) governs
+what a participant may authorize.
+
 **Check:** Show a project thread in its original application and a focused studio.
 Reply from each, then change source access. Can participants identify the same
 conversation and its contributions? Do both views honor the source's current
