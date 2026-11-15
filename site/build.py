@@ -29,7 +29,12 @@ class References(HTMLParser):
         self.refs.extend(values[k] for k in ('src', 'href', 'poster') if values.get(k))
 
 
-def validate(folder, page):
+def validate(folder, page, *, root=None):
+    # Nested pages may use parent assets, but no reference may leave the site.
+    root = folder.resolve() if root is None else root.resolve()
+    folder = folder.resolve()
+    if not folder.is_relative_to(root):
+        raise ValueError("Page folder escapes site root.")
     parser = References()
     parser.feed(page)
     for ref in parser.refs:
@@ -41,8 +46,17 @@ def validate(folder, page):
                 raise ValueError(f'Missing anchor: {ref}')
             continue
         path = (folder / unquote(url.path)).resolve()
-        if not path.is_relative_to(folder.resolve()) or not path.exists():
+        if not path.is_relative_to(root) or not path.exists():
             raise ValueError(f'Missing or escaping local reference: {ref}')
+
+
+def portable_project_links(page):
+    """Keep project navigation useful outside the downloaded HTML file."""
+    return re.sub(
+        r'href="(?:\./)?(projects(?:/[^"]*)?)"',
+        lambda match: 'href="' + PUBLIC_URL + match.group(1) + '"',
+        page,
+    )
 
 
 def build(destination):
@@ -53,6 +67,8 @@ def build(destination):
     for name in ('style.css', 'site.js'):
         shutil.copyfile(SOURCE / name, destination / name)
     shutil.copytree(SOURCE / 'assets', destination / 'assets', dirs_exist_ok=True)
+    if (SOURCE / 'projects').exists():
+        shutil.copytree(SOURCE / 'projects', destination / 'projects', dirs_exist_ok=True)
     info = json.loads((SOURCE / 'assets/media/chapters.json').read_text())
     if len(info['chapters']) != 4:
         raise ValueError('The introduction must contain four chapters.')
@@ -70,6 +86,7 @@ def build(destination):
     portable = portable.replace('<script src="site.js" defer></script>', '')
     portable = portable.replace('href="#film"', f'href="{PUBLIC_URL}#film"')
     portable = portable.replace('href="./"', f'href="{PUBLIC_URL}"')
+    portable = portable_project_links(portable)
     portable = portable.replace('<a href="downloads/constellation-illustrated.html" download>Take the illustrations with you</a>', '')
     portable = re.sub(r'<a class="art"[^>]*>(.*?)</a>', r'<div class="art">\1</div>', portable, flags=re.S)
     portable = portable.replace('Open any illustration to see it at full size.', 'All four illustrations are embedded in this file for offline viewing.')
@@ -79,8 +96,8 @@ def build(destination):
     downloads = destination / 'downloads'
     downloads.mkdir(exist_ok=True)
     (downloads / 'constellation-illustrated.html').write_text(portable)
-    validate(destination, page)
-    validate(downloads, portable)
+    for html in sorted(destination.rglob("*.html")):
+        validate(html.parent, html.read_text(), root=destination)
     if '@@' in page:
         raise ValueError('Unresolved template placeholder.')
     print(f'Built project page and four-image offline download in {destination}')

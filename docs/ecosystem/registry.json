@@ -1,0 +1,1852 @@
+{
+  "schema_version": 1,
+  "repositories": [
+    {
+      "repository": "microsoft/amplifier-acp-lab",
+      "display_name": "Agent Experiment Lab",
+      "ref": "46c61e5193aa79380a50b14427d9ffdd75f8c1da",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Connection",
+        "Conversation",
+        "Agent Instance"
+      ],
+      "summary": "An experiment and reporting experience for independently configured agent participants.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Agent Experiment Lab",
+          "kind": "self",
+          "repository": "microsoft/amplifier-acp-lab"
+        },
+        {
+          "id": "scenario",
+          "label": "Scenario definitions",
+          "kind": "internal"
+        },
+        {
+          "id": "execution",
+          "label": "ACP participant execution",
+          "kind": "internal"
+        },
+        {
+          "id": "evaluation",
+          "label": "Evaluation and reports",
+          "kind": "internal"
+        },
+        {
+          "id": "agents",
+          "label": "Installed agent participants",
+          "kind": "external"
+        },
+        {
+          "id": "fixtures",
+          "label": "Deterministic local fixtures",
+          "kind": "internal"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "scenario",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "execution",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "evaluation",
+          "relation": "contains"
+        },
+        {
+          "from": "execution",
+          "to": "agents",
+          "relation": "uses"
+        },
+        {
+          "from": "execution",
+          "to": "fixtures",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "fixtures",
+          "relation": "contains"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-acp-lab/blob/46c61e5193aa79380a50b14427d9ffdd75f8c1da/README.md",
+          "sha256": "af55796e30fbaefca1ae73c7015eb23971b953e0bee2bb266291b70b4328e79c",
+          "ref": "46c61e5193aa79380a50b14427d9ffdd75f8c1da"
+        },
+        {
+          "path": "examples/README.md",
+          "url": "https://github.com/microsoft/amplifier-acp-lab/blob/46c61e5193aa79380a50b14427d9ffdd75f8c1da/examples/README.md",
+          "sha256": "4ea0ac02882b5398256c2557e57088c5aaae91ce84c554bd928db362ea615abd",
+          "ref": "46c61e5193aa79380a50b14427d9ffdd75f8c1da"
+        },
+        {
+          "path": "docs/execution-reference.md",
+          "url": "https://github.com/microsoft/amplifier-acp-lab/blob/46c61e5193aa79380a50b14427d9ffdd75f8c1da/docs/execution-reference.md",
+          "sha256": "e7474988ddad8dcd71c21a5cefb3b49936aa6f114fa0b98b9dae0c142b2ca7e5",
+          "ref": "46c61e5193aa79380a50b14427d9ffdd75f8c1da"
+        }
+      ],
+      "notes": [
+        "Lab does not provision agents or model accounts.",
+        "Fixtures illustrate the workflow; fixture results are not actual-model or deployed collaboration evidence.",
+        "Experience classification is an editorial role mapping of its operator workflow and reports, not a claim of new protocol conformance."
+      ],
+      "start_cta": {
+        "label": "Try the local demonstration",
+        "url": "https://github.com/microsoft/amplifier-acp-lab#try-the-local-demonstration",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Builders and teams comparing agent collaboration",
+      "page_kind": "developer/operator tool",
+      "purpose": "Run repeatable collaboration experiments and inspect what the agents actually deliver.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-acp-minecraft",
+      "display_name": "Minecraft Connector for Amplifier",
+      "ref": "57cb48e47753ee44040205dfd6c8e64c6b969ef1",
+      "roles": [
+        "Connection",
+        "Tool"
+      ],
+      "supports_roles": [
+        "Conversation",
+        "Experience"
+      ],
+      "summary": "Connects ACP agents to Minecraft participation and exposes scoped world tools.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Minecraft Connector for Amplifier",
+          "kind": "self",
+          "repository": "microsoft/amplifier-acp-minecraft"
+        },
+        {
+          "id": "controller",
+          "label": "ACP session and work controller",
+          "kind": "internal"
+        },
+        {
+          "id": "body",
+          "label": "Mineflayer player body",
+          "kind": "internal"
+        },
+        {
+          "id": "tools",
+          "label": "HTTP MCP world tools",
+          "kind": "internal"
+        },
+        {
+          "id": "world",
+          "label": "Minecraft server and game",
+          "kind": "external"
+        },
+        {
+          "id": "agent",
+          "label": "ACP agent endpoint",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "controller",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "body",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "tools",
+          "relation": "contains"
+        },
+        {
+          "from": "body",
+          "to": "world",
+          "relation": "integrates"
+        },
+        {
+          "from": "controller",
+          "to": "agent",
+          "relation": "uses"
+        },
+        {
+          "from": "agent",
+          "to": "tools",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-acp-minecraft/blob/57cb48e47753ee44040205dfd6c8e64c6b969ef1/README.md",
+          "sha256": "9b92dde4407aa349616bbd1c68b4562ec8b4cbba8d2fccdcbd4b0e269fb2611e",
+          "ref": "57cb48e47753ee44040205dfd6c8e64c6b969ef1"
+        },
+        {
+          "path": "docs/interfaces.md",
+          "url": "https://github.com/microsoft/amplifier-acp-minecraft/blob/57cb48e47753ee44040205dfd6c8e64c6b969ef1/docs/interfaces.md",
+          "sha256": "11de6727031f00db11bbd988c647814d1a1c8029c2eb768710ecea759bd11ab6",
+          "ref": "57cb48e47753ee44040205dfd6c8e64c6b969ef1"
+        },
+        {
+          "path": "contracts/minecraft.md",
+          "url": "https://github.com/microsoft/amplifier-acp-minecraft/blob/57cb48e47753ee44040205dfd6c8e64c6b969ef1/contracts/minecraft.md",
+          "sha256": "f9ca845e73ec90ddfe961fb0016e8d794410ed018b0e4f8607674582bfb70d74",
+          "ref": "57cb48e47753ee44040205dfd6c8e64c6b969ef1"
+        }
+      ],
+      "notes": [
+        "The game supplies Conversation and Experience; the adapter supplies Connection and Tool surfaces.",
+        "Minecraft clients, servers, accounts and assets are separately obtained and owned."
+      ],
+      "start_cta": {
+        "label": "Set up an agent player",
+        "url": "https://github.com/microsoft/amplifier-acp-minecraft/blob/main/skills/minecraft-server-setup/SKILL.md",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Minecraft players, server owners and people trying agent collaboration",
+      "page_kind": "user-facing connector",
+      "purpose": "Bring independent AI agents into a Minecraft world as players who can talk, explore and build together.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-acp-slack",
+      "display_name": "Slack Connector for Amplifier",
+      "ref": "3498ea827487db370a941d632105bce805f54b8c",
+      "roles": [
+        "Connection"
+      ],
+      "supports_roles": [
+        "Conversation",
+        "Experience"
+      ],
+      "summary": "Connects existing ACP agents to Slack-owned conversations and presentation.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Slack Connector for Amplifier",
+          "kind": "self",
+          "repository": "microsoft/amplifier-acp-slack"
+        },
+        {
+          "id": "routing",
+          "label": "Channel and thread routing",
+          "kind": "internal"
+        },
+        {
+          "id": "records",
+          "label": "Inbox, outbox and session bindings",
+          "kind": "internal"
+        },
+        {
+          "id": "setup",
+          "label": "Connector setup and administration",
+          "kind": "internal"
+        },
+        {
+          "id": "slack",
+          "label": "Slack conversations and UI",
+          "kind": "external"
+        },
+        {
+          "id": "agent",
+          "label": "ACP agent endpoint",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "routing",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "records",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "setup",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "slack",
+          "relation": "integrates"
+        },
+        {
+          "from": "self",
+          "to": "agent",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-acp-slack/blob/3498ea827487db370a941d632105bce805f54b8c/README.md",
+          "sha256": "7cc12e99807d12ef6f85bd8a773956c6a5f61d6a58178a4fb5ffb14ca655a136",
+          "ref": "3498ea827487db370a941d632105bce805f54b8c"
+        },
+        {
+          "path": "docs/architecture.md",
+          "url": "https://github.com/microsoft/amplifier-acp-slack/blob/3498ea827487db370a941d632105bce805f54b8c/docs/architecture.md",
+          "sha256": "e36c253708e36422ec67a647f9f1502d955f5b9dcf2846bcc4ef94a8b464c699",
+          "ref": "3498ea827487db370a941d632105bce805f54b8c"
+        }
+      ],
+      "notes": [
+        "Slack owns conversation membership/source messages; the agent endpoint owns reasoning and execution sessions.",
+        "Constellation Instance is optional; no required host or central provisioning service.",
+        "This focused architecture source does not establish a separately advertised Tool implementation, so do not invent one."
+      ],
+      "start_cta": {
+        "label": "Download Slack Connector",
+        "url": "https://github.com/microsoft/amplifier-acp-slack/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Slack users and workspace administrators",
+      "page_kind": "user-facing connector",
+      "purpose": "Give an existing ACP agent a presence in Slack channels, threads and direct messages.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-acp-teams",
+      "display_name": "Teams Connector for Amplifier",
+      "ref": "ac7da0c25160eb397470689c9cb690fbf0e76b8c",
+      "roles": [
+        "Connection"
+      ],
+      "supports_roles": [
+        "Conversation",
+        "Experience"
+      ],
+      "summary": "Connects existing ACP agents to Teams-owned chats and threads through its own authorized installation.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Teams Connector for Amplifier",
+          "kind": "self",
+          "repository": "microsoft/amplifier-acp-teams"
+        },
+        {
+          "id": "routing",
+          "label": "Tenant, chat and thread routing",
+          "kind": "internal"
+        },
+        {
+          "id": "records",
+          "label": "Jobs, delivery and session bindings",
+          "kind": "internal"
+        },
+        {
+          "id": "setup",
+          "label": "Local setup and management",
+          "kind": "internal"
+        },
+        {
+          "id": "teams",
+          "label": "Teams platform and conversations",
+          "kind": "external"
+        },
+        {
+          "id": "agent",
+          "label": "ACP agent endpoint",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "routing",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "records",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "setup",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "teams",
+          "relation": "integrates"
+        },
+        {
+          "from": "self",
+          "to": "agent",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-acp-teams/blob/ac7da0c25160eb397470689c9cb690fbf0e76b8c/README.md",
+          "sha256": "813ddec676c441015425595506b6e6024587ba25ccc1a7a179f6380c662bbfab",
+          "ref": "ac7da0c25160eb397470689c9cb690fbf0e76b8c"
+        },
+        {
+          "path": "docs/api.md",
+          "url": "https://github.com/microsoft/amplifier-acp-teams/blob/ac7da0c25160eb397470689c9cb690fbf0e76b8c/docs/api.md",
+          "sha256": "bbe41d9520110d849fb2ba5840858958f2e9ca85ddc25d0597dff1f12d817265",
+          "ref": "ac7da0c25160eb397470689c9cb690fbf0e76b8c"
+        },
+        {
+          "path": "docs/session-handling.md",
+          "url": "https://github.com/microsoft/amplifier-acp-teams/blob/ac7da0c25160eb397470689c9cb690fbf0e76b8c/docs/session-handling.md",
+          "sha256": "1dbbae01f06fcaa990797a81a05f39793e53d1b13c4648688472682fc428817b",
+          "ref": "ac7da0c25160eb397470689c9cb690fbf0e76b8c"
+        }
+      ],
+      "notes": [
+        "Teams owns the source conversation and presentation; the connector does not provision a tenant, agent or callback host.",
+        "Bot identity, platform permissions and ACP engine accounts retain their separate owners.",
+        "No Tool conformance claim is inferred from administrative API routes."
+      ],
+      "start_cta": {
+        "label": "Check Teams setup requirements",
+        "url": "https://github.com/microsoft/amplifier-acp-teams/blob/main/docs/tenant-permissions.md",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Teams users and Microsoft 365 administrators",
+      "page_kind": "user-facing connector",
+      "purpose": "Bring an existing ACP agent into Teams conversations through an independently managed connector.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-app-tui",
+      "ref": "70995cb9b8b2d886a3cb857a29f0c0853006b732",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Conversation"
+      ],
+      "summary": "The connected terminal client for the current Amplifier Unified application.",
+      "scope": "current-app terminal experience",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier TUI",
+          "kind": "self",
+          "repository": "microsoft/amplifier-app-tui"
+        },
+        {
+          "id": "ui",
+          "label": "Terminal conversation UI",
+          "kind": "internal"
+        },
+        {
+          "id": "drafts",
+          "label": "Private drafts & delivery records",
+          "kind": "internal"
+        },
+        {
+          "id": "host",
+          "label": "Amplifier Unified",
+          "kind": "external",
+          "repository": "microsoft/amplifier-unified"
+        },
+        {
+          "id": "web",
+          "label": "Web client on same conversation",
+          "kind": "external",
+          "repository": "microsoft/amplifier-client-web",
+          "link": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "ui",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "drafts",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "host",
+          "relation": "uses"
+        },
+        {
+          "from": "web",
+          "to": "host",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "70995cb9b8b2d886a3cb857a29f0c0853006b732",
+          "url": "https://github.com/microsoft/amplifier-app-tui/blob/70995cb9b8b2d886a3cb857a29f0c0853006b732/README.md",
+          "sha256": "1b67d3453cb4b1ef4515437e710804ae375d4ea6e8cc82e3c1b3affab17b6506",
+          "git_blob": "a0f443f1c4360a00789deafe83693dadafaa4244"
+        },
+        {
+          "path": "notes/CONNECTED-CLIENT.md",
+          "ref": "70995cb9b8b2d886a3cb857a29f0c0853006b732",
+          "url": "https://github.com/microsoft/amplifier-app-tui/blob/70995cb9b8b2d886a3cb857a29f0c0853006b732/notes/CONNECTED-CLIENT.md",
+          "sha256": "12a642e3461945d8f0461f755314934895105b57cfd8cc6a4599c60643dbedb7",
+          "git_blob": "f96666280db47f1f2cf1092df8df8f2e152ad750"
+        }
+      ],
+      "notes": [
+        "This current connected-client route is distinct from amplifier-unified-client-tui.",
+        "Historical standalone wheels and source-only standalone behavior must not be confused with current connected-client releases.",
+        "Closing client does not cancel host work."
+      ],
+      "consumer_cta": {
+        "label": "Connect from your terminal",
+        "url": "https://github.com/microsoft/amplifier-app-tui#get-started",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "purpose": "Follow the same Amplifier work from a terminal while browser clients stay connected.",
+      "visibility": "public",
+      "display_name": "Amplifier TUI",
+      "start_cta": {
+        "label": "Connect from your terminal",
+        "url": "https://github.com/microsoft/amplifier-app-tui#get-started",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      }
+    },
+    {
+      "repository": "microsoft/amplifier-client-macos",
+      "ref": "573436c67cc69d6f9a3279700c75b9cb9bc49d97",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Conversation"
+      ],
+      "summary": "A native Mac companion experience connected to an existing Amplifier Unified host.",
+      "scope": "native client experience",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier for Mac",
+          "kind": "self",
+          "repository": "microsoft/amplifier-client-macos"
+        },
+        {
+          "id": "core",
+          "label": "ClientCore: pairing & reply intent",
+          "kind": "internal"
+        },
+        {
+          "id": "app",
+          "label": "AmplifierApp: native integration",
+          "kind": "internal"
+        },
+        {
+          "id": "tempo",
+          "label": "Tempo & notifications",
+          "kind": "internal"
+        },
+        {
+          "id": "host",
+          "label": "Amplifier Unified host",
+          "kind": "external",
+          "repository": "microsoft/amplifier-unified"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "core",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "app",
+          "relation": "contains"
+        },
+        {
+          "from": "app",
+          "to": "tempo",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "host",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "573436c67cc69d6f9a3279700c75b9cb9bc49d97",
+          "url": "https://github.com/microsoft/amplifier-client-macos/blob/573436c67cc69d6f9a3279700c75b9cb9bc49d97/README.md",
+          "sha256": "bff5d7027df5ed060bb313b812e7e3461da9becef1ea4945e9a8d2810b8297a1",
+          "git_blob": "eec48e2af315a097a439dc7a32a89216bc9cf444"
+        },
+        {
+          "path": "docs/architecture.md",
+          "ref": "573436c67cc69d6f9a3279700c75b9cb9bc49d97",
+          "url": "https://github.com/microsoft/amplifier-client-macos/blob/573436c67cc69d6f9a3279700c75b9cb9bc49d97/docs/architecture.md",
+          "sha256": "51a13e7ffc9fdfde023ab7903bcdb47d178d1ad50fc31502d6df75c9aa47032c",
+          "git_blob": "e0139954adb6085df0f73d6cd4ff82d9c0ac5d43"
+        }
+      ],
+      "notes": [
+        "Current early preview does not embed an agent runtime or a full workspace window.",
+        "Integrated workspace and device-control capability are future seams, not current map nodes.",
+        "Native client IDs, restricted pairing and private reply journals remain client-owned; canonical attention and work remain host-owned."
+      ],
+      "consumer_cta": {
+        "label": "Download Amplifier for Mac",
+        "url": "https://github.com/microsoft/amplifier-client-macos/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "purpose": "Keep Amplifier close through menu-bar activity, quick chat, notifications and optional Tempo.",
+      "visibility": "public",
+      "display_name": "Amplifier for Mac",
+      "start_cta": {
+        "label": "Download Amplifier for Mac",
+        "url": "https://github.com/microsoft/amplifier-client-macos/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      }
+    },
+    {
+      "repository": "microsoft/amplifier-constellation",
+      "display_name": "Amplifier Constellation",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "roles": [],
+      "supports_roles": [
+        "Agent Instance",
+        "Conversation",
+        "Connection",
+        "Tool",
+        "Experience"
+      ],
+      "summary": "The family index and shared role contracts; implementations remain independent.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Constellation",
+          "kind": "self",
+          "repository": "microsoft/amplifier-constellation"
+        },
+        {
+          "id": "contracts",
+          "label": "Five role contracts",
+          "kind": "internal"
+        },
+        {
+          "id": "composition",
+          "label": "Composition agreements",
+          "kind": "internal"
+        },
+        {
+          "id": "registry",
+          "label": "Repository index",
+          "kind": "internal"
+        },
+        {
+          "id": "implementations",
+          "label": "Independent implementations",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "contracts",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "composition",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "registry",
+          "relation": "contains"
+        },
+        {
+          "from": "implementations",
+          "to": "contracts",
+          "relation": "implements"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/README.md",
+          "sha256": "93cf290f7820a960448e9ace677fac3540e71cd8e16e30794be36239f49c9d87",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "family.toml",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/family.toml",
+          "sha256": "eaea7a13344d17794897514570ba2c98b4bae379b90c6ec06de302ca798af1a0",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/README.md",
+          "sha256": "2d827af0ab90402bf50b1bc3919c1a53803149d57d22f6bcc6e27690c361c22c",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/composition.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/composition.md",
+          "sha256": "293bed8537d56589b4162d3e4eed912f9c30724e4496bd3c5b4a56afacbb2361",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/agent-instance.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/agent-instance.md",
+          "sha256": "694e4df7e4efd9b15fe63cbdc9cd605ab0b14486a670ac39300d176d61b8180b",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/connection.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/connection.md",
+          "sha256": "66d75ac440e953fe3cfb91fd644f08c711f0ae40c5df6c335a4d897f9940c239",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/conversation.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/conversation.md",
+          "sha256": "68698cb6278bc813d7c4dc0ff90aac694a9ed7db0037773e40869c77876784fd",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/experience.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/experience.md",
+          "sha256": "2335abcccf2f9ed17822071863963ecff27c8658c4dea622ae7959d650dc2827",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        },
+        {
+          "path": "contracts/tool.md",
+          "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/tool.md",
+          "sha256": "ec22df05a908f64a44af7a6261d8e4e614221963adfb8dfefe9d3480d67b66d0",
+          "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6"
+        }
+      ],
+      "notes": [
+        "This repository is documentation plus shared native support, not an implementation of all five runtime roles.",
+        "The role map is a contract vocabulary, not a required service stack."
+      ],
+      "start_cta": {
+        "label": "Explore the illustrated introduction",
+        "url": "https://microsoft.github.io/amplifier-constellation/",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "People exploring persistent AI teammates and builders composing them",
+      "page_kind": "family index",
+      "purpose": "Connect persistent agents, conversations and useful capabilities across the places people work.",
+      "visibility": "public",
+      "product_site": {
+        "url": "https://microsoft.github.io/amplifier-constellation/",
+        "label": "Visit product website"
+      }
+    },
+    {
+      "repository": "microsoft/amplifier-constellation-conversations",
+      "display_name": "Agent Conversations",
+      "ref": "83a695b2af088deb216e96d84866458869f27842",
+      "roles": [
+        "Conversation",
+        "Experience",
+        "Connection",
+        "Tool"
+      ],
+      "supports_roles": [],
+      "summary": "Conversation services, reference experiences, ACP connections and authorized service tools share this repository.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Agent Conversations",
+          "kind": "self",
+          "repository": "microsoft/amplifier-constellation-conversations"
+        },
+        {
+          "id": "rooms",
+          "label": "Rooms, membership and messages",
+          "kind": "internal"
+        },
+        {
+          "id": "huddles",
+          "label": "Huddle coordination",
+          "kind": "internal"
+        },
+        {
+          "id": "experiences",
+          "label": "Reference UI and Companion",
+          "kind": "internal"
+        },
+        {
+          "id": "attachments",
+          "label": "ACP attachments",
+          "kind": "internal"
+        },
+        {
+          "id": "agents",
+          "label": "Independent agent endpoints",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "rooms",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "huddles",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "experiences",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "attachments",
+          "relation": "contains"
+        },
+        {
+          "from": "attachments",
+          "to": "agents",
+          "relation": "uses"
+        },
+        {
+          "from": "experiences",
+          "to": "rooms",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-conversations/blob/83a695b2af088deb216e96d84866458869f27842/README.md",
+          "sha256": "cceef4beac46c1ff8288788dd2653251818219f50a8b249ee936c99c5f97c363",
+          "ref": "83a695b2af088deb216e96d84866458869f27842"
+        },
+        {
+          "path": "docs/README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-conversations/blob/83a695b2af088deb216e96d84866458869f27842/docs/README.md",
+          "sha256": "85f567742c3f68901e7f51938c14808890edaac814750cb9726d0e4ab5b2bc69",
+          "ref": "83a695b2af088deb216e96d84866458869f27842"
+        },
+        {
+          "path": "docs/shared-rooms.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-conversations/blob/83a695b2af088deb216e96d84866458869f27842/docs/shared-rooms.md",
+          "sha256": "119c3fbf5245acb6d119e88279d92f5ea1a758234c50126dc0065a1141e45421",
+          "ref": "83a695b2af088deb216e96d84866458869f27842"
+        }
+      ],
+      "notes": [
+        "The current docs explicitly map Conversation, Experience, Connection and advertised Tool roles.",
+        "Companion and Conversations currently share this repository; planned extraction is not completed ownership.",
+        "The experience does not own the external agent execution sessions."
+      ],
+      "start_cta": {
+        "label": "Read the conversation-service guide",
+        "url": "https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/installation.md",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Builders of shared rooms and coordinated agent experiences",
+      "page_kind": "conversation service with bundled experience",
+      "purpose": "Provide source-owned rooms, messages and coordination for people and existing ACP agents.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-constellation-instance",
+      "display_name": "Constellation Instance",
+      "ref": "2178d36a4b987f15a0b70f2854cd530895f203b6",
+      "roles": [
+        "Agent Instance"
+      ],
+      "supports_roles": [],
+      "summary": "One selected-engine implementation of Agent Instance, with its own identity and lifecycle.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Constellation Instance",
+          "kind": "self",
+          "repository": "microsoft/amplifier-constellation-instance"
+        },
+        {
+          "id": "identity",
+          "label": "Identity and private state",
+          "kind": "internal"
+        },
+        {
+          "id": "management",
+          "label": "Management and lifecycle",
+          "kind": "internal"
+        },
+        {
+          "id": "attach",
+          "label": "ACP attach boundary",
+          "kind": "internal"
+        },
+        {
+          "id": "engine",
+          "label": "Selected ACP engine",
+          "kind": "external"
+        },
+        {
+          "id": "connections",
+          "label": "Independent connectors",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "identity",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "management",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "attach",
+          "relation": "contains"
+        },
+        {
+          "from": "attach",
+          "to": "engine",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "connections",
+          "relation": "integrates"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-instance/blob/2178d36a4b987f15a0b70f2854cd530895f203b6/README.md",
+          "sha256": "2fed7a5c9d775b5f579303c85ad2c02f81785b956370b042e5ba5450896b7030",
+          "ref": "2178d36a4b987f15a0b70f2854cd530895f203b6"
+        },
+        {
+          "path": "contracts/README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-instance/blob/2178d36a4b987f15a0b70f2854cd530895f203b6/contracts/README.md",
+          "sha256": "d50fc5ea0607f20754c01390cf857e2e9acca9d8a48dea50c7b49410cec2e296",
+          "ref": "2178d36a4b987f15a0b70f2854cd530895f203b6"
+        },
+        {
+          "path": "docs/acp-boundary.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-instance/blob/2178d36a4b987f15a0b70f2854cd530895f203b6/docs/acp-boundary.md",
+          "sha256": "e3d43df2ebfb29f5e862e428796912b3579127ad9775a3db2786eb26e9d8774e",
+          "ref": "2178d36a4b987f15a0b70f2854cd530895f203b6"
+        }
+      ],
+      "notes": [
+        "Constellation Runtime is one compatible engine choice, not a required internal module of every Agent Instance.",
+        "Connectors retain their own installations and platform credentials; Instance does not contain them.",
+        "Internal nodes are implementation responsibilities, not assertions that separate repositories exist."
+      ],
+      "start_cta": {
+        "label": "Download a consumer bundle",
+        "url": "https://github.com/microsoft/amplifier-constellation-instance/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "People installing an independent agent; administrators",
+      "page_kind": "agent installation",
+      "purpose": "Keep an agent’s identity, configuration and private work available across connected experiences.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-constellation-observatory",
+      "display_name": "Agent Observatory",
+      "ref": "56dfdbe715aab2b0340fb91437103ed884156b9f",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Agent Instance",
+        "Connection"
+      ],
+      "summary": "An optional management experience over independently owned agents, computers and connections.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Agent Observatory",
+          "kind": "self",
+          "repository": "microsoft/amplifier-constellation-observatory"
+        },
+        {
+          "id": "view",
+          "label": "Browser systems view",
+          "kind": "internal"
+        },
+        {
+          "id": "providers",
+          "label": "Management provider mappings",
+          "kind": "internal"
+        },
+        {
+          "id": "helper",
+          "label": "Computer helper",
+          "kind": "internal"
+        },
+        {
+          "id": "agents",
+          "label": "Managed or ACP-only agents",
+          "kind": "external"
+        },
+        {
+          "id": "connectors",
+          "label": "Independent connectors",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "view",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "providers",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "helper",
+          "relation": "contains"
+        },
+        {
+          "from": "providers",
+          "to": "agents",
+          "relation": "uses"
+        },
+        {
+          "from": "providers",
+          "to": "connectors",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-observatory/blob/56dfdbe715aab2b0340fb91437103ed884156b9f/README.md",
+          "sha256": "cb06daf8f74ada6c53e7cc49f779cac327c57d43e4a06832a8ec94b5d03c1edc",
+          "ref": "56dfdbe715aab2b0340fb91437103ed884156b9f"
+        },
+        {
+          "path": "docs/contracts.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-observatory/blob/56dfdbe715aab2b0340fb91437103ed884156b9f/docs/contracts.md",
+          "sha256": "0086da61c450009bee0564a9e62a54545f41d70f9b31c23b81ba4c6f35f9fb37",
+          "ref": "56dfdbe715aab2b0340fb91437103ed884156b9f"
+        }
+      ],
+      "notes": [
+        "Computer helper is part of this product; it is optional for connecting an existing agent.",
+        "Observatory is not a required fleet supervisor, identity service or agent owner.",
+        "Management access, ACP access, machine placement and conversation participation are distinct."
+      ],
+      "start_cta": {
+        "label": "Download Observatory",
+        "url": "https://github.com/microsoft/amplifier-constellation-observatory/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "People managing agents on one or several computers",
+      "page_kind": "user-facing app",
+      "purpose": "See your computers, create or connect agents, and manage their connections in one place.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-constellation-runtime",
+      "display_name": "Constellation Runtime",
+      "ref": "a684e02f21400c4c8b67deca3db97addcabaa0f9",
+      "roles": [],
+      "supports_roles": [
+        "Agent Instance",
+        "Tool"
+      ],
+      "summary": "A reasoning and tool-execution engine that an Instance or direct ACP client can use.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Constellation Runtime",
+          "kind": "self",
+          "repository": "microsoft/amplifier-constellation-runtime"
+        },
+        {
+          "id": "instance",
+          "label": "Constellation Instance (optional)",
+          "kind": "external",
+          "repository": "microsoft/amplifier-constellation-instance"
+        },
+        {
+          "id": "client",
+          "label": "Direct ACP client",
+          "kind": "external"
+        },
+        {
+          "id": "loop",
+          "label": "Model and tool loop",
+          "kind": "internal"
+        },
+        {
+          "id": "state",
+          "label": "Saved execution sessions",
+          "kind": "internal"
+        },
+        {
+          "id": "providers",
+          "label": "Model providers and tools",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "instance",
+          "to": "self",
+          "relation": "uses"
+        },
+        {
+          "from": "client",
+          "to": "self",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "loop",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "state",
+          "relation": "contains"
+        },
+        {
+          "from": "loop",
+          "to": "providers",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-runtime/blob/a684e02f21400c4c8b67deca3db97addcabaa0f9/README.md",
+          "sha256": "81c52a39d9911920039ea04c066f3514e0586a5c0562bca19936cc989f03994e",
+          "ref": "a684e02f21400c4c8b67deca3db97addcabaa0f9"
+        },
+        {
+          "path": "docs/runtime-overview.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-runtime/blob/a684e02f21400c4c8b67deca3db97addcabaa0f9/docs/runtime-overview.md",
+          "sha256": "54b4b0233e56c720f042fc9f325b72bc216e9d23fcdb0235faf83ce18e68f806",
+          "ref": "a684e02f21400c4c8b67deca3db97addcabaa0f9"
+        },
+        {
+          "path": "contracts/README.md",
+          "url": "https://github.com/microsoft/amplifier-constellation-runtime/blob/a684e02f21400c4c8b67deca3db97addcabaa0f9/contracts/README.md",
+          "sha256": "c707a0663c349836c1cd9df510f80de587b7ac51f26cbf03b92dd92b32a465a3",
+          "ref": "a684e02f21400c4c8b67deca3db97addcabaa0f9"
+        }
+      ],
+      "notes": [
+        "This is an engine implementation, not the entire installed Agent Instance boundary.",
+        "Direct local ACP clients can omit Instance.",
+        "Saved engine execution sessions are distinct from source Conversations."
+      ],
+      "start_cta": {
+        "label": "Get the engine",
+        "url": "https://github.com/microsoft/amplifier-constellation-runtime/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Agent builders and people connecting an ACP client",
+      "page_kind": "engine infrastructure",
+      "purpose": "Run an agent’s reasoning and tools with configured model providers and saved sessions.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-converge",
+      "display_name": "Amplifier Converge",
+      "ref": "689684db7c1bd348c6c4fa5f06919d331ec771ed",
+      "roles": [],
+      "supports_roles": [
+        "Agent Instance",
+        "Conversation",
+        "Connection",
+        "Tool",
+        "Experience"
+      ],
+      "summary": "A collaboration method for people and agents across systems, not a runtime component.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Converge",
+          "kind": "self",
+          "repository": "microsoft/amplifier-converge"
+        },
+        {
+          "id": "direction",
+          "label": "Shared direction and ownership",
+          "kind": "internal"
+        },
+        {
+          "id": "execution",
+          "label": "Execution and recovery",
+          "kind": "internal"
+        },
+        {
+          "id": "delivery",
+          "label": "Verification and delivery",
+          "kind": "internal"
+        },
+        {
+          "id": "guides",
+          "label": "People, agent and reviewer guides",
+          "kind": "internal"
+        },
+        {
+          "id": "teams",
+          "label": "Participating people and systems",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "direction",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "execution",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "delivery",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "guides",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "teams",
+          "relation": "supports"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-converge/blob/689684db7c1bd348c6c4fa5f06919d331ec771ed/README.md",
+          "sha256": "60ad159b33807250f13401dfcaedad13571b2ac2ab361659c384179d402eafba",
+          "ref": "689684db7c1bd348c6c4fa5f06919d331ec771ed"
+        },
+        {
+          "path": "contracts/system-design-and-decomposition-contract.md",
+          "url": "https://github.com/microsoft/amplifier-converge/blob/689684db7c1bd348c6c4fa5f06919d331ec771ed/contracts/system-design-and-decomposition-contract.md",
+          "sha256": "54520eb4872ca5587bebb6e85b3d2ec42ce5db0886d74eb3fc7071817108ab7c",
+          "ref": "689684db7c1bd348c6c4fa5f06919d331ec771ed"
+        }
+      ],
+      "notes": [
+        "Supports all roles as a working method; does not implement any runtime primitive.",
+        "Adopting the method does not grant new work, spending, publication or cross-owner authority."
+      ],
+      "start_cta": {
+        "label": "Start with the people guide",
+        "url": "https://github.com/microsoft/amplifier-converge/blob/main/guides/people-guide.md",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "People and agents coordinating larger bodies of work",
+      "page_kind": "method and documentation",
+      "purpose": "Agree on outcomes, divide responsibility and keep connected work dependable as plans change.",
+      "visibility": "public",
+      "product_site": {
+        "url": "https://microsoft.github.io/amplifier-converge/",
+        "label": "Visit product website"
+      }
+    },
+    {
+      "repository": "microsoft/amplifier-persona-workshop",
+      "display_name": "Persona Workshop",
+      "ref": "991bb420de564ffb1a4c96ea86728b46242f076b",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Agent Instance"
+      ],
+      "summary": "A profile-authoring experience that exports guidance or applies reviewed profiles through agent management.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Persona Workshop",
+          "kind": "self",
+          "repository": "microsoft/amplifier-persona-workshop"
+        },
+        {
+          "id": "evidence",
+          "label": "Selected evidence and attribution",
+          "kind": "internal"
+        },
+        {
+          "id": "profiles",
+          "label": "Reviewed profile revisions",
+          "kind": "internal"
+        },
+        {
+          "id": "exports",
+          "label": "Portable Markdown exports",
+          "kind": "internal"
+        },
+        {
+          "id": "analysis",
+          "label": "Optional ACP analysis endpoint",
+          "kind": "external"
+        },
+        {
+          "id": "agent",
+          "label": "Existing managed agent",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "evidence",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "profiles",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "exports",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "analysis",
+          "relation": "uses"
+        },
+        {
+          "from": "profiles",
+          "to": "agent",
+          "relation": "integrates"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-persona-workshop/blob/991bb420de564ffb1a4c96ea86728b46242f076b/README.md",
+          "sha256": "685a55683e8aa845d75c7d87a75012432d77d259a886393ea15b032976736963",
+          "ref": "991bb420de564ffb1a4c96ea86728b46242f076b"
+        },
+        {
+          "path": "docs/ui-api-contract.md",
+          "url": "https://github.com/microsoft/amplifier-persona-workshop/blob/991bb420de564ffb1a4c96ea86728b46242f076b/docs/ui-api-contract.md",
+          "sha256": "d685f7d658d81bc898b2a547a0fe34d204444aac39cf751184a131f2876df360",
+          "ref": "991bb420de564ffb1a4c96ea86728b46242f076b"
+        }
+      ],
+      "notes": [
+        "Profiles guide behavior; they are not a new Agent Instance implementation or verified replica of a person.",
+        "Generic ACP analysis and separately authorized management/profile application are distinct interfaces.",
+        "No Tool conformance claim is inferred solely from having an HTTP API."
+      ],
+      "start_cta": {
+        "label": "Download Persona Workshop",
+        "url": "https://github.com/microsoft/amplifier-persona-workshop/releases",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "People tailoring an agent’s communication and working style",
+      "page_kind": "user-facing app",
+      "purpose": "Turn selected evidence into reviewed, portable communication and working-style profiles.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-portability",
+      "display_name": "Amplifier Portability",
+      "ref": "f47bf739cf11e9bdd65d60092c3d80cdd743a7bb",
+      "roles": [],
+      "supports_roles": [
+        "Agent Instance",
+        "Conversation",
+        "Experience"
+      ],
+      "summary": "A reusable transfer library under application-owned pairing, transport and execution policy.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Portability",
+          "kind": "self",
+          "repository": "microsoft/amplifier-portability"
+        },
+        {
+          "id": "consumer",
+          "label": "Embedding application",
+          "kind": "external"
+        },
+        {
+          "id": "receipts",
+          "label": "Signed transfer receipts",
+          "kind": "internal"
+        },
+        {
+          "id": "capsules",
+          "label": "Workspace capsules",
+          "kind": "internal"
+        },
+        {
+          "id": "history",
+          "label": "Historical data payloads",
+          "kind": "internal"
+        },
+        {
+          "id": "hosts",
+          "label": "Explicitly paired hosts",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "consumer",
+          "to": "self",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "receipts",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "capsules",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "history",
+          "relation": "contains"
+        },
+        {
+          "from": "consumer",
+          "to": "hosts",
+          "relation": "integrates"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/microsoft/amplifier-portability/blob/f47bf739cf11e9bdd65d60092c3d80cdd743a7bb/README.md",
+          "sha256": "a7f5ad711afedf07685e50c92daee1648575b3b33c7f6af5dcec04f4245e0d16",
+          "ref": "f47bf739cf11e9bdd65d60092c3d80cdd743a7bb"
+        },
+        {
+          "path": "docs/contract.v1.md",
+          "url": "https://github.com/microsoft/amplifier-portability/blob/f47bf739cf11e9bdd65d60092c3d80cdd743a7bb/docs/contract.v1.md",
+          "sha256": "2e8c9b89b835e249298bdca2dfd633648fdd1fdc1f0aac9a1b3810acd14ad078",
+          "ref": "f47bf739cf11e9bdd65d60092c3d80cdd743a7bb"
+        }
+      ],
+      "notes": [
+        "No primary primitive implementation is claimed: this is supporting transfer machinery.",
+        "The application owns host authentication, transport, approvals and which runtime may continue.",
+        "Copying historical conversations does not transfer source ownership or authorize new execution."
+      ],
+      "start_cta": {
+        "label": "Build a reviewed handoff",
+        "url": "https://github.com/microsoft/amplifier-portability#get-started",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "audience": "Developers implementing reviewed host handoffs",
+      "page_kind": "transfer library",
+      "purpose": "Move selected work between paired hosts using signed receipts and verified copies.",
+      "visibility": "public"
+    },
+    {
+      "repository": "microsoft/amplifier-unified",
+      "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+      "roles": [
+        "Experience",
+        "Conversation"
+      ],
+      "supports_roles": [
+        "Agent Instance",
+        "Tool",
+        "Connection"
+      ],
+      "summary": "A complete AI workspace with its own web host, selected browser client, and configurable Amplifier execution.",
+      "scope": "assembled application",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Unified",
+          "kind": "self",
+          "repository": "microsoft/amplifier-unified"
+        },
+        {
+          "id": "host",
+          "label": "Web host & conversation state",
+          "kind": "internal"
+        },
+        {
+          "id": "web",
+          "label": "Amplifier Web Client",
+          "kind": "external",
+          "repository": "microsoft/amplifier-client-web",
+          "link": false
+        },
+        {
+          "id": "foundation",
+          "label": "Amplifier Foundation",
+          "kind": "external",
+          "repository": "microsoft/amplifier-foundation"
+        },
+        {
+          "id": "core",
+          "label": "Amplifier Core",
+          "kind": "external",
+          "repository": "microsoft/amplifier-core"
+        },
+        {
+          "id": "bundles",
+          "label": "Configured bundles & tools",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "host",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "web",
+          "relation": "integrates"
+        },
+        {
+          "from": "self",
+          "to": "foundation",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "core",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "bundles",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/README.md",
+          "sha256": "96005ecb7028fffbce9e7c5a43bef0c3b92899b970326cb017f3791c18dcfb7c",
+          "git_blob": "236c41edc9d6499c583f758813e125a33e4d5057"
+        },
+        {
+          "path": "components/README.md",
+          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/components/README.md",
+          "sha256": "5992cc00619417d7ae06b00135c669a442b9253ee699cb4cb525e696d2a9f159",
+          "git_blob": "d428226bc9264b481c1c5e3630309c74d6b10419"
+        },
+        {
+          "path": "docs/architecture/README.md",
+          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/docs/architecture/README.md",
+          "sha256": "46afa28ad7501801d6ad5266f92098f1b75160a14ef6a57a9e46d601b1a1c78c",
+          "git_blob": "c6047268da78c4be9fec56d2168cda8d7d03ba5f"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/pyproject.toml",
+          "sha256": "bd1ebadfdea7ae1341457bd8a280b72a436609d17cf8f0a35d515faa56f20c19",
+          "git_blob": "3b4138ff6383863c2e89e1bba5713fe62fe892a2"
+        }
+      ],
+      "notes": [
+        "Current app uses Core AmplifierSession through Foundation prepared bundles.",
+        "Do not depict amplifier-unified-host, amplifier-unified-client-web or AHP as already replacing current app architecture; the architecture packet explicitly keeps that adoption a secondary track.",
+        "amplifier-client-web is the authoring owner; Unified selects a copied delivery and ships built assets. Source merge is not automatic app delivery.",
+        "Role mapping describes responsibility, not a claim that every Constellation family contract has been qualified."
+      ],
+      "consumer_cta": {
+        "label": "Install Amplifier Unified",
+        "url": "https://github.com/microsoft/amplifier-unified#install",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "purpose": "Work with AI across conversations, tools and shared visual surfaces using your configured accounts.",
+      "visibility": "public",
+      "display_name": "Amplifier Unified",
+      "start_cta": {
+        "label": "Install Amplifier Unified",
+        "url": "https://github.com/microsoft/amplifier-unified#install",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "product_site": {
+        "url": "https://unified.amplifier.ms/",
+        "label": "Visit product website"
+      }
+    },
+    {
+      "repository": "microsoft/amplifier-voice",
+      "ref": "e1181373fbcc75b563a49e85ee7950b7431cfbe3",
+      "roles": [
+        "Experience"
+      ],
+      "supports_roles": [
+        "Agent Instance"
+      ],
+      "summary": "A WebRTC voice experience installed as an amplifierd plugin, with separately configured delegated agents.",
+      "scope": "daemon plugin experience",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Voice",
+          "kind": "self",
+          "repository": "microsoft/amplifier-voice"
+        },
+        {
+          "id": "browser",
+          "label": "Browser voice UI",
+          "kind": "internal"
+        },
+        {
+          "id": "session",
+          "label": "Voice sessions & transcripts",
+          "kind": "internal"
+        },
+        {
+          "id": "daemon",
+          "label": "amplifierd",
+          "kind": "external",
+          "repository": "microsoft/amplifierd"
+        },
+        {
+          "id": "realtime",
+          "label": "OpenAI Realtime",
+          "kind": "external"
+        },
+        {
+          "id": "agents",
+          "label": "Configured Amplifier agents",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "browser",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "session",
+          "relation": "contains"
+        },
+        {
+          "from": "daemon",
+          "to": "self",
+          "relation": "integrates"
+        },
+        {
+          "from": "browser",
+          "to": "realtime",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "agents",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "e1181373fbcc75b563a49e85ee7950b7431cfbe3",
+          "url": "https://github.com/microsoft/amplifier-voice/blob/e1181373fbcc75b563a49e85ee7950b7431cfbe3/README.md",
+          "sha256": "310e61374560b3e04a4df64bb49358b05cad6b50e137a6afdd142393187193c5",
+          "git_blob": "667e2f773668813ad7536f1c4b3a1c44c4922aa2"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "e1181373fbcc75b563a49e85ee7950b7431cfbe3",
+          "url": "https://github.com/microsoft/amplifier-voice/blob/e1181373fbcc75b563a49e85ee7950b7431cfbe3/pyproject.toml",
+          "sha256": "eef304e3227b5bcb66acdd425399349ddcf8d6531ac5989a78b030e745f0bf82",
+          "git_blob": "d94062df1b13f4850ce085992502700d7d417e97"
+        }
+      ],
+      "notes": [
+        "Audio travels directly browser-to-provider; daemon plugin manages sessions and delegation.",
+        "Not a claim that current Unified app delegates voice through this separate daemon plugin."
+      ],
+      "consumer_cta": {
+        "label": "Read voice setup",
+        "url": "https://github.com/microsoft/amplifier-voice#get-started",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "purpose": "Talk with Amplifier in a browser and delegate tasks through its voice interface.",
+      "visibility": "public",
+      "display_name": "Amplifier Voice",
+      "start_cta": {
+        "label": "Read voice setup",
+        "url": "https://github.com/microsoft/amplifier-voice#get-started",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      }
+    },
+    {
+      "repository": "microsoft/amplifierd",
+      "ref": "0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93",
+      "roles": [],
+      "supports_roles": [
+        "Agent Instance",
+        "Connection",
+        "Tool"
+      ],
+      "summary": "An HTTP/SSE wrapper over Amplifier Core and Foundation with pluggable endpoint extensions.",
+      "scope": "runtime HTTP integration",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier daemon",
+          "kind": "self",
+          "repository": "microsoft/amplifierd"
+        },
+        {
+          "id": "http",
+          "label": "HTTP routes & SSE transport",
+          "kind": "internal"
+        },
+        {
+          "id": "state",
+          "label": "SessionManager / EventBus",
+          "kind": "internal"
+        },
+        {
+          "id": "plugins",
+          "label": "Plugin discovery",
+          "kind": "internal"
+        },
+        {
+          "id": "core",
+          "label": "Amplifier Core",
+          "kind": "external",
+          "repository": "microsoft/amplifier-core"
+        },
+        {
+          "id": "foundation",
+          "label": "Amplifier Foundation",
+          "kind": "external",
+          "repository": "microsoft/amplifier-foundation"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "http",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "state",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "plugins",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "core",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "foundation",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93",
+          "url": "https://github.com/microsoft/amplifierd/blob/0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93/README.md",
+          "sha256": "78342d620f8a15d5dcf88cab8af65e3b558dd1e5c5ac17e539de92ac8e0094f3",
+          "git_blob": "eba9b044714c25a5c8bc410837b190ad48daaa2d"
+        },
+        {
+          "path": "docs/plugins.md",
+          "ref": "0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93",
+          "url": "https://github.com/microsoft/amplifierd/blob/0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93/docs/plugins.md",
+          "sha256": "2fb28826282dd9f7ad6063ac89986e2bb14a98bd0eb495ad0a4e290a0b04cd93",
+          "git_blob": "3c42789fa90422386452fe7aaa4643105fe75000"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93",
+          "url": "https://github.com/microsoft/amplifierd/blob/0fee31a61e56348b9b347e3b0b8d3f8d6dbdea93/pyproject.toml",
+          "sha256": "e002738f050ba11d02b26750e1d1c2a72e1f16e0d76d5c69f91e6107e99851b9",
+          "git_blob": "8d544356af1f19762e3eb4bae63b974d37ee53b5"
+        }
+      ],
+      "notes": [
+        "Not a Constellation fleet supervisor or the independent AHP host.",
+        "Libraries own agent logic; daemon supplies transport/state layer and plugin discovery.",
+        "No AHP or full Constellation Connection conformity claim follows from HTTP transport."
+      ],
+      "consumer_cta": {
+        "label": "Try the daemon",
+        "url": "https://github.com/microsoft/amplifierd#quick-start",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      },
+      "purpose": "Expose Amplifier runtime capabilities through a local HTTP and event-streaming service.",
+      "visibility": "public",
+      "display_name": "Amplifier daemon",
+      "start_cta": {
+        "label": "Try the daemon",
+        "url": "https://github.com/microsoft/amplifierd#quick-start",
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
+      }
+    }
+  ]
+}
