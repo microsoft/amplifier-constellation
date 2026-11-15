@@ -38,12 +38,7 @@ and work references to those interactions, and expose input reconciliation and
 accepted-work controls. Reuse ACP metadata and
 [negotiated extensions](https://agentclientprotocol.com/protocol/v1/extensibility)
 or existing owner controls; this contract does not assign new ACP method names.
-The outward agreement survives replacement of the implementation. Identity,
-connections, accepted work and attributed memory belong to the Agent Instance, not
-to an engine inside it, and survive a change of engine. Engine-private state need
-not: saved engine sessions may not be portable, and the instance says so honestly.
-A conversation may then start a fresh working session and retrieve its history
-from the source.
+The outward agreement survives replacement of the implementation.
 
 **Check:** Change a coordinator from one engine to an inner team. Continue its
 conversation and existing work. Can callers recognize the same agent and obtain

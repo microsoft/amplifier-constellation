@@ -47,9 +47,9 @@ capabilities produce a useful explanation instead of a silent substitute.
 
 4. **Keep model policy with the engine.** In the supplied selected-engine host,
    the owner chooses the family at installation creation and may change it by an
-   explicit, recorded action, never during an active logical turn. The same
-   [Agent Instance](agent-instance.md) continues; engine-private history, sessions
-   and continuation state are never implicitly migrated.
+   explicit, recorded action outside an active turn. The same
+   [Agent Instance](agent-instance.md) continues; engine-private history and
+   sessions are not migrated implicitly.
    This host-specific rule does not prescribe how other Agent Instance designs
    replace their internals while preserving outward promises. Native Runtime
    maintains the latest verified useful classes for capability, speed and cost,
