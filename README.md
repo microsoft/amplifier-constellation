@@ -1,69 +1,45 @@
 # Amplifier Constellation
 
-Persistent agents, reusable services and connections to the places people work.
-Each part can develop independently while people collaborate with the same agents
-across experiences.
+Constellation connects persistent agents to the places people work. Its components
+provide agent hosting, conversations, management, and connections to services such
+as Slack, Teams, and Minecraft. Each can be used and developed independently.
 
-[![Experience, Conversation, Connection, Agent Instance and Tool](site/assets/art/building-blocks.png)](https://microsoft.github.io/amplifier-constellation/)
+[![Experiences, conversations, connections, agents and tools](site/assets/art/building-blocks.png)](https://microsoft.github.io/amplifier-constellation/)
 
-[Explore the illustrated introduction](https://microsoft.github.io/amplifier-constellation/):
-four architecture illustrations, a short film, and a downloadable image collection.
+## Get started
 
-Start with the [vision](docs/VISION.md): what the parts mean, how they connect and
-why they matter. Read the [contract map](contracts/README.md) for promises relevant
-to your work, and [Working together](docs/working-together.md) for applying
-[Converge](https://github.com/microsoft/amplifier-converge) here.
+- **Explore the idea:** visit the [illustrated introduction](https://microsoft.github.io/amplifier-constellation/) or read the [vision](docs/VISION.md).
+- **Set up and manage agents:** start with [Observatory](https://github.com/microsoft/amplifier-constellation-observatory).
+- **Build with the components:** try the [request-to-result example](https://github.com/microsoft/amplifier-acp-lab/tree/main/examples/five_primitives), then follow the relevant repository below.
 
-For a runnable example, follow the [request-to-result journey](https://github.com/microsoft/amplifier-acp-lab/tree/main/examples/five_primitives).
-It connects real component APIs with Native or Unified as the engine, recovers lost
-submission replies, and checks the returned artifact in a disposable environment.
-Its controlled provider tests composition;
-it does not establish natural-model quality or production readiness.
+This repository is the family index and home of its shared agreements. Installation
+instructions and supported interfaces live with each component.
 
-## Find the owning component
+## Find a component
 
-These are provided implementations and supporting capabilities. The
-[five primitive roles](contracts/README.md) describe their outward boundaries,
-not a required repository or deployment layout.
-
-| Capability | Repository |
+| What you need | Repository |
 | --- | --- |
-| Installed identity, configuration, context, responsibilities and lifecycle | [Constellation Instance](https://github.com/microsoft/amplifier-constellation-instance) |
-| Native reasoning, providers, tools and durable execution | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
-| Rooms, membership, messages and observable coordination | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
-| Live talk, seeing what you share and a shared visual surface | [Companion](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/companion-vision.md), currently developed in Conversations |
-| External conversations and domain actions | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
+| An installed agent's identity, configuration and lifecycle | [Instance](https://github.com/microsoft/amplifier-constellation-instance) |
+| A reasoning and tool-execution engine | [Runtime](https://github.com/microsoft/amplifier-constellation-runtime) |
+| Shared rooms, messages and agent coordination | [Conversations](https://github.com/microsoft/amplifier-constellation-conversations) |
+| Live talk and sharing with an agent | [Companion](https://github.com/microsoft/amplifier-constellation-conversations/blob/main/docs/native-consumer-setup.md), currently in Conversations |
+| Connections to other services | [Slack](https://github.com/microsoft/amplifier-acp-slack) · [Teams](https://github.com/microsoft/amplifier-acp-teams) · [Minecraft](https://github.com/microsoft/amplifier-acp-minecraft) |
 | Portable communication and working-style profiles | [Persona Workshop](https://github.com/microsoft/amplifier-persona-workshop) |
-| Collaboration experiments and outcome checks | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
-| Fleet observation and management | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
+| Examples and collaboration experiments | [ACP Lab](https://github.com/microsoft/amplifier-acp-lab) |
+| A view of computers, agents and connections | [Observatory](https://github.com/microsoft/amplifier-constellation-observatory) |
 
-[family.toml](family.toml) indexes components, related products and intended homes,
-including Companion and reusable Context/Realtime capabilities. Intended homes do
-not certify available APIs. The [family agreement](contracts/composition.md)
-owns their boundaries; serving repositories own setup, API definitions and tests.
-The [ACP connection library](crates/acp-connection/README.md) is shared code,
-not a required service.
-
-Amplifier is one external experience, implemented by
-[Amplifier Unified](https://github.com/microsoft/amplifier-unified); its internal
-ecosystem stays there. [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
-is a distinct engine choice.
+[Amplifier Unified](https://github.com/microsoft/amplifier-unified) provides a
+separate Amplifier workspace that can use these components. [Amplifier Agent](https://github.com/microsoft/amplifier-agent)
+is another engine choice. See [family.toml](family.toml) for the full index.
 
 ## Join the work
 
-Invited collaborators work within their agreed repository access and scope.
+Use the [contract map](contracts/README.md) to find the shared interfaces and
+[Working together](docs/working-together.md) to coordinate changes across components.
+The contracts describe outward behavior; they do not require one deployment layout
+or a central provisioning service.
 
-- **Improve an existing part:** find its repository above, then read its vision
-  and local interfaces.
-- **Build a new experience, tool or agent implementation:** start with the relevant
-  [boundary contract](contracts/README.md) and reuse provided parts where useful.
-  The repository list is not a fixed product blueprint.
-- **Change a shared promise:** work in its umbrella contract with the affected owners.
-
-Use [Working together](docs/working-together.md) to frame the outcome and combined
-check. General public contribution intake is described below.
-
-Constellation is part of the broader [Amplifier ecosystem](https://github.com/microsoft/amplifier).
+Constellation is part of the [Amplifier ecosystem](https://github.com/microsoft/amplifier).
 
 ## Contributing
 
