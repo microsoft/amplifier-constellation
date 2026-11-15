@@ -101,8 +101,9 @@ Additional machines, containers and fleet clients remain optional.
 **Staying up:** A service the family installs to stay running comes back after
 anything other than its owner ends it: a crash, memory pressure, or a signal from
 another program. A deliberate stop or pause stays stopped, and an update's own
-stop is not overridden. Restarting only after an error exit does not meet this,
-because service managers commonly count a termination signal as a clean exit.
+stop is not overridden. Restarting only after an error exit does not meet this:
+service managers commonly count a termination signal as a clean exit, and a
+program that handles the signal exits cleanly.
 
 External services and independently supplied engines keep their account,
 licensing, network and platform requirements. Show these accurately before setup;
