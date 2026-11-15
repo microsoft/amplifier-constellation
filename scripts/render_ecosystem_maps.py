@@ -14,7 +14,7 @@ RELATIONS = {'contains', 'uses', 'supports', 'implements', 'adapts', 'integrates
 REPO = re.compile(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z')
 ID = re.compile(r'[A-Za-z0-9_-]+\Z')
 REGISTRY = Path('docs/ecosystem/registry.json')
-STYLE = '''body{margin:0;background:#fff7ee;color:#382316;font-family:"Trebuchet MS",system-ui,sans-serif;line-height:1.6}*{box-sizing:border-box}main,header,footer{max-width:1120px;margin:auto;padding:24px}header{border-bottom:1px solid #d7bfa8;display:flex;justify-content:space-between;gap:20px}a{color:#754121;text-underline-offset:3px}a:hover{color:#126d72}a:focus-visible,summary:focus-visible,.map-scroll:focus-visible{outline:3px solid #126d72;outline-offset:4px}h1{font-size:clamp(32px,5vw,58px);line-height:1.1;letter-spacing:-.03em;margin:30px 0 20px}h2{font-size:28px;line-height:1.25;margin-top:40px}p{max-width:75ch} .purpose{font-size:21px;max-width:65ch}.cta{display:inline-block;background:#a63c17;color:white;padding:12px 20px;border-radius:7px;font-weight:bold;text-decoration:none;margin:12px 20px 12px 0}.cta:hover{background:#803019;color:white}figure{margin:32px 0}figure img{display:block;width:100%;height:auto}.map-scroll{overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #d7bfa8;border-radius:12px}.map-scroll img{min-width:960px;width:100%}.role-summary{font-size:16px}figcaption,.note{color:#6c503e;font-size:15px}details{border-block:1px solid #d7bfa8;padding:18px 0;margin:28px 0}summary{cursor:pointer;font-weight:bold}.relations{padding-left:23px}.relations li{margin-bottom:10px}.directory{list-style:none;padding:0}.directory li{border-top:1px solid #d7bfa8;padding:22px 0}.directory a{font-size:23px;font-weight:bold}.directory p{margin:6px 0}.source-list{font-size:14px;overflow-wrap:anywhere}footer{border-top:1px solid #d7bfa8;font-size:14px}.skip{position:absolute;top:-100px;left:16px;background:white;padding:12px}.skip:focus{top:12px}@media(max-width:600px){main,header,footer{padding:18px}header{flex-wrap:wrap}.purpose{font-size:18px}figure{margin-inline:-6px}.cta{margin-right:8px}}'''
+STYLE = '''body{margin:0;background:#fff7ee;color:#382316;font-family:"Trebuchet MS",system-ui,sans-serif;line-height:1.6}*{box-sizing:border-box}main,header,footer{max-width:1120px;margin:auto;padding:24px}header{border-bottom:1px solid #d7bfa8;display:flex;justify-content:space-between;gap:20px}a{color:#754121;text-underline-offset:3px}a:hover{color:#126d72}a:focus-visible,summary:focus-visible,.map-scroll:focus-visible{outline:3px solid #126d72;outline-offset:4px}h1{font-size:clamp(32px,5vw,58px);line-height:1.1;letter-spacing:-.03em;margin:30px 0 20px}h2{font-size:28px;line-height:1.25;margin-top:40px}p{max-width:75ch} .purpose{font-size:21px;max-width:65ch}.cta{display:inline-block;background:#a63c17;color:white;padding:12px 20px;border-radius:7px;font-weight:bold;text-decoration:none;margin:12px 20px 12px 0}.cta:hover{background:#803019;color:white}figure{margin:32px 0}figure img{display:block;width:100%;height:auto}.map-scroll{overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #d7bfa8;border-radius:12px}.map-scroll img{min-width:960px;width:100%}.role-summary{font-size:16px}figcaption,.note{color:#6c503e;font-size:15px}details{border-block:1px solid #d7bfa8;padding:18px 0;margin:28px 0}summary{cursor:pointer;font-weight:bold}.relations{padding-left:23px}.relations li{margin-bottom:10px}.directory{list-style:none;padding:0}.directory li{border-top:1px solid #d7bfa8;padding:22px 0}.directory a{font-size:23px;font-weight:bold}.directory p{margin:6px 0}.directory .map-link{font-size:16px;font-weight:normal}.source-list{font-size:14px;overflow-wrap:anywhere}footer{border-top:1px solid #d7bfa8;font-size:14px}.skip{position:absolute;top:-100px;left:16px;background:white;padding:12px}.skip:focus{top:12px}@media(max-width:600px){main,header,footer{padding:18px}header{flex-wrap:wrap}.purpose{font-size:18px}figure{margin-inline:-6px}.cta{margin-right:8px}}'''
 
 
 def fail(message):
@@ -112,6 +112,13 @@ def validate(data):
         if not isinstance(cta, dict):
             fail(f'{name}: start_cta required')
         string(cta.get('label'), f'{name} CTA label', 100); url(cta.get('url'), f'{name} CTA URL')
+        if 'product_site' in r:
+            site = r['product_site']
+            if not isinstance(site, dict):
+                fail(f'{name}: product_site must be an object')
+            url(site.get('url'), f'{name} product_site URL')
+            if 'label' in site:
+                string(site['label'], f'{name} product_site label', 100)
         if not isinstance(r.get('notes'), list):
             fail(f'{name}: notes must be a list')
         for note in r['notes']:
@@ -268,14 +275,23 @@ def product_page(r):
     relationships = ''.join('<li>'+esc(nodes[e['from']]['label'])+' <strong>'+esc(e['relation'])+'</strong> '+esc(nodes[e['to']]['label'])+(' (optional)' if e.get('optional') else '')+'.</li>' for e in r['edges'])
     notes = ''.join('<li>'+esc(n)+'</li>' for n in r['notes'])
     citations = ''.join('<li><a href="'+esc(c['url'])+'">'+esc(c['path'])+'</a> · reviewed '+esc(c['ref'])+'</li>' for c in r['citations'])
-    body = f'<h1>{esc(r["display_name"])}</h1><p class="purpose">{esc(r["purpose"])}</p><a class="cta" href="{esc(r["start_cta"]["url"])}">{esc(r["start_cta"]["label"])}</a><a href="https://github.com/{esc(r["repository"])}">Repository and documentation →</a>'
+    site = r.get('product_site')
+    title = r['display_name']+' — ecosystem map' if site else r['display_name']
+    cta = {'url':site['url'],'label':site.get('label','Visit product website')} if site else r['start_cta']
+    body = f'<h1>{esc(title)}</h1><p class="purpose">{esc(r["purpose"])}</p>'
+    if site:
+        body += '<p>This supporting page shows where the project fits in Constellation. Visit its product website for the full introduction and ways to get started.</p>'
+    body += f'<a class="cta" href="{esc(cta["url"])}">{esc(cta["label"])}</a>'
+    if site and r['start_cta']['url'] != site['url']:
+        body += f'<a href="{esc(r["start_cta"]["url"])}">{esc(r["start_cta"]["label"])}</a> · '
+    body += f'<a href="https://github.com/{esc(r["repository"])}">Repository and documentation →</a>'
     role_text = ('Outward roles: '+', '.join(r['roles'])+'. ') if r['roles'] else 'Supporting component. '
     if r['supports_roles']: role_text += 'Supports: '+', '.join(r['supports_roles'])+'.'
     body += f'<h2>Where it fits</h2><p>{esc(r["summary"])}</p><p class="role-summary">{esc(role_text)}</p><figure><div class="map-scroll" role="region" tabindex="0" aria-label="Scrollable project map"><a href="map.svg"><img src="map.svg" alt="{esc(r["display_name"])}: ecosystem roles and project relationships"></a></div><figcaption>Scroll the map or <a href="map.svg">open it full size</a>. Role highlights describe scope, not proof of complete contract conformance.</figcaption></figure>'
     if relationships: body += '<ul class="relations">'+relationships+'</ul>'
     body += '<details><summary>The five Constellation building blocks</summary><figure><img src="../../assets/art/building-blocks.png" alt="Experience presents Conversation; Agent Instance participates through Connection and uses Tool."><figcaption>Many implementations can fulfill each role. Projects choose their own internals.</figcaption></figure><a href="https://github.com/microsoft/amplifier-constellation/blob/main/contracts/README.md">Read the boundary agreements →</a></details>'
     body += '<details><summary>Requirements, map sources, and implementation details</summary>'+('<ul class="note">'+notes+'</ul>' if notes else '')+'<ul class="source-list">'+citations+'</ul></details>'
-    return document(r['display_name'],body)
+    return document(title,body)
 
 
 def outputs(root, entries, staging=None, local_only=False, private_preview=False):
@@ -296,7 +312,9 @@ def outputs(root, entries, staging=None, local_only=False, private_preview=False
                 local[staging/slug/'docs/product/index.html']=page
                 local[staging/slug/'docs/product/style.css']=STYLE+'\n'
                 local[staging/slug/'docs/product/map.svg']=svg
-        directory.append(f'<li><a href="{esc(slug)}/index.html">{esc(r["display_name"])}</a><p>{esc(r["purpose"])}</p></li>')
+        site=r.get('product_site'); primary=site['url'] if site else slug+'/index.html'
+        map_link=f'<a class="map-link" href="{esc(slug)}/index.html">Ecosystem map</a>' if site else ''
+        directory.append(f'<li><a href="{esc(primary)}">{esc(r["display_name"])}</a><p>{esc(r["purpose"])}</p>{map_link}</li>')
     result[root/'site/projects/index.html']=document('Explore Constellation projects','<h1>Find your starting point.</h1><p class="purpose">Explore applications, connections, and the components that help build them. Each project explains its place and how to get started.</p><ul class="directory">'+''.join(directory)+'</ul>','style.css').replace('href="../../index.html"','href="../index.html"').replace('href="../index.html">Explore projects','href="index.html">Explore projects')
     return local if local_only else {**result, **local}
 

@@ -54,8 +54,55 @@ class RegistryValidation(unittest.TestCase):
     def test_scope_overflow_fails_instead_of_silent_truncation(self):
         self.invalid(lambda d:d['repositories'][0].update(edges=d['repositories'][0]['edges']*7),'six relationship')
 
+    def test_optional_product_site_requires_safe_url_and_text_label(self):
+        for site in (None, [], 'https://example.com', {}, {'url':'/local'},
+                     {'url':'http://example.com'}, {'url':'javascript:alert(1)'},
+                     {'url':'https://user:password@example.com'},
+                     {'url':'https://example.com/\n'},
+                     {'url':'https://example.com','label':''},
+                     {'url':'https://example.com','label':True}):
+            with self.subTest(site=site):
+                self.invalid(lambda d:d['repositories'][0].update(product_site=site),'product_site')
+        r=record();r['product_site']={'url':'https://example.com/'}
+        self.assertEqual(m.validate(r),[r])
+        r['product_site']['label']='Visit Example & friends'
+        self.assertEqual(m.validate(r),[r])
+
 
 class RenderAndImpact(unittest.TestCase):
+    def test_existing_product_site_is_primary_and_map_is_a_secondary_destination(self):
+        r=record();r['product_site']={'url':'https://example.com/product/'}
+        files=m.outputs(Path('/site-root'),[r])
+        index=files[Path('/site-root/site/projects/index.html')]
+        directory=ET.fromstring('<ul>'+index.split('<ul class="directory">',1)[1].split('</ul>',1)[0]+'</ul>')
+        links=directory.find('li').findall('a')
+        self.assertEqual([(a.attrib['href'],a.text) for a in links],
+                         [('https://example.com/product/','Example & Agent'),('example/index.html','Ecosystem map')])
+        page=files[Path('/site-root/site/projects/example/index.html')]
+        self.assertIn('<h1>Example &amp; Agent — ecosystem map</h1>',page)
+        self.assertIn('This supporting page shows where the project fits',page)
+        self.assertIn('<a class="cta" href="https://example.com/product/">Visit product website</a>',page)
+        self.assertLess(page.index('>Visit product website</a>'),page.index('>Read the guide</a>'))
+        r['product_site']['label']='Visit Example & friends'
+        self.assertIn('>Visit Example &amp; friends</a>',m.product_page(r))
+        r['start_cta']['url']=r['product_site']['url']
+        page=m.product_page(r)
+        self.assertNotIn('>Read the guide</a>',page)
+        self.assertIn('>Visit Example &amp; friends</a>',page)
+        self.assertEqual(r['start_cta']['label'],'Read the guide')
+
+    def test_generated_overview_remains_primary_when_no_product_site_is_registered(self):
+        r=record();files=m.outputs(Path('/site-root'),[r])
+        index=files[Path('/site-root/site/projects/index.html')]
+        directory=ET.fromstring('<ul>'+index.split('<ul class="directory">',1)[1].split('</ul>',1)[0]+'</ul>')
+        links=directory.find('li').findall('a')
+        self.assertEqual([(a.attrib['href'],a.text) for a in links],[('example/index.html','Example & Agent')])
+        page=files[Path('/site-root/site/projects/example/index.html')]
+        self.assertIn('<h1>Example &amp; Agent</h1>',page)
+        self.assertIn('<a class="cta" href="https://github.com/microsoft/example">Read the guide</a>',page)
+        self.assertNotIn('This supporting page',page)
+        self.assertNotIn('Visit product website',page)
+
     def test_product_map_is_keyboard_scrollable_and_editorial_notes_are_in_details(self):
         page=m.product_page(record())
         self.assertIn('class="map-scroll" role="region" tabindex="0"',page)
