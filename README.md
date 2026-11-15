@@ -51,7 +51,7 @@ Supports: Agent Instance, Conversation, Connection, Tool, Experience.
 
 ![Ecosystem roles and component relationships](docs/ecosystem-map.svg)
 
-[Open the map](docs/ecosystem-map.svg) · [Product overview](https://microsoft.github.io/amplifier-constellation/projects/amplifier-constellation/) · [Map guide](https://github.com/microsoft/amplifier-constellation/blob/main/docs/ecosystem-maps.md)
+[Product website](https://microsoft.github.io/amplifier-constellation/) · [Ecosystem map](https://microsoft.github.io/amplifier-constellation/projects/amplifier-constellation/) · [Open the map](docs/ecosystem-map.svg) · [Map guide](https://github.com/microsoft/amplifier-constellation/blob/main/docs/ecosystem-maps.md)
 
 <!-- ecosystem-map:end -->
 
