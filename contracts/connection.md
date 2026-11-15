@@ -24,6 +24,16 @@ Follow [continuity](work-continuity.md) for delivery and uncertainty and
 [interaction](interaction.md) for shared participation. Optional shared attention
 uses the single-decision responsibility in [ACP hosting](profiles/acp-hosting.md).
 
+A Connection may advertise a **requested return** as a tool or conversation
+capability: an agent in a conversation asks for a later turn there, after a delay
+or at a time, with a short stated purpose. The request grants no new authority,
+audience or allowance; Stop and current access still apply when it comes due. The
+Connection applies and states its own limits; this contract sets no fixed ceiling,
+so tomorrow is as valid as five minutes. People in the conversation can see and
+cancel a pending return, and newer human input there supersedes it. Report the
+outcome honestly: scheduled, declined, superseded, cancelled or delivered. A
+return exists because something specific is owed; it is not idle polling.
+
 ## Reuse and addition
 
 **Reuse:** Native platform authorization and APIs, existing Conversation/Tool
