@@ -46,8 +46,10 @@ capabilities produce a useful explanation instead of a silent substitute.
    upstream fixes; remove wrappers once supported and retain the verification.
 
 4. **Keep model policy with the engine.** In the supplied selected-engine host,
-   choose the family at installation creation; changing families uses a separate
-   installation rather than implicit migration of private history or active work.
+   the owner chooses the family at installation creation and may change it by an
+   explicit, recorded action, never during an active logical turn. The same
+   [Agent Instance](agent-instance.md) continues; engine-private history, sessions
+   and continuation state are never implicitly migrated.
    This host-specific rule does not prescribe how other Agent Instance designs
    replace their internals while preserving outward promises. Native Runtime
    maintains the latest verified useful classes for capability, speed and cost,

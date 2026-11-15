@@ -78,7 +78,10 @@ uncertain action.
    an unreachable provider can break unrelated conversations. On Connect, a
    reachable endpoint may become context-ready under closed effect admission for
    original-session verification. Persist and acknowledge readiness before advancing;
-   it is not terminal success. Metadata, enablement and effective availability
+   it is not terminal success. After a recorded [engine change](engine-compatibility.md),
+   verify the same Agent Instance rather than the original session: a saved session
+   that is not portable gives way to a visibly fresh one, and the connection is
+   neither refused nor recreated. Metadata, enablement and effective availability
    remain distinct. Offline connections defer updates needing unavailable checks,
    without temporary joins, fabricated verification or disabling unrelated schedules.
 
