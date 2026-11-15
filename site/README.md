@@ -22,3 +22,10 @@ GitHub Actions publishing source; no custom domain is required.
 The illustrations describe architectural ideas. They are not screenshots or
 evidence of deployed capabilities. The film uses synthetic narration and animated
 artwork; its captions, transcript and chapter times accompany the media.
+
+## Component product pages
+
+Pages in `projects/` are generated from `docs/ecosystem/registry.json`. Follow
+[the map maintenance guide](../docs/ecosystem-maps.md), then run
+`python3 scripts/render_ecosystem_maps.py --check` before building.
+The public registry excludes private owner records.

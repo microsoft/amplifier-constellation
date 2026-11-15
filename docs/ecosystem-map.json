@@ -1,0 +1,133 @@
+{
+  "audience": "People exploring persistent AI teammates and builders composing them",
+  "citations": [
+    {
+      "path": "README.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "93cf290f7820a960448e9ace677fac3540e71cd8e16e30794be36239f49c9d87",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/README.md"
+    },
+    {
+      "path": "family.toml",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "eaea7a13344d17794897514570ba2c98b4bae379b90c6ec06de302ca798af1a0",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/family.toml"
+    },
+    {
+      "path": "contracts/README.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "2d827af0ab90402bf50b1bc3919c1a53803149d57d22f6bcc6e27690c361c22c",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/README.md"
+    },
+    {
+      "path": "contracts/composition.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "293bed8537d56589b4162d3e4eed912f9c30724e4496bd3c5b4a56afacbb2361",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/composition.md"
+    },
+    {
+      "path": "contracts/agent-instance.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "694e4df7e4efd9b15fe63cbdc9cd605ab0b14486a670ac39300d176d61b8180b",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/agent-instance.md"
+    },
+    {
+      "path": "contracts/connection.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "66d75ac440e953fe3cfb91fd644f08c711f0ae40c5df6c335a4d897f9940c239",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/connection.md"
+    },
+    {
+      "path": "contracts/conversation.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "68698cb6278bc813d7c4dc0ff90aac694a9ed7db0037773e40869c77876784fd",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/conversation.md"
+    },
+    {
+      "path": "contracts/experience.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "2335abcccf2f9ed17822071863963ecff27c8658c4dea622ae7959d650dc2827",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/experience.md"
+    },
+    {
+      "path": "contracts/tool.md",
+      "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+      "sha256": "ec22df05a908f64a44af7a6261d8e4e614221963adfb8dfefe9d3480d67b66d0",
+      "url": "https://github.com/microsoft/amplifier-constellation/blob/47bf140cb608ed07fcc2cc9f14e577476abe22b6/contracts/tool.md"
+    }
+  ],
+  "display_name": "Amplifier Constellation",
+  "edges": [
+    {
+      "from": "self",
+      "relation": "contains",
+      "to": "contracts"
+    },
+    {
+      "from": "self",
+      "relation": "contains",
+      "to": "composition"
+    },
+    {
+      "from": "self",
+      "relation": "contains",
+      "to": "registry"
+    },
+    {
+      "from": "implementations",
+      "relation": "implements",
+      "to": "contracts"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "self",
+      "kind": "self",
+      "label": "Amplifier Constellation",
+      "repository": "microsoft/amplifier-constellation"
+    },
+    {
+      "id": "contracts",
+      "kind": "internal",
+      "label": "Five role contracts"
+    },
+    {
+      "id": "composition",
+      "kind": "internal",
+      "label": "Composition agreements"
+    },
+    {
+      "id": "registry",
+      "kind": "internal",
+      "label": "Repository index"
+    },
+    {
+      "id": "implementations",
+      "kind": "external",
+      "label": "Independent implementations"
+    }
+  ],
+  "notes": [
+    "This repository is documentation plus shared native support, not an implementation of all five runtime roles.",
+    "The role map is a contract vocabulary, not a required service stack."
+  ],
+  "page_kind": "family index",
+  "purpose": "Connect persistent agents, conversations and useful capabilities across the places people work.",
+  "ref": "47bf140cb608ed07fcc2cc9f14e577476abe22b6",
+  "repository": "microsoft/amplifier-constellation",
+  "roles": [],
+  "start_cta": {
+    "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+    "label": "Explore the illustrated introduction",
+    "url": "https://microsoft.github.io/amplifier-constellation/"
+  },
+  "summary": "The family index and shared role contracts; implementations remain independent.",
+  "supports_roles": [
+    "Agent Instance",
+    "Conversation",
+    "Connection",
+    "Tool",
+    "Experience"
+  ],
+  "visibility": "public"
+}
