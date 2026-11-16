@@ -44,6 +44,26 @@ Publish using negotiated speech-completion information; otherwise retain drafts
 until a successful prompt terminal. The [shared collector](../../crates/acp-connection/docs/public-speech.md)
 owns message assembly and the optional completion profile.
 
+## Approvals
+
+When installed-agent approval policy is enabled, select one policy owner across
+that agent’s chats; the supplied Instance hosting design assigns it to Instance.
+The selected engine remains responsible for execution checks. Connectors transport
+attributed current decisions and expose the offered controls without a competing
+remembered-rule cache. Ask is the default; remembering and Automatic are explicit
+choices and never expand separate background-work authority.
+
+Remembering requires negotiated trusted request semantics bound to the current
+engine and installation, not human wording or tool names. Preserve current source,
+revision, credential, cancellation and unknown-delivery checks. Rule revocation
+stops future matching decisions; it does not undo accepted work or an engine’s
+retained conversation grant. Automatic can approve an offered grant within hard
+engine/resource limits, so its scope must be visible. The [approval guide](../../docs/approval-policy.md)
+explains the composition; [Instance](https://github.com/microsoft/amplifier-constellation-instance/blob/main/docs/approval-policy.md)
+and [Runtime](https://github.com/microsoft/amplifier-constellation-runtime/blob/main/docs/acp-optional-capabilities.md#optional-host-owned-approval-rules)
+own exact optional interfaces. Ordinary ACP remains usable without reusable-rule
+negotiation; this agreement adds no mandatory protocol or central service.
+
 ## Context projections
 
 Original transcripts, requests, tool results and opaque provider continuation
