@@ -472,8 +472,7 @@
           "id": "web",
           "label": "Web client on same conversation",
           "kind": "external",
-          "repository": "microsoft/amplifier-client-web",
-          "link": false
+          "repository": "microsoft/amplifier-client-web"
         }
       ],
       "edges": [
@@ -1525,8 +1524,7 @@
           "id": "web",
           "label": "Amplifier Web Client",
           "kind": "external",
-          "repository": "microsoft/amplifier-client-web",
-          "link": false
+          "repository": "microsoft/amplifier-client-web"
         },
         {
           "id": "foundation",
@@ -1847,6 +1845,1487 @@
         "url": "https://github.com/microsoft/amplifierd#quick-start",
         "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan."
       }
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "a28665f48d1985a3a914906d57690e99b3350737",
+          "path": "README.md",
+          "ref": "855ab46ec60168219f9aaaa7801f978fc0743e9a",
+          "sha256": "c1f17ecbf320042b170cd93fc1345fb9d9bbcd236ea60b8850d288db14eeff59",
+          "url": "https://github.com/microsoft/amplifier-ahp-client-kit/blob/855ab46ec60168219f9aaaa7801f978fc0743e9a/README.md"
+        },
+        {
+          "git_blob": "b51a2ffa15ef33aa1e9c6ebb63001d3d3bae93d6",
+          "path": "contracts/client-kit.v1.md",
+          "ref": "855ab46ec60168219f9aaaa7801f978fc0743e9a",
+          "sha256": "49b29139539f49f417a8c135b7c4a0ecbd24caa18e393ec2ba01868dd25a9fcf",
+          "url": "https://github.com/microsoft/amplifier-ahp-client-kit/blob/855ab46ec60168219f9aaaa7801f978fc0743e9a/contracts/client-kit.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Try the command-line client",
+        "url": "https://github.com/microsoft/amplifier-ahp-client-kit#get-started-with-the-command-line-client"
+      },
+      "display_name": "Amplifier AHP Client Kit",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "connection"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "storage"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "cli"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "host"
+        },
+        {
+          "from": "web",
+          "relation": "uses",
+          "to": "self"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier AHP Client Kit",
+          "repository": "microsoft/amplifier-ahp-client-kit"
+        },
+        {
+          "id": "connection",
+          "kind": "internal",
+          "label": "Connection & confirmed-state recovery"
+        },
+        {
+          "id": "storage",
+          "kind": "internal",
+          "label": "Browser / file storage adapters"
+        },
+        {
+          "id": "cli",
+          "kind": "internal",
+          "label": "Headless CLI"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Compatible AHP host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "web",
+          "kind": "external",
+          "label": "AHP Web Client",
+          "repository": "microsoft/amplifier-unified-client-web",
+          "link": false
+        }
+      ],
+      "notes": [
+        "AHP network transport does not itself claim the whole Constellation participation/Connection contract.",
+        "Client applications own rendering, reconnect timing, storage limits and authorization.",
+        "No agent runtime loads in the client kit."
+      ],
+      "purpose": "Connect clients to an AHP host with recoverable requests, confirmed state and private drafts.",
+      "ref": "855ab46ec60168219f9aaaa7801f978fc0743e9a",
+      "repository": "microsoft/amplifier-ahp-client-kit",
+      "roles": [],
+      "scope": "shared client library",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Try the command-line client",
+        "url": "https://github.com/microsoft/amplifier-ahp-client-kit#get-started-with-the-command-line-client"
+      },
+      "summary": "A reusable AHP client library and headless CLI, used by independently owned experiences.",
+      "supports_roles": [
+        "Experience",
+        "Connection"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "f3e58d498bf63220f448f9c1d9cef405ae55f63b",
+          "path": "README.md",
+          "ref": "222c4401fc20bc8d0d45c7930ceaf6baf9130ee9",
+          "sha256": "1d46a7010614f3aebc447cb20650d82c06cf7b1888b9df45c6eea30897ecc796",
+          "url": "https://github.com/microsoft/amplifier-app-acp/blob/222c4401fc20bc8d0d45c7930ceaf6baf9130ee9/README.md"
+        },
+        {
+          "git_blob": "4993e8cb4e56329a2d98200f7d499da80c7b5161",
+          "path": "contracts/native-agent.v1.md",
+          "ref": "222c4401fc20bc8d0d45c7930ceaf6baf9130ee9",
+          "sha256": "d5107230c9ed27e2bdf2680294439d425c758bc489a6ccbd52d8a76a18f71d5c",
+          "url": "https://github.com/microsoft/amplifier-app-acp/blob/222c4401fc20bc8d0d45c7930ceaf6baf9130ee9/contracts/native-agent.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Build an ACP endpoint",
+        "url": "https://github.com/microsoft/amplifier-app-acp#get-started"
+      },
+      "display_name": "Amplifier ACP Agent",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "adapter"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "state"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "runtime"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "bundles"
+        },
+        {
+          "from": "client",
+          "relation": "uses",
+          "to": "self"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier ACP Agent",
+          "repository": "microsoft/amplifier-app-acp"
+        },
+        {
+          "id": "adapter",
+          "kind": "internal",
+          "label": "ACP sessions, approvals & streaming"
+        },
+        {
+          "id": "state",
+          "kind": "internal",
+          "label": "Private adapter records"
+        },
+        {
+          "id": "runtime",
+          "kind": "external",
+          "label": "Amplifier Core + Foundation"
+        },
+        {
+          "id": "client",
+          "kind": "external",
+          "label": "Independent ACP client / host"
+        },
+        {
+          "id": "bundles",
+          "kind": "external",
+          "label": "Configured bundles & providers"
+        }
+      ],
+      "notes": [
+        "Execution adapter is not the Constellation Instance installation manager and is not amplifier-agent.",
+        "The client/host retains the connection while work runs; the native runtime owns reasoning, tools and native history.",
+        "Do not label ordinary ACP support as compliance with every Agent Instance lifecycle contract."
+      ],
+      "purpose": "Expose configured Amplifier bundles, tools and delegation through the Agent Client Protocol.",
+      "ref": "222c4401fc20bc8d0d45c7930ceaf6baf9130ee9",
+      "repository": "microsoft/amplifier-app-acp",
+      "roles": [],
+      "scope": "agent execution adapter",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Build an ACP endpoint",
+        "url": "https://github.com/microsoft/amplifier-app-acp#get-started"
+      },
+      "summary": "An ACP execution adapter exposing configured Amplifier bundles to independent clients.",
+      "supports_roles": [
+        "Agent Instance",
+        "Connection",
+        "Tool"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "b60aeff19eff9c0676fe29f6bbe178375396944d",
+          "path": "README.md",
+          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+          "sha256": "29f92db8310c0bad987a123e9184cb3a935b6adb2850f828e66776fce6884c4c",
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/README.md"
+        },
+        {
+          "git_blob": "2340a58175980650fa4636963a28251953287ebf",
+          "path": "package.json",
+          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+          "sha256": "6a883c73941de85dd5b011e1d460c2ed2a593cd3506b00bf3a25ddab88f52011",
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/package.json"
+        },
+        {
+          "git_blob": "0e34faa293821a1b86d1b109f72e3d4aeccb4a72",
+          "path": "AGENTS.md",
+          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+          "sha256": "63e371d12e7d4c70284ab775f508af7ba20803bff18150d3aec5d6dcea2e23d6",
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/AGENTS.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Use Amplifier",
+        "url": "https://github.com/microsoft/amplifier-unified#install"
+      },
+      "display_name": "Amplifier Web Client",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "ui"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "private"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "host"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "inputs"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Web Client",
+          "repository": "microsoft/amplifier-client-web"
+        },
+        {
+          "id": "ui",
+          "kind": "internal",
+          "label": "Conversation & workspace UI"
+        },
+        {
+          "id": "private",
+          "kind": "internal",
+          "label": "Private client view state"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Amplifier Unified host",
+          "repository": "microsoft/amplifier-unified"
+        },
+        {
+          "id": "inputs",
+          "kind": "external",
+          "label": "Selected catalogs, SDK & branding"
+        }
+      ],
+      "notes": [
+        "Connects by the current Unified HTTP/SSE/WebSocket interface, not the separate AHP client interface.",
+        "Source authoring and selected delivery copy are separate; keep components/web-client and its provenance current through the documented handoff.",
+        "Developer source is not a standalone consumer installer."
+      ],
+      "purpose": "Present Amplifier conversations, workspaces and interactive work surfaces in a browser.",
+      "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+      "repository": "microsoft/amplifier-client-web",
+      "roles": [
+        "Experience"
+      ],
+      "scope": "selected frontend component",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Use Amplifier",
+        "url": "https://github.com/microsoft/amplifier-unified#install"
+      },
+      "summary": "The selected browser frontend for the current Amplifier Unified application.",
+      "supports_roles": [
+        "Conversation"
+      ],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers adding preview and deployment controls",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "168d56f195108626fdeeee55accfdc92a3b286aa",
+          "sha256": "b80b287d2ea9c2798c1d7fe16f48babf65ccea60937fae7f5f839937afa66561",
+          "url": "https://github.com/microsoft/amplifier-publishing/blob/168d56f195108626fdeeee55accfdc92a3b286aa/README.md",
+          "git_blob": "00eb394538360b08b8b87581d16b311122d2a4d1"
+        },
+        {
+          "path": "contracts/publishing.v1.md",
+          "ref": "168d56f195108626fdeeee55accfdc92a3b286aa",
+          "sha256": "5582f30942ce91684ef56789fb97498be57051a6a9bc929cf7d564b3e63febcb",
+          "url": "https://github.com/microsoft/amplifier-publishing/blob/168d56f195108626fdeeee55accfdc92a3b286aa/contracts/publishing.v1.md",
+          "git_blob": "57f3cb3f8f58d14e91c625d4e99721b8a00e210c"
+        }
+      ],
+      "display_name": "Amplifier Publishing",
+      "edges": [
+        {
+          "from": "consumer",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "capture"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "preview"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "records"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "target"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Publishing",
+          "repository": "microsoft/amplifier-publishing"
+        },
+        {
+          "id": "consumer",
+          "kind": "external",
+          "label": "Embedding application"
+        },
+        {
+          "id": "capture",
+          "kind": "internal",
+          "label": "Static snapshot capture"
+        },
+        {
+          "id": "preview",
+          "kind": "internal",
+          "label": "Local preview listeners"
+        },
+        {
+          "id": "records",
+          "kind": "internal",
+          "label": "Reviews and deployment records"
+        },
+        {
+          "id": "target",
+          "kind": "external",
+          "label": "Configured publishing target"
+        }
+      ],
+      "notes": [
+        "The library supports tool/experience integration but is not itself a standalone Experience or model/runtime.",
+        "Capture accepts prebuilt files; it does not run builds.",
+        "It does not supply public URL provisioning, DNS, cloud accounts, remote authentication or TLS."
+      ],
+      "page_kind": "publishing library",
+      "purpose": "Preview and publish already-built sites with immutable captures and reviewed rollback.",
+      "ref": "168d56f195108626fdeeee55accfdc92a3b286aa",
+      "repository": "microsoft/amplifier-publishing",
+      "roles": [],
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate publishing",
+        "url": "https://github.com/microsoft/amplifier-publishing#get-started"
+      },
+      "summary": "A reusable library for immutable site snapshots, local previews and reviewed publishing.",
+      "supports_roles": [
+        "Tool",
+        "Experience"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "1d9791021850bfffd2932ed5791e61c6e2ed4fa2",
+          "path": "README.md",
+          "ref": "db9987269898c57fc8e6ea28fa3839c97eb3bb3d",
+          "sha256": "864cecd0fed6c3957934f6fd2b4d2897f2e69d8b639e1aa3f26393f60d4ee348",
+          "url": "https://github.com/microsoft/amplifier-session-catalog/blob/db9987269898c57fc8e6ea28fa3839c97eb3bb3d/README.md"
+        },
+        {
+          "git_blob": "795d06204c9bbc64d9f6d3a9dec60acf9e9c88fa",
+          "path": "contracts/catalog.v1.md",
+          "ref": "db9987269898c57fc8e6ea28fa3839c97eb3bb3d",
+          "sha256": "e6ad18ee9136e0469fdc28da5a6b3bfe2e907151a9b8bd0edbdd6c6e83872f24",
+          "url": "https://github.com/microsoft/amplifier-session-catalog/blob/db9987269898c57fc8e6ea28fa3839c97eb3bb3d/contracts/catalog.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate the catalog",
+        "url": "https://github.com/microsoft/amplifier-session-catalog#get-started"
+      },
+      "display_name": "Amplifier Session Catalog",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "scan"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "index"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "rpc"
+        },
+        {
+          "from": "host",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "history"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Session Catalog",
+          "repository": "microsoft/amplifier-session-catalog"
+        },
+        {
+          "id": "scan",
+          "kind": "internal",
+          "label": "Native metadata scanner"
+        },
+        {
+          "id": "index",
+          "kind": "internal",
+          "label": "Rebuildable SQLite index"
+        },
+        {
+          "id": "rpc",
+          "kind": "internal",
+          "label": "Paginated stdio API"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Embedding host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "history",
+          "kind": "external",
+          "label": "Native Amplifier history"
+        }
+      ],
+      "notes": [
+        "Catalog supports discovery; it does not own the conversation, start work, delete history or prove a native lock is free.",
+        "No required global catalog service: hosts authorize results and configure allowed roots.",
+        "Depict a reusable component with consumers, not a fixed child of a particular web client."
+      ],
+      "purpose": "Find Amplifier conversations and workspaces from native metadata without loading an agent.",
+      "ref": "db9987269898c57fc8e6ea28fa3839c97eb3bb3d",
+      "repository": "microsoft/amplifier-session-catalog",
+      "roles": [],
+      "scope": "shared local metadata component",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate the catalog",
+        "url": "https://github.com/microsoft/amplifier-session-catalog#get-started"
+      },
+      "summary": "A reusable metadata index for conversation discovery; native history stays authoritative.",
+      "supports_roles": [
+        "Conversation",
+        "Experience"
+      ],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers composing host media support",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "b2abfc0b22985a3dc3e725730d097ef924b1d239",
+          "sha256": "a7657412e274d6c5e42c393741674baeec98ef09cbef13bf42cb7c2876aabe6f",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-media/blob/b2abfc0b22985a3dc3e725730d097ef924b1d239/README.md",
+          "git_blob": "a603f49e5d3c72109987301bb6e58b3da7f2542e"
+        },
+        {
+          "path": "contracts/media.v1.md",
+          "ref": "b2abfc0b22985a3dc3e725730d097ef924b1d239",
+          "sha256": "8cf64c07d10df6d6a99d71ce44efea8546fe304828458763055db8eb4d4c67fc",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-media/blob/b2abfc0b22985a3dc3e725730d097ef924b1d239/contracts/media.v1.md",
+          "git_blob": "f5e268112ceec12bf961f1d2c89dc2df73b64b06"
+        }
+      ],
+      "display_name": "Amplifier Unified Media",
+      "edges": [
+        {
+          "from": "host",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "gateway"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "transcripts"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "worker"
+        },
+        {
+          "from": "client",
+          "relation": "uses",
+          "to": "gateway"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Media",
+          "repository": "microsoft/amplifier-unified-capability-media"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Amplifier Unified host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "gateway",
+          "kind": "internal",
+          "label": "Media gateway and leases"
+        },
+        {
+          "id": "transcripts",
+          "kind": "internal",
+          "label": "Transcript delivery"
+        },
+        {
+          "id": "worker",
+          "kind": "internal",
+          "label": "Optional Python voice worker"
+        },
+        {
+          "id": "client",
+          "kind": "external",
+          "label": "Browser media client"
+        }
+      ],
+      "notes": [
+        "This is supporting library functionality, not a standalone voice Experience or universal Constellation Connection implementation.",
+        "Client owns device gestures; host owns authorization/admission and native session history.",
+        "The intended Constellation platform-realtime repository is not substituted for this existing Unified package."
+      ],
+      "page_kind": "capability library",
+      "purpose": "Add voice, transcript delivery and authorized visual capture to an Amplifier Unified host.",
+      "ref": "b2abfc0b22985a3dc3e725730d097ef924b1d239",
+      "repository": "microsoft/amplifier-unified-capability-media",
+      "roles": [],
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate media support",
+        "url": "https://github.com/microsoft/amplifier-unified-capability-media#get-started"
+      },
+      "summary": "An optional media capability inside a composed Amplifier Unified host.",
+      "supports_roles": [
+        "Experience",
+        "Connection"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "c08dc673d5067f418cd55a2417124aa3459e6b6c",
+          "path": "README.md",
+          "ref": "5c0c8367b0bd0ab5e690eb38a3064a34af7a47da",
+          "sha256": "3e3da618e1b0eb5f7d35cbac8e2510e3c048cfd09e2ca634dd2d8d71fb246ef3",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-native/blob/5c0c8367b0bd0ab5e690eb38a3064a34af7a47da/README.md"
+        },
+        {
+          "git_blob": "05f934471c3f68f291de985a18473964a037650e",
+          "path": "contracts/native-bridge.v1.md",
+          "ref": "5c0c8367b0bd0ab5e690eb38a3064a34af7a47da",
+          "sha256": "1970e2f36ebfaa8406438c9cdff6325662411e7fb46e2298cd499d1ea5703533",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-native/blob/5c0c8367b0bd0ab5e690eb38a3064a34af7a47da/contracts/native-bridge.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate native controls",
+        "url": "https://github.com/microsoft/amplifier-unified-capability-native#get-started"
+      },
+      "display_name": "Amplifier Unified Native Capabilities",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "bridge"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "admin"
+        },
+        {
+          "from": "host",
+          "relation": "integrates",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "agent"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Native Capabilities",
+          "repository": "microsoft/amplifier-unified-capability-native"
+        },
+        {
+          "id": "bridge",
+          "kind": "internal",
+          "label": "Native control capability factory"
+        },
+        {
+          "id": "admin",
+          "kind": "internal",
+          "label": "Optional AdminConnection"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Composing AHP host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "agent",
+          "kind": "external",
+          "label": "Amplifier ACP Agent",
+          "repository": "microsoft/amplifier-app-acp"
+        }
+      ],
+      "notes": [
+        "Does not implement an agent runtime; available controls depend on negotiated ACP peer support.",
+        "AdminConnection is optional and requires trusted workspace authorization.",
+        "The package is an optional host capability, not an unconditional dependency of all Agent Instances."
+      ],
+      "purpose": "Connect a Unified host to Amplifier provider, bundle and session controls.",
+      "ref": "5c0c8367b0bd0ab5e690eb38a3064a34af7a47da",
+      "repository": "microsoft/amplifier-unified-capability-native",
+      "roles": [],
+      "scope": "optional host capability",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate native controls",
+        "url": "https://github.com/microsoft/amplifier-unified-capability-native#get-started"
+      },
+      "summary": "An optional host integration for native Amplifier controls, with execution remaining in the ACP agent.",
+      "supports_roles": [
+        "Agent Instance",
+        "Tool",
+        "Experience"
+      ],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers adding durable host operations",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "2ab0bccbdb5a1d034c7afb807b4c8c2b029f70a1",
+          "sha256": "fd1dc7ccd5e989b7310c5c6ed48a45104ca3ee1a59895e16cdd05fad10238e81",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-operations/blob/2ab0bccbdb5a1d034c7afb807b4c8c2b029f70a1/README.md",
+          "git_blob": "5f816d1ee22a688c3ed5d566189ef761cbcde46e"
+        },
+        {
+          "path": "src/index.ts",
+          "ref": "2ab0bccbdb5a1d034c7afb807b4c8c2b029f70a1",
+          "sha256": "543715eb86f4679ba449e3eabc109840a6991ddd9b10bcb9a76291545c853f56",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-operations/blob/2ab0bccbdb5a1d034c7afb807b4c8c2b029f70a1/src/index.ts",
+          "git_blob": "e3366fca3f32da94ff2b5342fdfc1a056f208766"
+        }
+      ],
+      "display_name": "Amplifier Unified Operations",
+      "edges": [
+        {
+          "from": "host",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "provider"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "service"
+        },
+        {
+          "from": "service",
+          "relation": "contains",
+          "to": "records"
+        },
+        {
+          "from": "provider",
+          "relation": "uses",
+          "to": "native"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Operations",
+          "repository": "microsoft/amplifier-unified-capability-operations"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Amplifier Unified host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "provider",
+          "kind": "internal",
+          "label": "TypeScript capability provider"
+        },
+        {
+          "id": "service",
+          "kind": "internal",
+          "label": "Private Python service"
+        },
+        {
+          "id": "records",
+          "kind": "internal",
+          "label": "Schedules, questions and records"
+        },
+        {
+          "id": "native",
+          "kind": "external",
+          "label": "Native execution and admission"
+        }
+      ],
+      "notes": [
+        "This package retains operation records; host/native runtime still own execution and admission.",
+        "No extra autonomous agent, supervisor or Conversation owner is implied.",
+        "Optional callbacks must be mounted before advertising their capabilities."
+      ],
+      "page_kind": "capability library",
+      "purpose": "Add schedules, questions, observation watches and operation tracking to a Unified host.",
+      "ref": "2ab0bccbdb5a1d034c7afb807b4c8c2b029f70a1",
+      "repository": "microsoft/amplifier-unified-capability-operations",
+      "roles": [],
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate operations",
+        "url": "https://github.com/microsoft/amplifier-unified-capability-operations#get-started"
+      },
+      "summary": "Optional schedules, questions, watches and operation records behind a Unified host capability.",
+      "supports_roles": [
+        "Agent Instance",
+        "Experience"
+      ],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers composing shared artifacts into a host",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "800a4d90d42622fac7e14bbf916a3ec84508cd5e",
+          "sha256": "4d44ca23d26eee96c2dd88e31c39b0374427ef9d68cdf8451b5ae629a6249631",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-resources/blob/800a4d90d42622fac7e14bbf916a3ec84508cd5e/README.md",
+          "git_blob": "e45bb7dd0b2ba16ebac78a210ed9f557663fd051"
+        },
+        {
+          "path": "docs/CONTRACT.v1.md",
+          "ref": "800a4d90d42622fac7e14bbf916a3ec84508cd5e",
+          "sha256": "daa24d4e7e0c1f081ea344a755a6cd8a28aef9ee066f664a081bc28e5098aa8b",
+          "url": "https://github.com/microsoft/amplifier-unified-capability-resources/blob/800a4d90d42622fac7e14bbf916a3ec84508cd5e/docs/CONTRACT.v1.md",
+          "git_blob": "e47ef04f33fcea875190c9976ace00f904260465"
+        }
+      ],
+      "display_name": "Amplifier Unified Resources",
+      "edges": [
+        {
+          "from": "host",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "artifacts"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "apps"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "attachments"
+        },
+        {
+          "from": "client",
+          "relation": "uses",
+          "to": "host"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Resources",
+          "repository": "microsoft/amplifier-unified-capability-resources"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Amplifier Unified host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "artifacts",
+          "kind": "internal",
+          "label": "Immutable artifact versions"
+        },
+        {
+          "id": "apps",
+          "kind": "internal",
+          "label": "Canvas apps and shared state"
+        },
+        {
+          "id": "attachments",
+          "kind": "internal",
+          "label": "Scoped attachments"
+        },
+        {
+          "id": "client",
+          "kind": "external",
+          "label": "Browser or terminal client"
+        }
+      ],
+      "notes": [
+        "Client owns presentation and private drafts; resource storage does not own the source Conversation or execution.",
+        "Independent integration library; installing it alone does not provide a consumer app.",
+        "Historical imports are data, not live activation or permission to replay work."
+      ],
+      "page_kind": "capability library",
+      "purpose": "Store and version Canvas artifacts, interactive apps and attachments shared across conversations.",
+      "ref": "800a4d90d42622fac7e14bbf916a3ec84508cd5e",
+      "repository": "microsoft/amplifier-unified-capability-resources",
+      "roles": [],
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate shared resources",
+        "url": "https://github.com/microsoft/amplifier-unified-capability-resources#get-started"
+      },
+      "summary": "Shared Canvas, app-state and attachment storage for a composed Amplifier Unified host.",
+      "supports_roles": [
+        "Experience",
+        "Conversation"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "f0d35b1525cbb645fa223c82a28afebce969fc8c",
+          "path": "README.md",
+          "ref": "7611333caeb55a407503730fd7b567f1ee4743f8",
+          "sha256": "ce934974a54d18fd67edcf573fb427c42ac90a2018ce31efd52e21cfdbb79903",
+          "url": "https://github.com/microsoft/amplifier-unified-capabilty-mcp/blob/7611333caeb55a407503730fd7b567f1ee4743f8/README.md"
+        },
+        {
+          "git_blob": "78554f94426670ae9a79d609e83c5421a121a32c",
+          "path": "contracts/mcp-owner.v1.md",
+          "ref": "7611333caeb55a407503730fd7b567f1ee4743f8",
+          "sha256": "e8ef99a7c3e0ef4cf0fe2cb9f556dc4d35ae067a4020f449e89d051cb1624ae4",
+          "url": "https://github.com/microsoft/amplifier-unified-capabilty-mcp/blob/7611333caeb55a407503730fd7b567f1ee4743f8/contracts/mcp-owner.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate MCP capabilities",
+        "url": "https://github.com/microsoft/amplifier-unified-capabilty-mcp#get-started"
+      },
+      "display_name": "Amplifier Unified MCP Capabilities",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "adapter"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "broker"
+        },
+        {
+          "from": "host",
+          "relation": "integrates",
+          "to": "self"
+        },
+        {
+          "from": "broker",
+          "relation": "uses",
+          "to": "servers"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "resources"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified MCP Capabilities",
+          "repository": "microsoft/amplifier-unified-capabilty-mcp"
+        },
+        {
+          "id": "adapter",
+          "kind": "internal",
+          "label": "Node capability adapter"
+        },
+        {
+          "id": "broker",
+          "kind": "internal",
+          "label": "Python MCP broker"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Composing AHP host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "servers",
+          "kind": "external",
+          "label": "Authorized MCP servers"
+        },
+        {
+          "id": "resources",
+          "kind": "external",
+          "label": "Resources capability",
+          "repository": "microsoft/amplifier-unified-capability-resources"
+        }
+      ],
+      "notes": [
+        "Canonical repository spelling is amplifier-unified-capabilty-mcp.",
+        "MCP transport connections are not automatically the Constellation Connection conversation-participation primitive.",
+        "Separate from Amplifier native tool-mcp module.",
+        "External services retain authorization; listing metadata does not launch servers or start OAuth."
+      ],
+      "purpose": "Connect a Unified host to MCP servers, tools, resources and interactive apps.",
+      "ref": "7611333caeb55a407503730fd7b567f1ee4743f8",
+      "repository": "microsoft/amplifier-unified-capabilty-mcp",
+      "roles": [],
+      "scope": "optional host capability",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Integrate MCP capabilities",
+        "url": "https://github.com/microsoft/amplifier-unified-capabilty-mcp#get-started"
+      },
+      "summary": "An optional MCP broker and host adapter for external tools, resources and interactive apps.",
+      "supports_roles": [
+        "Tool",
+        "Experience"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "7150e89982a49a32a9c430703c2aa001a23e1da7",
+          "path": "README.md",
+          "ref": "4af1796f660e0c06d0992b08be1404c890cedcc0",
+          "sha256": "0317cfcfeb4dbc6f2fb176af081d181dc87d62a1c13fc62cf5a25bf14f63e238",
+          "url": "https://github.com/microsoft/amplifier-unified-client-tui/blob/4af1796f660e0c06d0992b08be1404c890cedcc0/README.md"
+        },
+        {
+          "git_blob": "acd64fa0b66722f8f329b17eaf26436dd86e7194",
+          "path": "contracts/session.v1.md",
+          "ref": "4af1796f660e0c06d0992b08be1404c890cedcc0",
+          "sha256": "adcf97bab93220b7715715d2408bce6eb8a5b6624ca7db76943e777dbea1c8f6",
+          "url": "https://github.com/microsoft/amplifier-unified-client-tui/blob/4af1796f660e0c06d0992b08be1404c890cedcc0/contracts/session.v1.md"
+        },
+        {
+          "git_blob": "2690beb9f94d7f6aa0f95718987ad93cae1d6f7b",
+          "path": "pyproject.toml",
+          "ref": "4af1796f660e0c06d0992b08be1404c890cedcc0",
+          "sha256": "188c3d46d1ba0f9febaafce6863a3f4bd2c9dbb72368eaddfe11f78e221592cc",
+          "url": "https://github.com/microsoft/amplifier-unified-client-tui/blob/4af1796f660e0c06d0992b08be1404c890cedcc0/pyproject.toml"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Install and connect",
+        "url": "https://github.com/microsoft/amplifier-unified-client-tui#install-and-connect"
+      },
+      "display_name": "Amplifier Unified Terminal Client",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "renderer"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "drafts"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "sdk"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "host"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Terminal Client",
+          "repository": "microsoft/amplifier-unified-client-tui"
+        },
+        {
+          "id": "renderer",
+          "kind": "internal",
+          "label": "Native Ratatui renderer"
+        },
+        {
+          "id": "drafts",
+          "kind": "internal",
+          "label": "Private drafts & navigation"
+        },
+        {
+          "id": "sdk",
+          "kind": "internal",
+          "label": "Bundled AHP SDK"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Compatible AHP host",
+          "repository": "microsoft/amplifier-unified-host"
+        }
+      ],
+      "notes": [
+        "Distinct from amplifier-app-tui.",
+        "An installed host is external; the client does not load an agent runtime.",
+        "Current package supports macOS/Linux and Windows via WSL2, not native Windows wheels."
+      ],
+      "purpose": "Send messages, inspect agent activity and reopen conversations from a native terminal interface.",
+      "ref": "4af1796f660e0c06d0992b08be1404c890cedcc0",
+      "repository": "microsoft/amplifier-unified-client-tui",
+      "roles": [
+        "Experience"
+      ],
+      "scope": "independent AHP experience",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Install and connect",
+        "url": "https://github.com/microsoft/amplifier-unified-client-tui#install-and-connect"
+      },
+      "summary": "An independently installable AHP terminal experience; closing it detaches while host work continues.",
+      "supports_roles": [
+        "Conversation"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "89086d212337a0464a72a383351fd69d66c663e4",
+          "path": "README.md",
+          "ref": "4174b53025d2b3b4131024c5c9b3a410e2d13a26",
+          "sha256": "91746138611b7d36491e39fc7cc48573df7e306d4a0b6e2f916a2d74c8fdc013",
+          "url": "https://github.com/microsoft/amplifier-unified-host/blob/4174b53025d2b3b4131024c5c9b3a410e2d13a26/README.md"
+        },
+        {
+          "git_blob": "7146b2fc0df12a9bf0645190830378b27d20de2a",
+          "path": "docs/contracts/host-boundary.v1.md",
+          "ref": "4174b53025d2b3b4131024c5c9b3a410e2d13a26",
+          "sha256": "2b702d696a0999e4c5051e1a6d1f66ba7eca58d0a8c65c6ae370860924ebbcc5",
+          "url": "https://github.com/microsoft/amplifier-unified-host/blob/4174b53025d2b3b4131024c5c9b3a410e2d13a26/docs/contracts/host-boundary.v1.md"
+        },
+        {
+          "git_blob": "dd261a923f0671ef91d8f3c46e00caa30308b748",
+          "path": "package.json",
+          "ref": "4174b53025d2b3b4131024c5c9b3a410e2d13a26",
+          "sha256": "8e79f0400f0df71a8f517d9e7550e4df8dedde128b6acb02400c819d10ff3173",
+          "url": "https://github.com/microsoft/amplifier-unified-host/blob/4174b53025d2b3b4131024c5c9b3a410e2d13a26/package.json"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Try the local host",
+        "url": "https://github.com/microsoft/amplifier-unified-host#try-it-locally"
+      },
+      "display_name": "Amplifier Unified Host",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "state"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "bridge"
+        },
+        {
+          "from": "clients",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "bridge",
+          "relation": "uses",
+          "to": "agents"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "catalog"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "state",
+          "kind": "internal",
+          "label": "Conversation state & admission"
+        },
+        {
+          "id": "bridge",
+          "kind": "internal",
+          "label": "ACP agent bridge"
+        },
+        {
+          "id": "clients",
+          "kind": "external",
+          "label": "Independent AHP clients"
+        },
+        {
+          "id": "agents",
+          "kind": "external",
+          "label": "Configured ACP agents"
+        },
+        {
+          "id": "catalog",
+          "kind": "external",
+          "label": "Optional Session Catalog",
+          "repository": "microsoft/amplifier-session-catalog"
+        }
+      ],
+      "notes": [
+        "AHP server and ACP client roles are protocol roles, not new ecosystem primitives.",
+        "This is an independently composable host; do not label it the default installed backend of current Amplifier Unified.",
+        "Catalog and capability packages are optional. A same-origin authenticated gateway owns TLS and user account management.",
+        "Does not embed a model runtime or own every agent implementation."
+      ],
+      "purpose": "Keep conversations and shared state available while clients connect to independently installed agents.",
+      "ref": "4174b53025d2b3b4131024c5c9b3a410e2d13a26",
+      "repository": "microsoft/amplifier-unified-host",
+      "roles": [
+        "Conversation",
+        "Connection"
+      ],
+      "scope": "independent host component",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Try the local host",
+        "url": "https://github.com/microsoft/amplifier-unified-host#try-it-locally"
+      },
+      "summary": "A separately composable AHP host for clients, durable conversation state and independently installed ACP agents.",
+      "supports_roles": [
+        "Experience",
+        "Agent Instance",
+        "Tool"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "adccd3a9fbea01f13a489fd2286bf05f5733b418",
+          "path": "README.md",
+          "ref": "8ce7480764b363d4df15d8022d2fcfded249d0ad",
+          "sha256": "269a8fdd7f6eba99d5f177013b7af18a96314c16c23027a578cc64ae202d7fa9",
+          "url": "https://github.com/microsoft/amplifier-unified-interop/blob/8ce7480764b363d4df15d8022d2fcfded249d0ad/README.md"
+        },
+        {
+          "git_blob": "a78375dbca2fac953a68f6a55a8580d389d5070c",
+          "path": "CONTRACT.v1.md",
+          "ref": "8ce7480764b363d4df15d8022d2fcfded249d0ad",
+          "sha256": "c7710880041bc9319ddf3aa95c18c2cebb5399452b097c7be72eb8937fc36d0f",
+          "url": "https://github.com/microsoft/amplifier-unified-interop/blob/8ce7480764b363d4df15d8022d2fcfded249d0ad/CONTRACT.v1.md"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Run integration checks",
+        "url": "https://github.com/microsoft/amplifier-unified-interop#get-started"
+      },
+      "display_name": "Amplifier Unified Interoperability Checks",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "peers"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "checks"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "host"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "agents"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "clients"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Interoperability Checks",
+          "repository": "microsoft/amplifier-unified-interop"
+        },
+        {
+          "id": "peers",
+          "kind": "internal",
+          "label": "Synthetic protocol peers"
+        },
+        {
+          "id": "checks",
+          "kind": "internal",
+          "label": "Boundary & recovery checks"
+        },
+        {
+          "id": "host",
+          "kind": "external",
+          "label": "Independently installed host",
+          "repository": "microsoft/amplifier-unified-host"
+        },
+        {
+          "id": "agents",
+          "kind": "external",
+          "label": "Independent ACP agents"
+        },
+        {
+          "id": "clients",
+          "kind": "external",
+          "label": "Independent clients"
+        }
+      ],
+      "notes": [
+        "This is validation infrastructure, not a user experience or runtime component.",
+        "An omitted host command skips process checks; schema passes alone do not establish functioning host or real providers.",
+        "Do not draw the fixture suite as a production runtime dependency."
+      ],
+      "purpose": "Check public integration boundaries with independent peers and deterministic fixtures.",
+      "ref": "8ce7480764b363d4df15d8022d2fcfded249d0ad",
+      "repository": "microsoft/amplifier-unified-interop",
+      "roles": [],
+      "scope": "independent conformance harness",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Run integration checks",
+        "url": "https://github.com/microsoft/amplifier-unified-interop#get-started"
+      },
+      "summary": "Independent test peers exercising public host/client/agent boundaries.",
+      "supports_roles": [
+        "Experience",
+        "Conversation",
+        "Connection",
+        "Agent Instance"
+      ],
+      "visibility": "public"
+    },
+    {
+      "citations": [
+        {
+          "git_blob": "a8180b063ddebb4584381812ac95decbb1c58823",
+          "path": "README.md",
+          "ref": "b22c1aa3506b4c580359cb749f0c098264639eea",
+          "sha256": "c456c50e8609a29bf55eb551d1db4169a707cde815ce3d9980840b1ec954055f",
+          "url": "https://github.com/microsoft/amplifier-unified-protocol-extensions/blob/b22c1aa3506b4c580359cb749f0c098264639eea/README.md"
+        },
+        {
+          "git_blob": "83d9e90bd15cc341252083cb50e269cb29e4e1b2",
+          "path": "docs/extensions.v1.md",
+          "ref": "b22c1aa3506b4c580359cb749f0c098264639eea",
+          "sha256": "7852ade3971109e89ea1f7ff4e6e90e6c13080621bd58ff4266f6dcc90185552",
+          "url": "https://github.com/microsoft/amplifier-unified-protocol-extensions/blob/b22c1aa3506b4c580359cb749f0c098264639eea/docs/extensions.v1.md"
+        },
+        {
+          "git_blob": "53b71441390d4588810d210d4b816b12301d8035",
+          "path": "registry.json",
+          "ref": "b22c1aa3506b4c580359cb749f0c098264639eea",
+          "sha256": "58db321635e65cb032d48482ef3de8de9b966274f292a37eca8f1bc339213e11",
+          "url": "https://github.com/microsoft/amplifier-unified-protocol-extensions/blob/b22c1aa3506b4c580359cb749f0c098264639eea/registry.json"
+        }
+      ],
+      "consumer_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Browse the extension registry",
+        "url": "https://github.com/microsoft/amplifier-unified-protocol-extensions/blob/main/registry.json"
+      },
+      "display_name": "Amplifier Unified Protocol Extensions",
+      "edges": [
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "registry"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "types"
+        },
+        {
+          "from": "hosts",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "clients",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "uses",
+          "to": "ahp"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Unified Protocol Extensions",
+          "repository": "microsoft/amplifier-unified-protocol-extensions"
+        },
+        {
+          "id": "registry",
+          "kind": "internal",
+          "label": "Extension registry & schemas"
+        },
+        {
+          "id": "types",
+          "kind": "internal",
+          "label": "Type declarations & wire examples"
+        },
+        {
+          "id": "hosts",
+          "kind": "external",
+          "label": "Hosts / capability providers"
+        },
+        {
+          "id": "clients",
+          "kind": "external",
+          "label": "Independent AHP clients"
+        },
+        {
+          "id": "ahp",
+          "kind": "external",
+          "label": "Upstream AHP protocol"
+        }
+      ],
+      "notes": [
+        "Defines optional extensions only; does not own AHP/ACP themselves.",
+        "Schema validity is not authorization or runtime compatibility qualification.",
+        "No runtime service, model or client installation is required to use schemas."
+      ],
+      "purpose": "Share schemas and examples for optional Unified capabilities carried over AHP.",
+      "ref": "b22c1aa3506b4c580359cb749f0c098264639eea",
+      "repository": "microsoft/amplifier-unified-protocol-extensions",
+      "roles": [],
+      "scope": "cross-cutting interface definitions",
+      "start_cta": {
+        "basis": "Existing approved README route; target release assets/availability not freshly audited in this plan.",
+        "label": "Browse the extension registry",
+        "url": "https://github.com/microsoft/amplifier-unified-protocol-extensions/blob/main/registry.json"
+      },
+      "summary": "Shared definitions for optional AHP-carried capability messages used by hosts, providers and clients.",
+      "supports_roles": [
+        "Experience",
+        "Conversation",
+        "Tool",
+        "Connection"
+      ],
+      "visibility": "public"
     }
   ]
 }
