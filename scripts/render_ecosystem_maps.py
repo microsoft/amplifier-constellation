@@ -123,7 +123,9 @@ def validate(data):
             fail(f'{name}: notes must be a list')
         for note in r['notes']:
             string(note, f'{name} note', 1000)
-    return sorted(data['repositories'], key=lambda r: r['repository'])
+    # Order by project name, which is unique here, so an entry's owner does not
+    # decide its place in the directory.
+    return sorted(data['repositories'], key=lambda r: r['repository'].split('/')[1])
 
 
 def esc(value):
