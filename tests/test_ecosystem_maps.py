@@ -103,6 +103,12 @@ class RenderAndImpact(unittest.TestCase):
         self.assertNotIn('This supporting page',page)
         self.assertNotIn('Visit product website',page)
 
+    def test_directory_order_follows_project_name_not_owner(self):
+        entries=m.validate({'repositories':[record('microsoft/beta'),record('another-owner/gamma'),record('microsoft/alpha')]})
+        self.assertEqual([r['repository'] for r in entries],['microsoft/alpha','microsoft/beta','another-owner/gamma'])
+        index=m.outputs(Path('/site-root'),entries)[Path('/site-root/site/projects/index.html')]
+        self.assertEqual(re.findall(r'<li><a href="([a-z]+)/index\.html">',index),['alpha','beta','gamma'])
+
     def test_product_map_is_keyboard_scrollable_and_editorial_notes_are_in_details(self):
         page=m.product_page(record())
         self.assertIn('class="map-scroll" role="region" tabindex="0"',page)

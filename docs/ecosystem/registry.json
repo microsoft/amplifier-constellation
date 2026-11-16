@@ -3326,6 +3326,123 @@
         "Connection"
       ],
       "visibility": "public"
+    },
+    {
+      "audience": "People who run a Constellation agent and want one continuing teammate",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "1eaa19150a11d607ba1225d839e69713634658bb",
+          "sha256": "714cdea6b1f389a275a92690fa846ea41005aa05dabd9bad748b4f3c6529715c",
+          "url": "https://github.com/bkrabach/amplifier-constellation-vigil/blob/1eaa19150a11d607ba1225d839e69713634658bb/README.md"
+        },
+        {
+          "path": "docs/DESIGN.md",
+          "ref": "1eaa19150a11d607ba1225d839e69713634658bb",
+          "sha256": "5990ae94c0ce5ba1227b9b225ab7718c4f198bf027d607f51e870b40975e86d0",
+          "url": "https://github.com/bkrabach/amplifier-constellation-vigil/blob/1eaa19150a11d607ba1225d839e69713634658bb/docs/DESIGN.md"
+        }
+      ],
+      "display_name": "Vigil",
+      "edges": [
+        {
+          "from": "instance",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "conductor"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "scheduler"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "mind"
+        },
+        {
+          "from": "conductor",
+          "relation": "uses",
+          "to": "runtime"
+        },
+        {
+          "from": "mind",
+          "optional": true,
+          "relation": "uses",
+          "to": "decisions"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Vigil",
+          "repository": "bkrabach/amplifier-constellation-vigil"
+        },
+        {
+          "id": "instance",
+          "kind": "external",
+          "label": "Constellation Instance",
+          "repository": "microsoft/amplifier-constellation-instance"
+        },
+        {
+          "id": "conductor",
+          "kind": "internal",
+          "label": "ACP bridge and conductor"
+        },
+        {
+          "id": "scheduler",
+          "kind": "internal",
+          "label": "Follow-ups and background work"
+        },
+        {
+          "id": "mind",
+          "kind": "internal",
+          "label": "Mind: memory and presence brief"
+        },
+        {
+          "id": "runtime",
+          "kind": "external",
+          "label": "Selected runtime (any ACP agent)"
+        },
+        {
+          "id": "decisions",
+          "kind": "external",
+          "label": "Decision models"
+        }
+      ],
+      "notes": [
+        "Vigil is an independent open-source project maintained in its own repository. It is not one of the Microsoft components in the Constellation family index.",
+        "Vigil is an engine an Agent Instance selects, not an Agent Instance itself: identity, tokens, attention and context sources stay with the Instance.",
+        "The default runtime is Constellation Runtime; any other ACP agent can be the main runtime or take delegated work.",
+        "Experiences are unchanged and attach to the Instance as before. Each experience still decides when the agent may speak.",
+        "Decision models are optional; without one Vigil falls back to plain rules.",
+        "Tested on Linux with systemd user services. The map shows scope, not a compatibility claim for every ACP agent or host."
+      ],
+      "page_kind": "engine infrastructure",
+      "product_site": {
+        "label": "Visit product website",
+        "url": "https://bkrabach.github.io/amplifier-constellation-vigil/"
+      },
+      "purpose": "Keep a Constellation agent awake between messages: one memory across every place, promises it keeps, and background work of its own. An independent open-source project.",
+      "ref": "1eaa19150a11d607ba1225d839e69713634658bb",
+      "repository": "bkrabach/amplifier-constellation-vigil",
+      "roles": [],
+      "start_cta": {
+        "basis": "README install section at the cited revision.",
+        "label": "Install Vigil",
+        "url": "https://github.com/bkrabach/amplifier-constellation-vigil#install"
+      },
+      "summary": "An always-on engine that an Agent Instance can select. Outside it is an ordinary ACP agent; inside, a daemon keeps memory and a schedule and drives a runtime of your choice.",
+      "supports_roles": [
+        "Agent Instance"
+      ],
+      "visibility": "public"
     }
   ]
 }

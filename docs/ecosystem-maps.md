@@ -67,6 +67,14 @@ the public registry. Use separately reviewed public copy and preserve the
 private-record publication guard. A documentation update does not authorize a
 repository visibility change or override an existing owner instruction.
 
+An independent project from another owner can be listed when the Constellation
+owners approve it. `family.toml` locates Microsoft components and gains no entry
+for it. The directory shows only a name and a purpose, so that purpose line says
+the project is independent, and a note says it is not a Microsoft component.
+Listing locates the project; it is not a support or compatibility statement. The
+directory is ordered by project name, so an owner's name does not decide an
+entry's place.
+
 Each entry names the repository, display name, role scope, local parts and
 relationships, and source references. The renderer derives output paths from the
 repository name. Each component keeps
