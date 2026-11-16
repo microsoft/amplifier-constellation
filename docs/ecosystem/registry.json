@@ -3443,6 +3443,684 @@
         "Agent Instance"
       ],
       "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "89912d4eb431d0e5abdc5826854f9a9c4abfa8bb",
+          "sha256": "f4798e1041470da4902ac6b0d7d55d39506310d398a12c50b82e0305a1fb3b26",
+          "url": "https://github.com/bkrabach/amplifier-platform-scheduling/blob/89912d4eb431d0e5abdc5826854f9a9c4abfa8bb/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "89912d4eb431d0e5abdc5826854f9a9c4abfa8bb",
+          "sha256": "19fe699f2902f7cfde546a413fa2c4624d29b3c9657036a15a9ebe1bb98411ea",
+          "url": "https://github.com/bkrabach/amplifier-platform-scheduling/blob/89912d4eb431d0e5abdc5826854f9a9c4abfa8bb/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "89912d4eb431d0e5abdc5826854f9a9c4abfa8bb",
+          "sha256": "6559ec7e7275b722037cf9001611f4fbdbf71978e8704e1d161a6220ec9f0c8d",
+          "url": "https://github.com/bkrabach/amplifier-platform-scheduling/blob/89912d4eb431d0e5abdc5826854f9a9c4abfa8bb/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Scheduling",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Scheduling",
+          "repository": "bkrabach/amplifier-platform-scheduling"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Recurrence policy"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Durable run admission store"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The store does not run model work. Ambiguous handoff remains unknown and requires deliberate reconciliation; importing this source does not replace Foundation scheduling APIs."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Calculate recurring times and retain durable run-admission receipts. An independent Python library.",
+      "ref": "89912d4eb431d0e5abdc5826854f9a9c4abfa8bb",
+      "repository": "bkrabach/amplifier-platform-scheduling",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-scheduling/blob/89912d4eb431d0e5abdc5826854f9a9c4abfa8bb/README.md#build-and-test-independently"
+      },
+      "summary": "Recurrence rules and a SQLite admission store for a calling application. The caller supplies authorization, input submission, Stop and observed outcomes.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "03d792673952500e5d24537a4cad374b9f684495",
+          "sha256": "beb1b7c12eac024bb74685b70e7891a8cab1e478ba10bc351774819ae7cc58f6",
+          "url": "https://github.com/bkrabach/amplifier-platform-operations/blob/03d792673952500e5d24537a4cad374b9f684495/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "03d792673952500e5d24537a4cad374b9f684495",
+          "sha256": "c6f67f14bf64260c00848a9c764a754899225924a0ce4c5c257d2626e1cd82d0",
+          "url": "https://github.com/bkrabach/amplifier-platform-operations/blob/03d792673952500e5d24537a4cad374b9f684495/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "03d792673952500e5d24537a4cad374b9f684495",
+          "sha256": "ec7dcaa6cdefa1032dc48b0693ed45ceb72a7af5122c3e83eb213774f90f698a",
+          "url": "https://github.com/bkrabach/amplifier-platform-operations/blob/03d792673952500e5d24537a4cad374b9f684495/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Operations",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Operations",
+          "repository": "bkrabach/amplifier-platform-operations"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Operation journal"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Coordination delivery"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "Recovery retains unfinished operations as unknown without replay. Coordination helpers format and deliver caller-supplied evidence; they are not a scheduler or execution service."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Record operation evidence and deliver bounded coordination updates. An independent Python library.",
+      "ref": "03d792673952500e5d24537a4cad374b9f684495",
+      "repository": "bkrabach/amplifier-platform-operations",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-operations/blob/03d792673952500e5d24537a4cad374b9f684495/README.md#build-and-test-independently"
+      },
+      "summary": "An operation journal and coordination helpers retain identities, output and recovery evidence. The calling application owns admission, permissions, cancellation and execution.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "b1631d04d272353477a80c94c3311e2d045de527",
+          "sha256": "d5fce6cf7484a6a3c370157576013a351df831908f85179869bfdff3fbd4585e",
+          "url": "https://github.com/bkrabach/amplifier-platform-workspaces/blob/b1631d04d272353477a80c94c3311e2d045de527/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "b1631d04d272353477a80c94c3311e2d045de527",
+          "sha256": "634ab8bd86795f470a297d0d45a277510550525648e825a72afb87fe796d51c3",
+          "url": "https://github.com/bkrabach/amplifier-platform-workspaces/blob/b1631d04d272353477a80c94c3311e2d045de527/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "b1631d04d272353477a80c94c3311e2d045de527",
+          "sha256": "e75cff6822f663333dfb18309dad240ad5e54eec5d084b46cc11e96b2578c36c",
+          "url": "https://github.com/bkrabach/amplifier-platform-workspaces/blob/b1631d04d272353477a80c94c3311e2d045de527/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Workspaces",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Workspaces",
+          "repository": "bkrabach/amplifier-platform-workspaces"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Registration and listing"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Local-location interpretation"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The package does not read folders, allocate identities or authorize access. Registration metadata is separate from the existing workspace CLI, portable workspace identity and shared context."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Edit and reconcile workspace registration metadata. An independent Python library.",
+      "ref": "b1631d04d272353477a80c94c3311e2d045de527",
+      "repository": "bkrabach/amplifier-platform-workspaces",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-workspaces/blob/b1631d04d272353477a80c94c3311e2d045de527/README.md#develop-and-qualify"
+      },
+      "summary": "Registration and local-location helpers operate on caller-owned records. The caller validates folders and owns persistence, identity, access and selection.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "5c65026abb134780a84333162fd20b5bd643c78b",
+          "sha256": "dfe4090c040e22925a48e72a53d10210b91cf3a3afeed5b1e120f705d37cda65",
+          "url": "https://github.com/bkrabach/amplifier-platform-worktrees/blob/5c65026abb134780a84333162fd20b5bd643c78b/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "5c65026abb134780a84333162fd20b5bd643c78b",
+          "sha256": "36ba0a4c5916fe0f168732f16de584b4a5f18bfe7e1dfbf02dd7fb9e8de4a749",
+          "url": "https://github.com/bkrabach/amplifier-platform-worktrees/blob/5c65026abb134780a84333162fd20b5bd643c78b/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "5c65026abb134780a84333162fd20b5bd643c78b",
+          "sha256": "c72d0712380174f51a25bd6072c3230462277829e4c210f9b6fecc234e0270df",
+          "url": "https://github.com/bkrabach/amplifier-platform-worktrees/blob/5c65026abb134780a84333162fd20b5bd643c78b/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Worktrees",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Worktrees",
+          "repository": "bkrabach/amplifier-platform-worktrees"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Bounded Git operations"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Durable ownership and recovery receipts"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The library performs no fetch, push, merge, reset or forced deletion. Attaching an existing checkout does not acquire deletion ownership; uncertain mutations are not replayed automatically."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Inspect and manage Git worktrees with ownership and recovery receipts. An independent Python library.",
+      "ref": "5c65026abb134780a84333162fd20b5bd643c78b",
+      "repository": "bkrabach/amplifier-platform-worktrees",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-worktrees/blob/5c65026abb134780a84333162fd20b5bd643c78b/README.md#standalone-development"
+      },
+      "summary": "Bounded Git operations and durable receipts support explicit inspect, create, attach, status and remove requests. The caller chooses the operation and retains cleanup responsibility.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "2d433117d001af9e92ecd39bd89114e8603dc1be",
+          "sha256": "dbf9928ba380fe4c65f9bd3bd846b67885019f5d139bcf6b46289c7e4e473db4",
+          "url": "https://github.com/bkrabach/amplifier-platform-resources/blob/2d433117d001af9e92ecd39bd89114e8603dc1be/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "2d433117d001af9e92ecd39bd89114e8603dc1be",
+          "sha256": "476b0257b41b5fd8b7bd895e4e752a682e74f34f2a64f206333e4eb4ef0e8da4",
+          "url": "https://github.com/bkrabach/amplifier-platform-resources/blob/2d433117d001af9e92ecd39bd89114e8603dc1be/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "2d433117d001af9e92ecd39bd89114e8603dc1be",
+          "sha256": "354abd85b5f528f58e37fe1af5460b8e88efd910a0fb9a1e3ae8f371620fab0c",
+          "url": "https://github.com/bkrabach/amplifier-platform-resources/blob/2d433117d001af9e92ecd39bd89114e8603dc1be/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Resources",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-2"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Resources",
+          "repository": "bkrabach/amplifier-platform-resources"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Output relationship registry"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Saved-body decoder"
+        },
+        {
+          "id": "part-2",
+          "kind": "internal",
+          "label": "Read-only Git review"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The installed package is amplifier-outputs. It does not implement the broader resources store or replace the separate resources capability; unlinking a relationship does not delete retained content."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Track output relationships, decode saved bodies and inspect Git changes. An independent Python library.",
+      "ref": "2d433117d001af9e92ecd39bd89114e8603dc1be",
+      "repository": "bkrabach/amplifier-platform-resources",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-resources/blob/2d433117d001af9e92ecd39bd89114e8603dc1be/README.md#develop-and-qualify"
+      },
+      "summary": "Output relationships, historical body decoding and read-only Git review evidence support a calling application. The caller owns content storage, integrity, transactions and authorization.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62",
+          "sha256": "ca515e2db5a2f9e58bc0b8ff43c698730e950c92ab826e0ff7a5fbd2b39517df",
+          "url": "https://github.com/bkrabach/amplifier-platform-recall/blob/1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62",
+          "sha256": "93dd03b6daaa601368463faa6df65c574dbecf8619d49a948fa2e9ffdc33e5cd",
+          "url": "https://github.com/bkrabach/amplifier-platform-recall/blob/1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62",
+          "sha256": "0dd51e0bdfcd509ab667835d442edb0c16d5b5f3d9654821d9a5eae1b3d740ae",
+          "url": "https://github.com/bkrabach/amplifier-platform-recall/blob/1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Recall",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Recall",
+          "repository": "bkrabach/amplifier-platform-recall"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Search and versioned note store"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Personalization attempt receipts"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "Explicit notes, versions and receipts are durable, not disposable search data. This package does not replace native history or the separate memory extraction and verification mechanisms."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Store conversation search indexes and versioned memory records. An independent Python library.",
+      "ref": "1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62",
+      "repository": "bkrabach/amplifier-platform-recall",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-recall/blob/1a4b4757fdf9cbf3686353932ea87ff9d2a7cb62/README.md#develop-and-qualify"
+      },
+      "summary": "A SQLite search and note store plus personalization attempt receipts retain caller-supplied evidence. The caller supplies allowed sources and owns context assembly, models and Stop.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "6a8ec71de68cae09e844f77a547475eded68f963",
+          "sha256": "c65344163bda3ae79717e5f69f785b7e1099bf7bbe99d3aebbcfea72ecc74beb",
+          "url": "https://github.com/bkrabach/amplifier-platform-kernels/blob/6a8ec71de68cae09e844f77a547475eded68f963/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "6a8ec71de68cae09e844f77a547475eded68f963",
+          "sha256": "b764544888a41da551518d730ad65781812a12fe28f6810c8b86898bff6cfd26",
+          "url": "https://github.com/bkrabach/amplifier-platform-kernels/blob/6a8ec71de68cae09e844f77a547475eded68f963/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "6a8ec71de68cae09e844f77a547475eded68f963",
+          "sha256": "e56b80a46feecbb5363c3d72aa6c3a8b590641ae1bf7b4ad68e60e6469a112f8",
+          "url": "https://github.com/bkrabach/amplifier-platform-kernels/blob/6a8ec71de68cae09e844f77a547475eded68f963/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Kernels",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-2"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Kernels",
+          "repository": "bkrabach/amplifier-platform-kernels"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Kernel manager"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Python runner"
+        },
+        {
+          "id": "part-2",
+          "kind": "internal",
+          "label": "Node runner"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The package does not launch processes itself. Lost ownership or uncertain delivery does not replay code or reconstruct variables; the Node namespace is not a security boundary."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Keep Python and Node computation state across cells. An independent Python library.",
+      "ref": "6a8ec71de68cae09e844f77a547475eded68f963",
+      "repository": "bkrabach/amplifier-platform-kernels",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-kernels/blob/6a8ec71de68cae09e844f77a547475eded68f963/README.md#build-and-test-independently"
+      },
+      "summary": "A kernel manager and child runners use caller-supplied process operations, observation and trusted runtime paths. The caller owns process authority and cleanup.",
+      "supports_roles": [],
+      "visibility": "public"
+    },
+    {
+      "audience": "Developers embedding the documented Python library",
+      "citations": [
+        {
+          "path": "README.md",
+          "ref": "1c25def3e540082367b206d46021fc3128e7e51e",
+          "sha256": "d5a2196e4042b5f97b5b78e98bf384cf93cbb2287589513be4766eaa6dd3e6db",
+          "url": "https://github.com/bkrabach/amplifier-platform-status/blob/1c25def3e540082367b206d46021fc3128e7e51e/README.md"
+        },
+        {
+          "path": "PROVENANCE.json",
+          "ref": "1c25def3e540082367b206d46021fc3128e7e51e",
+          "sha256": "592213e8456cfebf4f2c768bed0995f74c4a03644cd227e582dff23117679b9a",
+          "url": "https://github.com/bkrabach/amplifier-platform-status/blob/1c25def3e540082367b206d46021fc3128e7e51e/PROVENANCE.json"
+        },
+        {
+          "path": "pyproject.toml",
+          "ref": "1c25def3e540082367b206d46021fc3128e7e51e",
+          "sha256": "e52f5acdadd26338870bb13e91e8e46a01cc74a8f40683821e24b1b02737293b",
+          "url": "https://github.com/bkrabach/amplifier-platform-status/blob/1c25def3e540082367b206d46021fc3128e7e51e/pyproject.toml"
+        }
+      ],
+      "display_name": "Amplifier Platform Status",
+      "edges": [
+        {
+          "from": "caller",
+          "relation": "uses",
+          "to": "self"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-0"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-1"
+        },
+        {
+          "from": "self",
+          "relation": "contains",
+          "to": "part-2"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "self",
+          "label": "Amplifier Platform Status",
+          "repository": "bkrabach/amplifier-platform-status"
+        },
+        {
+          "id": "caller",
+          "kind": "external",
+          "label": "Calling application (Python API)"
+        },
+        {
+          "id": "part-0",
+          "kind": "internal",
+          "label": "Publisher"
+        },
+        {
+          "id": "part-1",
+          "kind": "internal",
+          "label": "Reader and schema"
+        },
+        {
+          "id": "part-2",
+          "kind": "internal",
+          "label": "CLI and optional hook"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source package hosted by bkrabach, not a Microsoft component in the Constellation family index.",
+        "The public source import preserves its Unified provenance. Source ownership, publication and consumer artifact selection are separate reviewed steps; this listing does not change an existing selection.",
+        "The distribution is amplifier-status-emitter and the import is amplifier_status. Status files are observations, not commands, permissions or execution receipts; missing and stale information remain unknown."
+      ],
+      "page_kind": "supporting library",
+      "purpose": "Publish and read bounded local status observations. An independent Python library with command-line readers.",
+      "ref": "1c25def3e540082367b206d46021fc3128e7e51e",
+      "repository": "bkrabach/amplifier-platform-status",
+      "roles": [],
+      "start_cta": {
+        "label": "Read the library guide",
+        "url": "https://github.com/bkrabach/amplifier-platform-status/blob/1c25def3e540082367b206d46021fc3128e7e51e/README.md#publish-and-read"
+      },
+      "summary": "A publisher, reader and optional hook exchange versioned local JSON observations. Callers choose private storage and session identity; no network service is introduced.",
+      "supports_roles": [],
+      "visibility": "public"
     }
   ]
 }
