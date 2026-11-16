@@ -47,7 +47,9 @@ owns message assembly and the optional completion profile.
 ## Approvals
 
 When installed-agent approval policy is enabled, select one policy owner across
-that agent’s chats; the supplied Instance hosting design assigns it to Instance.
+the chats routed through that host; the supplied Instance hosting design assigns
+it to Instance. Direct engine consoles retain their separate approval controls
+unless connected through the installed Instance’s route.
 The selected engine remains responsible for execution checks. Connectors transport
 attributed current decisions and expose the offered controls without a competing
 remembered-rule cache. Ask is the default; remembering and Automatic are explicit

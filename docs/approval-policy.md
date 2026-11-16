@@ -22,7 +22,12 @@ fields and executable behavior belong to the serving implementations:
 ## One owner for the policy
 
 For an Instance-hosted agent, Instance owns the installed agent’s policy across
-its chats. The selected engine owns execution authority. A connector presents
+chats routed through its ACP endpoint. A direct engine console that bypasses
+Instance keeps its own approval controls. Using the same person’s identity or
+the same engine does not share those rules; a console connected through Instance
+uses that installed agent’s policy.
+
+The selected engine owns execution authority. A connector presents
 and returns the exact offered choices, preserving the authenticated caller,
 request and conversation; it does not create another remembered-approval cache.
 A fleet interface is an optional management client, not a required permission
