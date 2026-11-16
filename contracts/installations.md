@@ -98,11 +98,12 @@ tools or a user-installed language runtime. Owners package or privately install
 their runtime dependencies and provide native setup, startup, updates and recovery.
 Additional machines, containers and fleet clients remain optional.
 
-**Staying up:** A service the family installs to stay running comes back after
-anything other than its owner ends it: a crash, memory pressure, or another
-program. A deliberate stop or pause stays stopped, and an update's own stop is not
-overridden. Ended from outside its service manager, the service is running again
-shortly after with the same identity and saved state.
+**Staying up:** An enabled service the family installs to stay running is configured
+to recover from outside termination while its host and service manager are
+available. Recovery preserves identity and saved state and follows the manager's
+restart and backoff limits. A deliberate stop or pause stays stopped, and an
+update's own stop is not overridden. If recovery cannot complete, report the
+failure or unavailability rather than claiming the service is running.
 
 External services and independently supplied engines keep their account,
 licensing, network and platform requirements. Show these accurately before setup;
