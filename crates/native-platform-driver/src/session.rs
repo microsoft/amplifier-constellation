@@ -198,14 +198,39 @@ impl DriverIdentity {
         #[cfg(feature = "native-write-diagnostic")]
         let _phase = amplifier_native_platform::diagnostic::Phase::begin("driver.unchanged");
         if self.require_private {
+            #[cfg(feature = "native-write-diagnostic")]
+            let original =
+                amplifier_native_platform::diagnostic::Phase::begin("driver.policy_original");
             config::protected_file(&self.path)?;
+            #[cfg(feature = "native-write-diagnostic")]
+            drop(original);
+            #[cfg(feature = "native-write-diagnostic")]
+            let canonical =
+                amplifier_native_platform::diagnostic::Phase::begin("driver.policy_canonical");
             config::protected_file(&self.canonical)?;
+            #[cfg(feature = "native-write-diagnostic")]
+            drop(canonical);
         }
         ensure!(
-            fs::canonicalize(&self.path)? == self.canonical,
+            {
+                #[cfg(feature = "native-write-diagnostic")]
+                let _phase =
+                    amplifier_native_platform::diagnostic::Phase::begin("driver.canonicalize");
+                fs::canonicalize(&self.path)?
+            } == self.canonical,
             "Installed native driver path changed"
         );
+        #[cfg(not(feature = "native-write-diagnostic"))]
         let digest: [u8; 32] = Sha256::digest(fs::read(&self.canonical)?).into();
+        #[cfg(feature = "native-write-diagnostic")]
+        let digest: [u8; 32] = {
+            let bytes = {
+                let _phase = amplifier_native_platform::diagnostic::Phase::begin("driver.read");
+                fs::read(&self.canonical)?
+            };
+            let _phase = amplifier_native_platform::diagnostic::Phase::begin("driver.digest");
+            Sha256::digest(bytes).into()
+        };
         ensure!(
             digest == self.digest,
             "Installed native driver bytes changed"

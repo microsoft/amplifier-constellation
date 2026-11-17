@@ -51,6 +51,11 @@ Timing records distinguish the whole Python method from the original
 `NativeSession._call`, whose clock starts after `bytes=list(data)`. Rust phase
 times are inclusive. `path.chain` and `path.windows_access` are nested and must
 not be added to the top-level driver, enrollment and storage phase sum. The
+driver phase also reports its original-path policy check, canonical-path policy
+check, canonicalization, file read and digest separately. These five subphases
+are inside `driver.unchanged`, not additional top-level time; path/ACL observations
+also overlap its policy subphases. All checks still execute in their original
+order, and no validation or digest is cached. The
 correlated output reports both the remaining Rust dispatch time and the outer
 native-call residual. The latter includes Python JSON, ABI framing/decoding and
 post-dispatch diagnostic logging; instrumentation overhead is not subtracted.
