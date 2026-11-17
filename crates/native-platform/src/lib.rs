@@ -1,5 +1,7 @@
 //! Optional local implementation support, not a provisioning or identity service.
 //! Applications retain their own installation, credentials and startup ownership.
+#[cfg(feature = "native-write-diagnostic")]
+pub mod diagnostic;
 #[cfg(feature = "installation")]
 pub mod installation;
 #[cfg(feature = "installation")]

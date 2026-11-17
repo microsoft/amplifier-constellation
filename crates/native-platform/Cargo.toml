@@ -23,6 +23,7 @@ serde_json = { version = "1", optional = true }
 default = []
 local-auth = ["dep:argon2", "dep:hmac", "dep:rand_core", "dep:sha2"]
 installation = ["dep:serde", "dep:serde_json", "dep:sha2"]
+native-write-diagnostic = ["dep:serde_json"]
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

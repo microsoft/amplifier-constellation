@@ -199,6 +199,8 @@ impl Enrollment {
     }
 
     pub fn unchanged(&self) -> Result<()> {
+        #[cfg(feature = "native-write-diagnostic")]
+        let _phase = amplifier_native_platform::diagnostic::Phase::begin("enrollment.unchanged");
         protected_file(&self.path)?;
         ensure!(
             Sha256::digest(fs::read(&self.path)?).as_slice() == self.digest,
@@ -226,6 +228,8 @@ impl Enrollment {
     }
 
     fn storage_path(&self, root: &str, relative: &str, directory: bool) -> Result<PathBuf> {
+        #[cfg(feature = "native-write-diagnostic")]
+        let _phase = amplifier_native_platform::diagnostic::Phase::begin("enrollment.storage_path");
         let root = self
             .config
             .roots
@@ -339,6 +343,8 @@ fn valid_name(name: &str) -> bool {
 /// Reject links/reparse ancestors. The enrolled owner itself is trusted; this is
 /// not a sandbox against another process with the same owner's write access.
 pub fn path_chain(path: &Path) -> Result<()> {
+    #[cfg(feature = "native-write-diagnostic")]
+    let _phase = amplifier_native_platform::diagnostic::Phase::begin("path.chain");
     ensure!(path.is_absolute(), "Installation paths must be absolute");
     ensure!(
         path.components()
@@ -440,6 +446,8 @@ fn windows_allow_is_safe(
 
 #[cfg(windows)]
 fn windows_access(path: &Path, private: bool) -> Result<()> {
+    #[cfg(feature = "native-write-diagnostic")]
+    let _phase = amplifier_native_platform::diagnostic::Phase::begin("path.windows_access");
     use std::ptr;
     use windows_sys::Win32::{
         Foundation::LocalFree,

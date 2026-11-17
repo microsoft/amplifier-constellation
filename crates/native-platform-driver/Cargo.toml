@@ -11,6 +11,10 @@ repository = "https://github.com/microsoft/amplifier-constellation"
 [lib]
 crate-type = ["rlib", "cdylib"]
 
+[features]
+default = []
+native-write-diagnostic = ["amplifier-native-platform/native-write-diagnostic"]
+
 [dependencies]
 amplifier-native-platform = { path = "../native-platform", features = ["installation"] }
 anyhow = "1"

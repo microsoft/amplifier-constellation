@@ -334,6 +334,8 @@ pub fn private_create_dir(path: &Path) -> std::io::Result<()> {
     create_private_directory(path)
 }
 fn write_atomic(path: &Path, bytes: &[u8], publication: Publication) -> Result<()> {
+    #[cfg(feature = "native-write-diagnostic")]
+    let prepare = crate::diagnostic::Phase::begin("storage.prepare");
     let parent = path
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
@@ -344,17 +346,39 @@ fn write_atomic(path: &Path, bytes: &[u8], publication: Publication) -> Result<(
         "Private file is not an ordinary file"
     );
     prepare_parent(parent)?;
+    #[cfg(feature = "native-write-diagnostic")]
+    drop(prepare);
     let temporary = parent.join(format!(".save-{}.tmp", uuid::Uuid::new_v4()));
     let result = (|| -> Result<()> {
+        #[cfg(feature = "native-write-diagnostic")]
+        let create = crate::diagnostic::Phase::begin("storage.create_private");
         let mut file = create_private_file(&temporary)?;
+        #[cfg(feature = "native-write-diagnostic")]
+        drop(create);
+        #[cfg(feature = "native-write-diagnostic")]
+        let write = crate::diagnostic::Phase::begin("storage.write_all");
         file.write_all(bytes)?;
+        #[cfg(feature = "native-write-diagnostic")]
+        drop(write);
+        #[cfg(feature = "native-write-diagnostic")]
+        let sync = crate::diagnostic::Phase::begin("storage.sync_all");
         file.sync_all()?;
+        #[cfg(feature = "native-write-diagnostic")]
+        drop(sync);
+        #[cfg(feature = "native-write-diagnostic")]
+        let close = crate::diagnostic::Phase::begin("storage.close");
         drop(file);
+        #[cfg(feature = "native-write-diagnostic")]
+        drop(close);
+        #[cfg(feature = "native-write-diagnostic")]
+        let publish = crate::diagnostic::Phase::begin("storage.publish");
         match publication {
             Publication::CreateOnly => commit(&temporary, path, true)?,
             Publication::ReplaceClosed => commit(&temporary, path, false)?,
             Publication::ReplaceData => commit_data(&temporary, path)?,
         }
+        #[cfg(feature = "native-write-diagnostic")]
+        drop(publish);
         #[cfg(unix)]
         File::open(parent)?.sync_all()?;
         Ok(())

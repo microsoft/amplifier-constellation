@@ -195,6 +195,8 @@ impl DriverIdentity {
     }
 
     fn unchanged(&self) -> Result<()> {
+        #[cfg(feature = "native-write-diagnostic")]
+        let _phase = amplifier_native_platform::diagnostic::Phase::begin("driver.unchanged");
         if self.require_private {
             config::protected_file(&self.path)?;
             config::protected_file(&self.canonical)?;
@@ -261,6 +263,20 @@ impl Session {
     }
 
     fn dispatch(&mut self, op: Operation) -> Result<Outcome> {
+        #[cfg(feature = "native-write-diagnostic")]
+        let _diagnostic = match &op {
+            Operation::StorageWrite { path, bytes, .. } => {
+                Some(amplifier_native_platform::diagnostic::Operation::begin(
+                    "storage.write",
+                    bytes.len(),
+                    Path::new(path).components().count(),
+                ))
+            }
+            Operation::Describe => Some(amplifier_native_platform::diagnostic::Operation::begin(
+                "describe", 0, 0,
+            )),
+            _ => None,
+        };
         // Releasing this process's existing handle needs no authority from a new
         // configuration and must not strand a lock after an owner update.
         if let Operation::LockRelease { name } = op {

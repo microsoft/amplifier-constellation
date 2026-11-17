@@ -6,10 +6,17 @@ on:
     branches: [main]
     paths: ['crates/native-platform/**', 'crates/native-platform-driver/**', 'support/python/constellation_native/**', 'tests/native_python/**', '.github/workflows/native-python.yml']
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Qualification or finite Windows ARM write timing
+        type: choice
+        default: qualification
+        options: [qualification, write-diagnostic]
 permissions:
   contents: read
 jobs:
   native-installation:
+    if: github.event_name != 'workflow_dispatch' || inputs.mode != 'write-diagnostic'
     strategy:
       fail-fast: false
       matrix:
@@ -286,3 +293,98 @@ jobs:
             ${{ env.CONSTELLATION_NATIVE_LIBRARY }}
             ${{ env.NATIVE_SERVICE_FIXTURE }}
           if-no-files-found: error
+
+  write-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'write-diagnostic'
+    runs-on: windows-11-arm
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      RUSTFLAGS: '-C target-feature=+crt-static'
+    steps:
+      - uses: actions/checkout@v4
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check out the exact uninstrumented control source
+        uses: actions/checkout@v4
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+        with:
+          ref: 8062eda22ea4fe9c333798be8397ce7fa4f6f2ee
+          path: _diagnostic/control-source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: rustup toolchain install 1.93.0 --profile minimal
+      - name: Verify the ARM64 compiler and fixed control source
+        run: |
+          python - <<'PYVERIFY'
+          import os, pathlib, subprocess
+          version = subprocess.check_output(['rustc', '+1.93.0', '-vV'], text=True)
+          assert 'host: aarch64-pc-windows-msvc' in version and 'release: 1.93.0' in version
+          assert os.environ['RUNNER_ARCH'] == 'ARM64'
+          assert subprocess.check_output(['git', '-C', '_diagnostic/control-source', 'rev-parse', 'HEAD'], text=True).strip() == '8062eda22ea4fe9c333798be8397ce7fa4f6f2ee'
+          pathlib.Path('native-write-build-rustc.txt').write_text(version, encoding='utf-8')
+          PYVERIFY
+      - name: Build a new uninstrumented release control
+        run: >-
+          cargo +1.93.0 build --locked --release
+          --target aarch64-pc-windows-msvc --target-dir _diagnostic/build-control
+          --manifest-path _diagnostic/control-source/crates/native-platform-driver/Cargo.toml
+      - name: Build the distinct timing-enabled release pair
+        run: >-
+          cargo +1.93.0 build --locked --release --features native-write-diagnostic
+          --target aarch64-pc-windows-msvc --target-dir _diagnostic/build-timings
+          --manifest-path crates/native-platform-driver/Cargo.toml
+      - name: Record both actual builds before any diagnostic execution
+        run: |
+          python - <<'PYRECORD'
+          import hashlib, json, os, pathlib, subprocess, sys
+          def sha(path): return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+          def git(source, *args): return subprocess.check_output(['git', '-C', source, *args], text=True).strip()
+          pairs = []
+          for role, source in [('control', '_diagnostic/control-source'), ('timings', '.')]:
+              assert not git(source, 'status', '--porcelain', '--untracked-files=no')
+              folder = pathlib.Path('_diagnostic/build-'+role+'/aarch64-pc-windows-msvc/release')
+              pairs.append({'role': role, 'source': git(source, 'rev-parse', 'HEAD'),
+                  'tree': git(source, 'rev-parse', 'HEAD^{tree}'), 'profile': 'release',
+                  'target': 'aarch64-pc-windows-msvc', 'feature': None if role == 'control' else 'native-write-diagnostic',
+                  'driver_sha256': sha(folder/'constellation-native-driver.exe'),
+                  'library_sha256': sha(folder/'constellation_native_driver.dll')})
+          pathlib.Path('native-write-builds.json').write_text(json.dumps({'schema': 1,
+              'rustc': pathlib.Path('native-write-build-rustc.txt').read_text(), 'python': sys.version,
+              'rustflags': os.environ['RUSTFLAGS'], 'workflow_sha256': sha('.github/workflows/native-python.yml'),
+              'pairs': pairs, 'original_failed_binaries_available': False}, indent=2)+'\n', encoding='utf-8')
+          PYRECORD
+      - name: Run the two finite caller-owned diagnostic arms once
+        run: >-
+          python -B tests/native_python/run_write_diagnostic.py
+          --control-source _diagnostic/control-source
+          --control-driver _diagnostic/build-control/aarch64-pc-windows-msvc/release/constellation-native-driver.exe
+          --control-library _diagnostic/build-control/aarch64-pc-windows-msvc/release/constellation_native_driver.dll
+          --instrumented-driver _diagnostic/build-timings/aarch64-pc-windows-msvc/release/constellation-native-driver.exe
+          --instrumented-library _diagnostic/build-timings/aarch64-pc-windows-msvc/release/constellation_native_driver.dll
+          --output native-write-diagnostic
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-write-diagnostic-windows-arm64
+          path: |
+            native-write-build-rustc.txt
+            native-write-builds.json
+            native-write-diagnostic/
+            _diagnostic/build-control/aarch64-pc-windows-msvc/release/constellation-native-driver.exe
+            _diagnostic/build-control/aarch64-pc-windows-msvc/release/constellation_native_driver.dll
+            _diagnostic/build-timings/aarch64-pc-windows-msvc/release/constellation-native-driver.exe
+            _diagnostic/build-timings/aarch64-pc-windows-msvc/release/constellation_native_driver.dll
+          if-no-files-found: warn
