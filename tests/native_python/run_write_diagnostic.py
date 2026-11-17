@@ -49,6 +49,20 @@ def git(source, *args):
     return subprocess.check_output(["git", "-C", str(source), *args], text=True).strip()
 
 
+def fixture_parent():
+    # Match the native fixture override, with an explicit user-profile default.
+    # Runner scratch directories can have public-write ancestors. Never repair
+    # the selected parent's policy; normal native enrollment still validates it.
+    configured = os.environ.get("CONSTELLATION_NATIVE_TEST_ROOT")
+    parent = Path(configured) if configured is not None else Path.home()
+    if not parent.is_absolute():
+        raise ValueError("Diagnostic fixture parent must be absolute")
+    parent = parent.resolve(strict=True)
+    if not parent.is_dir():
+        raise ValueError("Diagnostic fixture parent must be an existing directory")
+    return parent
+
+
 def child(spec_path):
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     facade = Path(spec["facade"])
@@ -337,11 +351,12 @@ def main():
         "arms": [],
         "scope": "Fresh uninstrumented control versus distinct timed build. Finite NativeSession workload only; not the original failed binaries or full package stage.",
     }
-    temporary = Path(
-        tempfile.mkdtemp(prefix="native-write-", dir=os.environ["RUNNER_TEMP"])
-    ).resolve()
+    parent = fixture_parent()
+    result["fixture_parent"] = str(parent)
+    temporary = Path(tempfile.mkdtemp(prefix="native-write-", dir=parent)).resolve()
     marker = temporary / "diagnostic-owner.json"
-    save(marker, {"output": str(output), "pid": os.getpid()})
+    owner = {"output": str(output), "pid": os.getpid(), "parent": str(parent)}
+    save(marker, owner)
     owned_live = False
     try:
         from test_driver import protect
@@ -488,11 +503,8 @@ def main():
         cleanup = {"owned_child_live": owned_live, "removed": False}
         try:
             assert not owned_live
-            assert json.loads(marker.read_text()) == {
-                "output": str(output),
-                "pid": os.getpid(),
-            }
-            assert temporary.parent == Path(os.environ["RUNNER_TEMP"]).resolve()
+            assert json.loads(marker.read_text()) == owner
+            assert temporary.parent == parent
             shutil.rmtree(temporary)
             cleanup["removed"] = not temporary.exists()
         except BaseException as error:

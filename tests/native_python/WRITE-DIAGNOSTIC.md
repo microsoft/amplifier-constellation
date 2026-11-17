@@ -20,6 +20,10 @@ result. The feature is for diagnostics, not for distribution artifacts.
 `run_write_diagnostic.py` uses the exact control's three hash-bound Python facade
 files and the actual `NativeSession` ABI, including its caller-owned mutex and
 native installation lock. Each arm has a separate protected temporary root. The
+parent is the current user's profile, or the explicit existing absolute
+`CONSTELLATION_NATIVE_TEST_ROOT`. Its resolved path is recorded and bound to
+cleanup. Only newly created fixture paths are protected; existing ancestors are
+never modified, and normal native enrollment validates their policy. The
 fixed workload contains 63 create-only writes: three repetitions of 0, 1 KiB and
 64 KiB at each state-relative depth 7, 8, 9, 10, 11, 14 and 15. It interleaves 63
 `describe` calls and adds seven refusal checks against existing destinations.
