@@ -35,7 +35,11 @@ Each write verifies its returned result, exact bytes, owner and private DACL.
 These post-call checks record named observed/expected values and row/path context
 before asserting, outside the measurement clocks. Content records contain length
 and digest; the actual predicate still compares all bytes. Failures retain a
-traceback before cleanup. The exact DACL-text predicate is not normalized.
+traceback before cleanup. Windows renders the strict expected DACL in memory
+through its own descriptor conversion APIs before full text equality with the
+observed DACL. This preserves the protected flag, exact trustees and access masks
+while handling Windows' trustee abbreviations. Both the full-SID expected input
+and its rendered text are retained; no existing path's policy is changed.
 Duplicate publication must preserve content and file identity. Contention remains
 effective throughout the caller's critical section, and the lock becomes
 available after release. Payload removal uses the native owner; parent cleanup

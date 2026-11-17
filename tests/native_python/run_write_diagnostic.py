@@ -64,7 +64,51 @@ def fixture_parent():
     return parent
 
 
-def record_validation(result, name, context, observed, expected, passed):
+def canonical_dacl_text(sddl):
+    """Render the strict expected DACL through Windows, without touching a path."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    parse = advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW
+    parse.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    parse.restype = wintypes.BOOL
+    render = advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    render.argtypes = [
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.LPWSTR),
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    render.restype = wintypes.BOOL
+    free = kernel.LocalFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = ctypes.c_void_p
+    descriptor = ctypes.c_void_p()
+    rendered = wintypes.LPWSTR()
+    try:
+        if not parse(sddl, 1, ctypes.byref(descriptor), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if not render(descriptor, 1, 0x4, ctypes.byref(rendered), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return rendered.value
+    finally:
+        if rendered:
+            free(ctypes.cast(rendered, ctypes.c_void_p))
+        if descriptor:
+            free(descriptor)
+
+
+def record_validation(
+    result, name, context, observed, expected, passed, *, expected_input=None
+):
     record = {
         "event": "validation",
         "check": name,
@@ -74,6 +118,8 @@ def record_validation(result, name, context, observed, expected, passed):
         "expected": expected,
         "passed": passed,
     }
+    if expected_input is not None:
+        record["expected_input"] = expected_input
     result.setdefault("validation", []).append(record)
     print(json.dumps(record), flush=True)
     assert passed, name
@@ -300,9 +346,10 @@ def child(spec_path):
                             owner_sid == expected_sid,
                         )
                         policy = windows_policy_text(path)
-                        expected_policy = (
+                        expected_policy_input = (
                             f"D:P(A;;FA;;;SY)(A;;FA;;;{windows_user_sid()})"
                         )
+                        expected_policy = canonical_dacl_text(expected_policy_input)
                         record_validation(
                             result,
                             "exact_dacl_text",
@@ -310,6 +357,7 @@ def child(spec_path):
                             policy,
                             expected_policy,
                             policy == expected_policy,
+                            expected_input=expected_policy_input,
                         )
                         files.append((relative, data, path.stat().st_ino))
                         if first is None:
