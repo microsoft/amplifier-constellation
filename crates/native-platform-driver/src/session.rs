@@ -185,7 +185,7 @@ impl DriverIdentity {
         if require_private {
             config::protected_file(&canonical)?;
         }
-        let digest = Sha256::digest(fs::read(&canonical)?).into();
+        let digest = crate::driver_digest::sha256(fs::read(&canonical)?);
         Ok(Self {
             path: path.to_owned(),
             canonical,
@@ -203,7 +203,7 @@ impl DriverIdentity {
             fs::canonicalize(&self.path)? == self.canonical,
             "Installed native driver path changed"
         );
-        let digest: [u8; 32] = Sha256::digest(fs::read(&self.canonical)?).into();
+        let digest = crate::driver_digest::sha256(fs::read(&self.canonical)?);
         ensure!(
             digest == self.digest,
             "Installed native driver bytes changed"

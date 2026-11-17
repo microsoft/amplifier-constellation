@@ -2,6 +2,7 @@
 
 mod config;
 mod data_read;
+mod driver_digest;
 pub mod ffi;
 mod service_application;
 mod session;
