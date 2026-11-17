@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 
 BASE = "8062eda22ea4fe9c333798be8397ce7fa4f6f2ee"
 DEPTHS = (7, 8, 9, 10, 11, 14, 15)
@@ -61,6 +62,21 @@ def fixture_parent():
     if not parent.is_dir():
         raise ValueError("Diagnostic fixture parent must be an existing directory")
     return parent
+
+
+def record_validation(result, name, context, observed, expected, passed):
+    record = {
+        "event": "validation",
+        "check": name,
+        "after_sequence": result["rows"][-1]["sequence"],
+        "context": context,
+        "observed": observed,
+        "expected": expected,
+        "passed": passed,
+    }
+    result.setdefault("validation", []).append(record)
+    print(json.dumps(record), flush=True)
+    assert passed, name
 
 
 def child(spec_path):
@@ -234,20 +250,66 @@ def child(spec_path):
                                 "state", relative, data, create_only=True
                             ),
                         )
-                        assert value == {}
+                        context = {
+                            "relative_path": relative,
+                            "depth": depth,
+                            "bytes": size,
+                            "repetition": repetition,
+                        }
+                        record_validation(
+                            result, "write_result", context, value, {}, value == {}
+                        )
                         description = call(
                             "describe", 0, 0, repetition, native.describe
                         )
-                        assert (
+                        record_validation(
+                            result,
+                            "describe_contract",
+                            context,
+                            description,
+                            {"protocol": 1, "required_operation": "storage.write"},
                             description["protocol"] == 1
-                            and "storage.write" in description["operations"]
+                            and "storage.write" in description["operations"],
                         )
                         path = state / relative
-                        assert path.read_bytes() == data
-                        assert windows_owner_sid(path) == windows_user_sid()
-                        assert (
-                            windows_policy_text(path)
-                            == f"D:P(A;;FA;;;SY)(A;;FA;;;{windows_user_sid()})"
+                        content = path.read_bytes()
+                        record_validation(
+                            result,
+                            "exact_content",
+                            context,
+                            {
+                                "bytes": len(content),
+                                "sha256": hashlib.sha256(content).hexdigest(),
+                            },
+                            {
+                                "bytes": len(data),
+                                "sha256": hashlib.sha256(data).hexdigest(),
+                            },
+                            content == data,
+                        )
+                        owner_sid, expected_sid = (
+                            windows_owner_sid(path),
+                            windows_user_sid(),
+                        )
+                        record_validation(
+                            result,
+                            "owner_sid",
+                            context,
+                            owner_sid,
+                            expected_sid,
+                            owner_sid == expected_sid,
+                        )
+                        policy = windows_policy_text(path)
+                        expected_policy = (
+                            f"D:P(A;;FA;;;SY)(A;;FA;;;{windows_user_sid()})"
+                        )
+                        record_validation(
+                            result,
+                            "exact_dacl_text",
+                            context,
+                            policy,
+                            expected_policy,
+                            policy == expected_policy,
                         )
                         files.append((relative, data, path.stat().st_ino))
                         if first is None:
@@ -303,7 +365,11 @@ def child(spec_path):
     except BaseException as error:
         result.update(
             status="failed_or_unknown",
-            error={"type": type(error).__name__, "message": str(error)},
+            error={
+                "type": type(error).__name__,
+                "message": str(error),
+                "traceback": traceback.format_exc(),
+            },
         )
     finally:
         errors = []
@@ -497,7 +563,11 @@ def main():
     except BaseException as error:
         result.update(
             status="failed_or_unknown",
-            error={"type": type(error).__name__, "message": str(error)},
+            error={
+                "type": type(error).__name__,
+                "message": str(error),
+                "traceback": traceback.format_exc(),
+            },
         )
     finally:
         cleanup = {"owned_child_live": owned_live, "removed": False}

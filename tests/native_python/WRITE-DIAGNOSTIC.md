@@ -32,6 +32,10 @@ Zero-byte seeds and direct 64 KiB writes cover the native publication boundary;
 later filling of large files is outside this fixture.
 
 Each write verifies its returned result, exact bytes, owner and private DACL.
+These post-call checks record named observed/expected values and row/path context
+before asserting, outside the measurement clocks. Content records contain length
+and digest; the actual predicate still compares all bytes. Failures retain a
+traceback before cleanup. The exact DACL-text predicate is not normalized.
 Duplicate publication must preserve content and file identity. Contention remains
 effective throughout the caller's critical section, and the lock becomes
 available after release. Payload removal uses the native owner; parent cleanup
