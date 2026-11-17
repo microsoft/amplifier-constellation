@@ -185,7 +185,7 @@ impl DriverIdentity {
         if require_private {
             config::protected_file(&canonical)?;
         }
-        let digest = Sha256::digest(fs::read(&canonical)?).into();
+        let digest = crate::driver_digest::sha256(fs::read(&canonical)?);
         Ok(Self {
             path: path.to_owned(),
             canonical,
@@ -221,7 +221,7 @@ impl DriverIdentity {
             "Installed native driver path changed"
         );
         #[cfg(not(feature = "native-write-diagnostic"))]
-        let digest: [u8; 32] = Sha256::digest(fs::read(&self.canonical)?).into();
+        let digest = crate::driver_digest::sha256(fs::read(&self.canonical)?);
         #[cfg(feature = "native-write-diagnostic")]
         let digest: [u8; 32] = {
             let bytes = {
@@ -229,7 +229,7 @@ impl DriverIdentity {
                 fs::read(&self.canonical)?
             };
             let _phase = amplifier_native_platform::diagnostic::Phase::begin("driver.digest");
-            Sha256::digest(bytes).into()
+            crate::driver_digest::sha256(bytes)
         };
         ensure!(
             digest == self.digest,
