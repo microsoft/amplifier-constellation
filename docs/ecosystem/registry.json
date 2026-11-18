@@ -1542,6 +1542,12 @@
           "id": "bundles",
           "label": "Configured bundles & tools",
           "kind": "external"
+        },
+        {
+          "id": "shell-sdk",
+          "label": "Shell extension SDK",
+          "kind": "external",
+          "repository": "bkrabach/amplifier-shell-sdk"
         }
       ],
       "edges": [
@@ -1568,6 +1574,11 @@
         {
           "from": "self",
           "to": "bundles",
+          "relation": "uses"
+        },
+        {
+          "from": "self",
+          "to": "shell-sdk",
           "relation": "uses"
         }
       ],
@@ -1599,13 +1610,21 @@
           "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/pyproject.toml",
           "sha256": "bd1ebadfdea7ae1341457bd8a280b72a436609d17cf8f0a35d515faa56f20c19",
           "git_blob": "3b4138ff6383863c2e89e1bba5713fe62fe892a2"
+        },
+        {
+          "path": "README.md",
+          "git_blob": "6a8bbcf76ef11fda970c0bc0480e3c3b2d1565d8",
+          "sha256": "bba979b2d9c060f53ccd5c2154baf4575e2e57f45067a6cae5203261bb7c5696",
+          "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+          "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/README.md"
         }
       ],
       "notes": [
         "Current app uses Core AmplifierSession through Foundation prepared bundles.",
         "Do not depict amplifier-unified-host, amplifier-unified-client-web or AHP as already replacing current app architecture; the architecture packet explicitly keeps that adoption a secondary track.",
         "amplifier-client-web is the authoring owner; Unified selects a copied delivery and ships built assets. Source merge is not automatic app delivery.",
-        "Role mapping describes responsibility, not a claim that every Constellation family contract has been qualified."
+        "Role mapping describes responsibility, not a claim that every Constellation family contract has been qualified.",
+        "The independently authored Shell SDK supplies trusted browser extension helpers. Unified retains host contracts, validation and activation; source publication and explicit app input selection remain separate."
       ],
       "consumer_cta": {
         "label": "Install Amplifier Unified",
@@ -2082,6 +2101,13 @@
           "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
           "sha256": "63e371d12e7d4c70284ab775f508af7ba20803bff18150d3aec5d6dcea2e23d6",
           "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/AGENTS.md"
+        },
+        {
+          "path": "README.md",
+          "git_blob": "6a8bbcf76ef11fda970c0bc0480e3c3b2d1565d8",
+          "sha256": "bba979b2d9c060f53ccd5c2154baf4575e2e57f45067a6cae5203261bb7c5696",
+          "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+          "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/README.md"
         }
       ],
       "consumer_cta": {
@@ -2110,6 +2136,11 @@
           "from": "self",
           "relation": "uses",
           "to": "inputs"
+        },
+        {
+          "from": "self",
+          "to": "shell-sdk",
+          "relation": "uses"
         }
       ],
       "nodes": [
@@ -2138,13 +2169,20 @@
         {
           "id": "inputs",
           "kind": "external",
-          "label": "Selected catalogs, SDK & branding"
+          "label": "Selected catalogs & branding"
+        },
+        {
+          "id": "shell-sdk",
+          "label": "Shell extension SDK",
+          "kind": "external",
+          "repository": "bkrabach/amplifier-shell-sdk"
         }
       ],
       "notes": [
         "Connects by the current Unified HTTP/SSE/WebSocket interface, not the separate AHP client interface.",
         "Source authoring and selected delivery copy are separate; keep components/web-client and its provenance current through the documented handoff.",
-        "Developer source is not a standalone consumer installer."
+        "Developer source is not a standalone consumer installer.",
+        "The Shell SDK is an independently authored browser extension helper, selected through the client input lock and Unified assembly. A map or source release does not update the bundled client or qualify a host pairing."
       ],
       "purpose": "Present Amplifier conversations, workspaces and interactive work surfaces in a browser.",
       "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
@@ -4121,6 +4159,115 @@
       "summary": "A publisher, reader and optional hook exchange versioned local JSON observations. Callers choose private storage and session identity; no network service is introduced.",
       "supports_roles": [],
       "visibility": "public"
+    },
+    {
+      "repository": "bkrabach/amplifier-shell-sdk",
+      "display_name": "Amplifier Shell SDK",
+      "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+      "visibility": "public",
+      "roles": [],
+      "supports_roles": [
+        "Experience"
+      ],
+      "page_kind": "supporting library",
+      "audience": "Authors of trusted browser shell components",
+      "purpose": "Author navigation, Canvas and shell extensions with an independent JavaScript helper library.",
+      "summary": "Dependency-free JavaScript helpers, TypeScript declarations and a controls example for the documented shell host interface.",
+      "nodes": [
+        {
+          "id": "self",
+          "label": "Amplifier Shell SDK",
+          "kind": "self",
+          "repository": "bkrabach/amplifier-shell-sdk"
+        },
+        {
+          "id": "helpers",
+          "label": "JavaScript helpers",
+          "kind": "internal"
+        },
+        {
+          "id": "types",
+          "label": "TypeScript declarations",
+          "kind": "internal"
+        },
+        {
+          "id": "example",
+          "label": "Controls example",
+          "kind": "internal"
+        },
+        {
+          "id": "unified",
+          "label": "Unified host and assembly",
+          "kind": "external",
+          "repository": "microsoft/amplifier-unified"
+        },
+        {
+          "id": "web",
+          "label": "Web client inputs",
+          "kind": "external",
+          "repository": "microsoft/amplifier-client-web"
+        }
+      ],
+      "edges": [
+        {
+          "from": "self",
+          "to": "helpers",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "types",
+          "relation": "contains"
+        },
+        {
+          "from": "self",
+          "to": "example",
+          "relation": "contains"
+        },
+        {
+          "from": "unified",
+          "to": "self",
+          "relation": "uses"
+        },
+        {
+          "from": "web",
+          "to": "self",
+          "relation": "uses"
+        }
+      ],
+      "citations": [
+        {
+          "path": "README.md",
+          "git_blob": "6a8bbcf76ef11fda970c0bc0480e3c3b2d1565d8",
+          "sha256": "bba979b2d9c060f53ccd5c2154baf4575e2e57f45067a6cae5203261bb7c5696",
+          "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+          "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/README.md"
+        },
+        {
+          "path": "package.json",
+          "git_blob": "750e6b98ef77420bd228368be8a385ce9ae95a02",
+          "sha256": "ab3f528d82e6322b6d91a5f82bb1ea11157a55a28ce2db022b614412dac01dd8",
+          "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+          "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/package.json"
+        },
+        {
+          "path": "index.js",
+          "git_blob": "051658249fd2e7621dd36b07982dd52fe5e2cb87",
+          "sha256": "1b358735db3b8de9802370cbe9c03911388b78ae36c20ed44fcba68fb915bbae",
+          "ref": "5114e5ecee18dfdc6af70876846adb0291fe2f1b",
+          "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/index.js"
+        }
+      ],
+      "notes": [
+        "This is an independent open-source library hosted by bkrabach, not a Microsoft component in the Constellation family index. Its original extraction and repository history remain recorded in ORIGIN.json.",
+        "The package @amplifier/shell-sdk exposes browser component helpers for host API 1.0. It is not a terminal shell, agent runtime, network service or implementation of a complete Constellation role.",
+        "Component authors bundle the helper and accept React and state from the host. Unified retains manifest compatibility, capability discovery, validation, activation and authority; trusted same-origin extensions are not isolated by this library.",
+        "Public source ownership, a qualified release tarball, consumer input selection and app release are separate steps. This map does not change an installed default or establish host compatibility; npm registry publication is separate."
+      ],
+      "start_cta": {
+        "label": "Read the SDK guide",
+        "url": "https://github.com/bkrabach/amplifier-shell-sdk/blob/5114e5ecee18dfdc6af70876846adb0291fe2f1b/README.md"
+      }
     }
   ]
 }
