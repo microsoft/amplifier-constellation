@@ -1496,7 +1496,7 @@
     },
     {
       "repository": "microsoft/amplifier-unified",
-      "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
+      "ref": "54c457a059812d290c781c55e4edf84cb33ad937",
       "roles": [
         "Experience",
         "Conversation"
@@ -1585,31 +1585,31 @@
       "citations": [
         {
           "path": "README.md",
-          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
-          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/README.md",
-          "sha256": "96005ecb7028fffbce9e7c5a43bef0c3b92899b970326cb017f3791c18dcfb7c",
-          "git_blob": "236c41edc9d6499c583f758813e125a33e4d5057"
+          "ref": "54c457a059812d290c781c55e4edf84cb33ad937",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/54c457a059812d290c781c55e4edf84cb33ad937/README.md",
+          "sha256": "38dca4661e0fe588edb6215a5214f93f3e5887de67b918de6120f9005f1dfc06",
+          "git_blob": "e751153b8ae1c64ba45bd7a099d87afd109e4053"
         },
         {
           "path": "components/README.md",
-          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
-          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/components/README.md",
-          "sha256": "5992cc00619417d7ae06b00135c669a442b9253ee699cb4cb525e696d2a9f159",
-          "git_blob": "d428226bc9264b481c1c5e3630309c74d6b10419"
+          "ref": "54c457a059812d290c781c55e4edf84cb33ad937",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/54c457a059812d290c781c55e4edf84cb33ad937/components/README.md",
+          "sha256": "5debebb028e42134cd9e62200fbcdfa8592a434f7f4b0eae6b704641571da1ed",
+          "git_blob": "9d4d27651c39cd9987e39a2c74622ab09bc506ba"
         },
         {
           "path": "docs/architecture/README.md",
-          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
-          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/docs/architecture/README.md",
+          "ref": "54c457a059812d290c781c55e4edf84cb33ad937",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/54c457a059812d290c781c55e4edf84cb33ad937/docs/architecture/README.md",
           "sha256": "46afa28ad7501801d6ad5266f92098f1b75160a14ef6a57a9e46d601b1a1c78c",
           "git_blob": "c6047268da78c4be9fec56d2168cda8d7d03ba5f"
         },
         {
           "path": "pyproject.toml",
-          "ref": "6225ca5c0d3a50cf6c96c4674dedd2514125cdfa",
-          "url": "https://github.com/microsoft/amplifier-unified/blob/6225ca5c0d3a50cf6c96c4674dedd2514125cdfa/pyproject.toml",
-          "sha256": "bd1ebadfdea7ae1341457bd8a280b72a436609d17cf8f0a35d515faa56f20c19",
-          "git_blob": "3b4138ff6383863c2e89e1bba5713fe62fe892a2"
+          "ref": "54c457a059812d290c781c55e4edf84cb33ad937",
+          "url": "https://github.com/microsoft/amplifier-unified/blob/54c457a059812d290c781c55e4edf84cb33ad937/pyproject.toml",
+          "sha256": "737f5bfcf0f1bdb0a262e52f7a5cfb59c542c04ea0ac742c2540fb6b4072f0f6",
+          "git_blob": "f84179f10d775eed6c0867be84f66502d23dfcff"
         },
         {
           "path": "README.md",
@@ -1622,7 +1622,7 @@
       "notes": [
         "Current app uses Core AmplifierSession through Foundation prepared bundles.",
         "Do not depict amplifier-unified-host, amplifier-unified-client-web or AHP as already replacing current app architecture; the architecture packet explicitly keeps that adoption a secondary track.",
-        "amplifier-client-web is the authoring owner; Unified selects a copied delivery and ships built assets. Source merge is not automatic app delivery.",
+        "amplifier-client-web is the sole authoring owner; Unified prepares an exact public repository revision and ships its verified built assets. Source merge is not automatic app delivery.",
         "Role mapping describes responsibility, not a claim that every Constellation family contract has been qualified.",
         "The independently authored Shell SDK supplies trusted browser extension helpers. Unified retains host contracts, validation and activation; source publication and explicit app input selection remain separate."
       ],
@@ -2082,25 +2082,25 @@
     {
       "citations": [
         {
-          "git_blob": "b60aeff19eff9c0676fe29f6bbe178375396944d",
+          "git_blob": "4013fb7798017ea5a8ff2e3d3283b3848a8727d7",
           "path": "README.md",
-          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
-          "sha256": "29f92db8310c0bad987a123e9184cb3a935b6adb2850f828e66776fce6884c4c",
-          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/README.md"
+          "ref": "4308c1e1a770ca6d7dd0d430611e1db412c82bb4",
+          "sha256": "8762e8a05d3078a73fbb1b79c8e15ef30a0685181d59dbd6278e6516402a66db",
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/4308c1e1a770ca6d7dd0d430611e1db412c82bb4/README.md"
         },
         {
           "git_blob": "2340a58175980650fa4636963a28251953287ebf",
           "path": "package.json",
-          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+          "ref": "4308c1e1a770ca6d7dd0d430611e1db412c82bb4",
           "sha256": "6a883c73941de85dd5b011e1d460c2ed2a593cd3506b00bf3a25ddab88f52011",
-          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/package.json"
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/4308c1e1a770ca6d7dd0d430611e1db412c82bb4/package.json"
         },
         {
-          "git_blob": "0e34faa293821a1b86d1b109f72e3d4aeccb4a72",
+          "git_blob": "c53611002ff3b3aea0e1a6cbbb105983aca37810",
           "path": "AGENTS.md",
-          "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
-          "sha256": "63e371d12e7d4c70284ab775f508af7ba20803bff18150d3aec5d6dcea2e23d6",
-          "url": "https://github.com/microsoft/amplifier-client-web/blob/1b055e861d4380cbbccff56e3142588ae806882b/AGENTS.md"
+          "ref": "4308c1e1a770ca6d7dd0d430611e1db412c82bb4",
+          "sha256": "87e4b33530af7652b0d290de675e5fb1dc452f71e90a45398dfdedab52e321c7",
+          "url": "https://github.com/microsoft/amplifier-client-web/blob/4308c1e1a770ca6d7dd0d430611e1db412c82bb4/AGENTS.md"
         },
         {
           "path": "README.md",
@@ -2180,12 +2180,12 @@
       ],
       "notes": [
         "Connects by the current Unified HTTP/SSE/WebSocket interface, not the separate AHP client interface.",
-        "Source authoring and selected delivery copy are separate; keep components/web-client and its provenance current through the documented handoff.",
+        "Unified selects an exact accepted public source revision through its repository-delivery workflow; source changes require explicit selection, paired qualification and Unified release.",
         "Developer source is not a standalone consumer installer.",
         "The Shell SDK is an independently authored browser extension helper, selected through the client input lock and Unified assembly. A map or source release does not update the bundled client or qualify a host pairing."
       ],
       "purpose": "Present Amplifier conversations, workspaces and interactive work surfaces in a browser.",
-      "ref": "1b055e861d4380cbbccff56e3142588ae806882b",
+      "ref": "4308c1e1a770ca6d7dd0d430611e1db412c82bb4",
       "repository": "microsoft/amplifier-client-web",
       "roles": [
         "Experience"
