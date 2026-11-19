@@ -59,7 +59,7 @@ pub fn hostname() -> String {
     env::var(key)
         .ok()
         .or_else(|| {
-            Command::new("hostname")
+            noninteractive_command(Command::new("hostname"))
                 .output()
                 .ok()
                 .filter(|o| o.status.success())
@@ -68,6 +68,23 @@ pub fn hostname() -> String {
         .filter(|s| !s.is_empty() && s.len() <= 160 && !s.chars().any(char::is_control))
         .unwrap_or_else(|| "My computer".into())
 }
+
+fn noninteractive_command(command: Command) -> Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
+        let mut command = command;
+        // Fixed desktop utility calls must not open a separate console.
+        command.creation_flags(CREATE_NO_WINDOW);
+        command
+    }
+    #[cfg(not(windows))]
+    {
+        command
+    }
+}
+
 pub fn open_browser(url: &str) -> Result<()> {
     validate_local_url(url)?;
     launch_browser(url)
@@ -299,7 +316,7 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
             .flat_map(u16::to_le_bytes)
             .collect();
         crate::private_write(&path, &bytes)?;
-        let status = Command::new("schtasks.exe")
+        let status = noninteractive_command(Command::new("schtasks.exe"))
             .arg("/Create")
             .arg("/TN")
             .arg(&label)
@@ -365,7 +382,7 @@ pub fn remove_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Result
             )?,
             "Startup task belongs to another command; it was preserved"
         );
-        let status = Command::new("schtasks.exe")
+        let status = noninteractive_command(Command::new("schtasks.exe"))
             .args(["/Delete", "/TN", &label, "/F"])
             .stdout(Stdio::null())
             .status()?;
@@ -641,4 +658,67 @@ pub fn validate_local_url(value: &str) -> Result<()> {
         "Setup must open on this computer"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod hostname_tests {
+    use super::*;
+
+    #[test]
+    fn hostname_command_keeps_program_arguments_and_environment() {
+        let mut command = Command::new("hostname");
+        command
+            .arg("fixture-argument")
+            .env("FIXTURE_HOSTNAME", "value");
+        let command = noninteractive_command(command);
+        assert_eq!(command.get_program(), "hostname");
+        assert_eq!(command.get_args().collect::<Vec<_>>(), ["fixture-argument"]);
+        assert_eq!(
+            command.get_envs().collect::<Vec<_>>(),
+            [(
+                std::ffi::OsStr::new("FIXTURE_HOSTNAME"),
+                Some(std::ffi::OsStr::new("value"))
+            )]
+        );
+        assert!(command.get_current_dir().is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn hostname_child_has_no_console_and_preserves_native_output() {
+        const CHILD: &str = "CONSTELLATION_HOSTNAME_WINDOWLESS_CHILD";
+        if env::var_os(CHILD).is_some() {
+            // Test-only API binding; no production ABI or dependency changes.
+            #[link(name = "kernel32")]
+            unsafe extern "system" {
+                fn GetConsoleWindow() -> *mut std::ffi::c_void;
+            }
+            assert!(unsafe { GetConsoleWindow() }.is_null());
+            assert!(env::var_os("COMPUTERNAME").is_none());
+            let output = noninteractive_command(Command::new("hostname"))
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            let native = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+            assert!(!native.is_empty());
+            assert_eq!(hostname(), native);
+            println!("hostname windowless native child passed");
+            return;
+        }
+        let mut command = Command::new(env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "platform::hostname_tests::hostname_child_has_no_console_and_preserves_native_output",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .env_remove("COMPUTERNAME");
+        let output = noninteractive_command(command).output().unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert!(
+            String::from_utf8_lossy(&output.stdout)
+                .contains("hostname windowless native child passed")
+        );
+    }
 }
