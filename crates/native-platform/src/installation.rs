@@ -551,27 +551,13 @@ fn launchctl(args: &[&str]) -> Command {
 #[cfg(any(target_os = "macos", test))]
 fn launch_properties(text: &str) -> Result<BTreeMap<String, String>> {
     let mut result = BTreeMap::new();
-    let mut key = None;
-    let mut value = String::new();
-    let mut depth: i32 = 0;
-    for line in text.lines().skip(1) {
+    let mut lines = text.lines().skip(1);
+    while let Some(line) = lines.next() {
         let trimmed = line.trim();
-        if depth > 0 {
-            value.push_str(line);
-            value.push('\n');
-            depth += trimmed.matches('{').count() as i32 - trimmed.matches('}').count() as i32;
-            if depth == 0 {
-                result.insert(key.take().unwrap(), std::mem::take(&mut value));
-            }
-            continue;
-        }
-        if trimmed == "}" || trimmed.is_empty() {
-            continue;
-        }
         let Some((name, body)) = trimmed.split_once(" = ") else {
             continue;
         };
-        if [
+        let selected = [
             "path",
             "type",
             "state",
@@ -586,19 +572,38 @@ fn launch_properties(text: &str) -> Result<BTreeMap<String, String>> {
             "minimum runtime",
             "exit timeout",
         ]
-        .contains(&name)
-        {
-            ensure!(!result.contains_key(name), "Duplicate launchd property");
-            if body == "{" {
-                key = Some(name.to_owned());
-                value = "{\n".into();
-                depth = 1;
-            } else {
-                result.insert(name.into(), body.into());
+        .contains(&name);
+        let mut value = String::from(body);
+        if body == "{" {
+            // Children of every launchctl block are indented one level further,
+            // including blocks we do not retain. A brace in an argument is data.
+            let indent = &line[..line.len() - line.trim_start().len()];
+            value.push('\n');
+            loop {
+                let child = lines.next().context("Incomplete launchd observation")?;
+                let tail = child.strip_prefix(indent);
+                let end = tail.is_some_and(|s| s.trim_end() == "}");
+                ensure!(
+                    end || child.trim().is_empty()
+                        || tail.is_some_and(|s| s.starts_with([' ', '\t'])),
+                    "Malformed launchd block indentation"
+                );
+                if selected {
+                    value.push_str(child);
+                    value.push('\n');
+                }
+                if end {
+                    break;
+                }
             }
         }
+        if selected {
+            ensure!(
+                result.insert(name.to_owned(), value).is_none(),
+                "Duplicate launchd property"
+            );
+        }
     }
-    ensure!(depth == 0, "Incomplete launchd observation");
     ensure!(
         result.contains_key("state") && result.contains_key("path"),
         "Missing launchd service state/definition"
@@ -935,6 +940,39 @@ mod tests {
         );
         assert!(disabled_override("unknown", "example").is_err());
     }
+    #[test]
+    fn launchd_coalition_fields_are_not_service_fields() {
+        // launchctl prints both coalitions for a running GUI LaunchAgent on macOS.
+        let raw = concat!(
+            "gui/501/example = {\n",
+            "\tpath = /Users/example/job.plist\n\ttype = LaunchAgent\n\tstate = running\n",
+            "\tresource coalition = {\n\t\tID = 14\n\t\ttype = resource\n",
+            "\t\tstate = active\n\t\tactive count = 1\n\t\tname = example\n\t}\n",
+            "\tjetsam coalition = {\n\t\tID = 15\n\t\ttype = jetsam\n",
+            "\t\tstate = active\n\t\tactive count = 1\n\t\tname = example\n\t}\n",
+            "\tpid = 21\n}\n",
+        );
+        let props = launch_properties(raw).unwrap();
+        assert_eq!(props.len(), 4);
+        assert_eq!(props["type"], "LaunchAgent");
+        assert_eq!(props["state"], "running");
+        assert_eq!(props["pid"], "21");
+        assert!(launch_properties(&raw.replace("\tstate = running\n", "")).is_err());
+        assert!(launch_properties(&raw.replace("\tpid = 21", "\tstate = waiting")).is_err());
+        assert!(launch_properties(&raw.replace("\t}\n\tjetsam", "\tjetsam")).is_err());
+    }
+
+    #[test]
+    fn launchd_argument_braces_are_literal_and_retained() {
+        let text = "gui/501/example = {\n\tpath = /tmp/example.plist\n\tstate = running\n\targuments = {\n\t\t/bin/example\n\t\t}\n\t\ttext {\n\t}\n\tpid = 21\n}\n";
+        let properties = launch_properties(text).unwrap();
+        assert_eq!(
+            properties["arguments"],
+            "{\n\t\t/bin/example\n\t\t}\n\t\ttext {\n\t}\n"
+        );
+        assert_eq!(properties["pid"], "21");
+    }
+
     #[test]
     fn definition_records_exact_bytes_and_rejects_directories() {
         let tmp = tempfile::tempdir().unwrap();
