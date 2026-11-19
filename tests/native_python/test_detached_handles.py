@@ -27,19 +27,35 @@ from test_driver import protect, windows_native_path  # noqa: E402
 
 
 def _save(path: Path, value: dict) -> None:
-    temporary = path.with_suffix(".pending")
-    temporary.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
-    os.replace(temporary, path)
+    # Each fixture receipt has a single producer. Announce it only after that
+    # producer has closed the data file, so the observer never races its handle.
+    with path.open("x", encoding="utf-8") as stream:
+        json.dump(value, stream, ensure_ascii=False)
+    path.with_suffix(".published").touch(exist_ok=False)
 
 
 def _read_until(path: Path, timeout: float = 10) -> dict:
     until = time.monotonic() + timeout
     while time.monotonic() < until:
-        try:
+        if path.with_suffix(".published").is_file():
             return json.loads(path.read_text(encoding="utf-8"))
-        except FileNotFoundError:
-            time.sleep(0.01)
+        time.sleep(0.01)
     raise AssertionError("Missing disposable launch receipt: " + path.name)
+
+
+class ReceiptTests(unittest.TestCase):
+    def test_reader_requires_publication_and_reports_bad_published_receipts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "endpoint.json"
+            path.write_text("{", encoding="utf-8")
+            with self.assertRaisesRegex(AssertionError, "Missing disposable launch receipt"):
+                _read_until(path, timeout=0.02)
+            path.with_suffix(".published").touch()
+            with self.assertRaises(json.JSONDecodeError):
+                _read_until(path)
+            path.unlink()
+            with self.assertRaises(FileNotFoundError):
+                _read_until(path)
 
 
 class _WindowsExclusiveFile:
@@ -332,8 +348,9 @@ class DetachedHandleTests(unittest.TestCase):
                 def settle_generations():
                     for name, key in (("caller-finished.json", "supervisor"),
                                       ("endpoint.json", "identity")):
-                        if (self.root / name).exists():
-                            identity = json.loads((self.root / name).read_text(encoding="utf-8"))[key]
+                        path = self.root / name
+                        if path.exists() or path.with_suffix(".published").exists():
+                            identity = _read_until(path)[key]
                             if identity not in identities:
                                 identities.append(identity)
                     until = time.monotonic() + 35

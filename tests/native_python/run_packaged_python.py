@@ -304,7 +304,8 @@ def qualify(target, output, log):
     # Preserve fixture owner/DACL diagnostics in the ordinary CI log as well as
     # the artifact; the full test log is small and contains disposable state only.
     if log.is_file():
-        print(log.read_text(encoding="utf-8"), end="")
+        sys.stdout.buffer.write(log.read_bytes())
+        sys.stdout.buffer.flush()
     print(json.dumps({"target": target, "outcome": record["outcome"], "receipt": str(output)}))
     return 0 if record["outcome"] == "passed" else 1
 
