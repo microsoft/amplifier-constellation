@@ -59,7 +59,7 @@ pub fn hostname() -> String {
     env::var(key)
         .ok()
         .or_else(|| {
-            hostname_command(Command::new("hostname"))
+            noninteractive_command(Command::new("hostname"))
                 .output()
                 .ok()
                 .filter(|o| o.status.success())
@@ -69,13 +69,13 @@ pub fn hostname() -> String {
         .unwrap_or_else(|| "My computer".into())
 }
 
-fn hostname_command(command: Command) -> Command {
+fn noninteractive_command(command: Command) -> Command {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
         let mut command = command;
-        // A missing COMPUTERNAME must not open a console in a desktop app.
+        // Fixed desktop utility calls must not open a separate console.
         command.creation_flags(CREATE_NO_WINDOW);
         command
     }
@@ -316,7 +316,7 @@ pub fn install_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Resul
             .flat_map(u16::to_le_bytes)
             .collect();
         crate::private_write(&path, &bytes)?;
-        let status = Command::new("schtasks.exe")
+        let status = noninteractive_command(Command::new("schtasks.exe"))
             .arg("/Create")
             .arg("/TN")
             .arg(&label)
@@ -382,7 +382,7 @@ pub fn remove_startup(app: &Application, home: &Path, id: &uuid::Uuid) -> Result
             )?,
             "Startup task belongs to another command; it was preserved"
         );
-        let status = Command::new("schtasks.exe")
+        let status = noninteractive_command(Command::new("schtasks.exe"))
             .args(["/Delete", "/TN", &label, "/F"])
             .stdout(Stdio::null())
             .status()?;
@@ -670,7 +670,7 @@ mod hostname_tests {
         command
             .arg("fixture-argument")
             .env("FIXTURE_HOSTNAME", "value");
-        let command = hostname_command(command);
+        let command = noninteractive_command(command);
         assert_eq!(command.get_program(), "hostname");
         assert_eq!(command.get_args().collect::<Vec<_>>(), ["fixture-argument"]);
         assert_eq!(
@@ -695,7 +695,9 @@ mod hostname_tests {
             }
             assert!(unsafe { GetConsoleWindow() }.is_null());
             assert!(env::var_os("COMPUTERNAME").is_none());
-            let output = hostname_command(Command::new("hostname")).output().unwrap();
+            let output = noninteractive_command(Command::new("hostname"))
+                .output()
+                .unwrap();
             assert!(output.status.success());
             let native = String::from_utf8_lossy(&output.stdout).trim().to_owned();
             assert!(!native.is_empty());
@@ -712,7 +714,7 @@ mod hostname_tests {
             ])
             .env(CHILD, "1")
             .env_remove("COMPUTERNAME");
-        let output = hostname_command(command).output().unwrap();
+        let output = noninteractive_command(command).output().unwrap();
         assert!(output.status.success(), "{output:?}");
         assert!(
             String::from_utf8_lossy(&output.stdout)
